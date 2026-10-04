@@ -111,18 +111,26 @@ Kết quả ghi `so-tay/<chức-năng>.md`; điều gì lật đổ thiết kế
 ## 6. Bảng mẫu · cài đặt bảng *(chốt 04/10/2026 — chi tiết: thiết kế mục 5, 5.1)*
 
 Mỗi bảng một file cho mỗi đơn vị · cột A = Mã đơn vị · tab kỳ tên `dd.mm.yyyy` ·
-khoá theo cài đặt bảng (cột nhập, cho thêm dòng, tab chú thích kèm).
+khoá theo cài đặt bảng (cột nhập, dòng nhập/dòng khoá, cho thêm dòng, tab chú
+thích kèm). Dòng ghi theo số dòng **của mẫu** → khi tách phải giữ ánh xạ dòng
+mẫu ↔ dòng file đơn vị.
 
 **Cài đặt bảng lưu ở đâu** — đề xuất **(a)**, chờ chủ dự án chốt:
 
-| | (a) Tab *Bảng* trong Sheet quản lý | (b) Tab ẩn + khoá trong từng file | (c) Trong phần mềm (Script Properties / file cấu hình) |
-|---|---|---|---|
-| Đơn vị thấy được? | Không — file chỉ chủ mở | **Có** — tải Excel là thấy tab ẩn (phép thử K2) | Không |
-| Sửa một cài đặt | 1 dòng | Sửa 49–168 file, dễ lệch nhau | (c1) Script Properties: chỉ qua mã · (c2) file cấu hình: sửa mã + đẩy git, lên GitHub công khai |
-| GAS đọc | 1 lần cho mọi bảng | Mở từng file (~400 ms/file) | Nhanh nhất |
-| Trang quản trị sửa được? | Có | Có, nhưng ghi N file | (c1) có · (c2) không |
+*Sheet quản lý* = **một** file chung của cả app (Đơn vị · Tài khoản · Bảng ·
+File). *File tổng* = mỗi bảng một file (mẫu + số liệu gộp). Hai thứ khác nhau.
 
-Cài đặt **không phải bí mật**, cần sửa dễ và có một nguồn duy nhất → (a).
+| | (a) Tab *Bảng* trong Sheet quản lý | (d) Tab cài đặt trong file tổng của bảng | (b) Tab ẩn trong từng file đơn vị | (c) Trong phần mềm (Script Properties / file cấu hình) |
+|---|---|---|---|---|
+| Đơn vị thấy được? | Không | Không — file tổng chỉ chủ mở | **Có** — tải Excel thấy tab ẩn (K2) | Không |
+| Sửa một cài đặt | 1 dòng | 1 chỗ trong file tổng | 49–168 file, dễ lệch | (c1) chỉ qua mã · (c2) sửa mã + đẩy git công khai |
+| Xem cài đặt mọi bảng một lượt | **Có** | Không — mở từng file tổng | Không | Khó |
+| GAS đọc | 1 file | 1 file tổng / bảng | Từng file đơn vị | Nhanh nhất |
+| Nằm cạnh mẫu | Không | **Có** — chép file tổng là mang theo | Có | Không |
+
+Cài đặt không phải bí mật; cần một nguồn, xem được một lượt, GAS đọc một
+file khi đăng nhập/tạo file → **(a)**. (d) cũng dùng được, hơn ở chỗ "đi cùng
+mẫu", nhưng thua ở chỗ rải rác theo từng bảng.
 
 ## 7. Bố cục mã dự kiến *(tạo khi cần, đừng tạo thư mục rỗng trước)*
 
