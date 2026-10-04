@@ -102,7 +102,8 @@ link đã lộ dùng mãi. Chỉ cho số liệu không nhạy cảm. Phép th�
   ở file con, đồng bộ về vẫn đúng chỗ (mã định danh ẩn).
 - **T5 Bảng cho thêm dòng:** protect cả tab thì chặn chèn dòng (b03). Thử chỉ
   protect dòng tiêu đề + cột A + cột công thức → đơn vị chèn dòng được không,
-  công thức có tự chép xuống dòng mới không.
+  công thức có tự chép xuống dòng mới không. Kèm: tab có nhiều vùng mở vụn
+  (100 dòng × vài ô công thức) có tạo được không, có chậm không.
 - **T4 Hạn mức:** `addEditor` có gửi email và có trừ hạn mức 100/ngày không;
   tạo 20 file theo lô có ngắt–chạy tiếp được không.
 
@@ -115,7 +116,17 @@ khoá theo cài đặt bảng (cột nhập, dòng nhập/dòng khoá, cho thêm
 thích kèm). Dòng ghi theo số dòng **của mẫu** → khi tách phải giữ ánh xạ dòng
 mẫu ↔ dòng file đơn vị.
 
-**Cài đặt bảng lưu ở đâu** — đề xuất **(a)**, chờ chủ dự án chốt:
+**Ô có công thức tự khoá** (theo ô, không theo dòng — chốt 04/10/2026). Lỗ hổng
+phải biết:
+- Vùng mở bị công thức chia vụn → số vùng mở nhiều; gộp ô liền nhau trước khi
+  `setUnprotectedRanges`. Chưa biết giới hạn số vùng → phép thử T5.
+- Chỉ áp lúc sinh tab kỳ: sửa mẫu sau đó thì tab đã sinh không tự đổi.
+- Ô cố định không phải công thức (tên dự án, cột A) vẫn phải khoá bằng cài
+  đặt cột/dòng — công thức chỉ **bổ sung**, không thay cài đặt.
+- Dòng đơn vị tự chèn thêm không có công thức → không khoá, không tự tính.
+- Ô công thức đơn vị cần ghi đè bằng số thật → bị chặn; cần thì quản trị mở riêng.
+
+**Cài đặt bảng lưu ở đâu** — **(a), chủ dự án chốt 04/10/2026**:
 
 *Sheet quản lý* = **một** file chung của cả app (Đơn vị · Tài khoản · Bảng ·
 File). *File tổng* = mỗi bảng một file (mẫu + số liệu gộp). Hai thứ khác nhau.

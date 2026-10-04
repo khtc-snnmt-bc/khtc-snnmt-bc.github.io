@@ -19,14 +19,13 @@
 
 ## Đang chờ chủ dự án
 
-- Chốt **nơi lưu cài đặt bảng** — đề xuất tab *Bảng* trong Sheet quản lý
-  (`KIEN-TRUC.md` mục 6, bảng so sánh). Không chặn b04: b04 dùng tab *Bảng*.
+- Không có.
 
 ## Các bước
 
 | Bước | Việc | Điểm dừng |
 |---|---|---|
-| **b04** | Dựng lại BTTĐC theo quy ước mới (mã `thu-nghiem/gas-thu/B03.js`): 2 bảng → 2 file con cho Ban thử; cột A = Mã đơn vị (chèn vào mẫu); tab `dd.mm.yyyy`; khoá theo cài đặt ở tab *Bảng* (cột nhập, cho thêm dòng, tab chú thích kèm). Làm phép thử **T5** (bảng Khó khăn cho thêm dòng) | Gmail thử: bảng Dự án như b03; bảng Khó khăn chèn được dòng, cột công thức/cột A vẫn khoá |
+| **b04** | Dựng lại BTTĐC theo quy ước mới (mã `thu-nghiem/gas-thu/B03.js`): 2 bảng → 2 file con cho Ban thử; cột A = Mã đơn vị (chèn vào mẫu); tab `dd.mm.yyyy`; khoá theo cài đặt ở tab *Bảng* của Sheet quản lý (cột nhập, dòng nhập/khoá, cho thêm dòng, tab chú thích kèm) + **ô có công thức tự khoá**. Làm phép thử **T5** (bảng Khó khăn cho thêm dòng) | Gmail thử: bảng Dự án như b03; bảng Khó khăn chèn được dòng, cột công thức/cột A vẫn khoá |
 | **b05** | Màn hình đăng nhập + màn hình nhập (pptx trang 2–3) | Gmail thử đăng nhập, thấy Sheet đơn vị mình |
 | **b06** | Trang quản trị (pptx trang 4): kỳ báo cáo, tài khoản, phân quyền, bảng; **dựng bảng mẫu trên app** + kiểm Excel tải lên | Chia nhỏ sau b05 |
 | **b07** | Bảng công khai (C): phép thử C1–C4 rồi tùy chọn "không cần đăng nhập" | `so-tay/chia-se-cong-khai.md` có kết quả |
