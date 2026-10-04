@@ -1,6 +1,6 @@
 # KIẾN TRÚC
 
-*Cập nhật: 04/10/2026 13:30*
+*Cập nhật: 04/10/2026 20:10*
 
 > Thiết kế nghiệp vụ + quyết định nền tảng: `../tai-lieu/thiet-ke-webapp-baocao.md`
 > (của chủ dự án). File này **không chép lại** thiết kế — chỉ ghi điều kỹ thuật
@@ -99,10 +99,9 @@ link đã lộ dùng mãi. Chỉ cho số liệu không nhạy cảm. Phép th�
 
 **Sau đó:**
 - **T3 Tách–gộp dòng:** tách 2 dòng sang file con, người dùng **chèn thêm dòng**
-  ở file con, đồng bộ về vẫn đúng chỗ (mã định danh ẩn).
-- **T5 Bảng cho thêm dòng:** protect cả tab thì chặn chèn dòng (b03). Thử chỉ
-  protect dòng tiêu đề + cột A + cột công thức → đơn vị chèn dòng được không,
-  công thức có tự chép xuống dòng mới không.
+  ở file con, đồng bộ về vẫn đúng chỗ (mã định danh ẩn). ⚠ Theo T5, chèn
+  **giữa** bảng chỉ được khi cột A/công thức **không** khoá cứng.
+- ✅ **T5 Bảng cho thêm dòng** (b04) — kết quả và cách khoá đã chọn: mục 6.
 - **T4 Hạn mức:** `addEditor` có gửi email và có trừ hạn mức 100/ngày không;
   tạo 20 file theo lô có ngắt–chạy tiếp được không.
 
@@ -118,6 +117,16 @@ mẫu ↔ dòng file đơn vị.
 **Khoá chỉ theo khai báo dòng/cột**, không tự dò công thức (chủ dự án chốt
 04/10/2026). Cài đặt áp lúc sinh tab kỳ — sửa mẫu sau đó thì tab đã sinh không
 tự đổi.
+
+**Hai cách khoá** *(phép thử T5, b04)*:
+- *Không thêm dòng* → protect cả tab + vùng mở = cột nhập × dòng nhập.
+- *Cho thêm dòng* → **không** protect cả tab: khoá cứng dòng tiêu đề (cả dòng)
+  + cột khoá **chỉ tới dòng cuối hiện có** (không khoá cả cột). Đơn vị thêm
+  dòng ở cuối được; **chèn giữa và xoá dòng bị chặn** (bỏ dòng = xoá nội
+  dung). Khoá cả cột thì chặn luôn nút *Thêm hàng*; khoá "cảnh báo" thì chèn
+  được nhưng gõ đè cột công thức được (ra `#REF!`).
+- Cột A của bảng tự nhập dòng = một `ARRAYFORMULA` hiện mã ở dòng có nội dung
+  → dòng thêm mới tự có mã. Cột trống thừa sau cột cuối của mẫu bị xoá.
 
 **Cài đặt bảng lưu ở đâu** — **(a), chủ dự án chốt 04/10/2026**:
 

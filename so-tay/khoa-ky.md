@@ -10,11 +10,16 @@
 | Tab protect + vùng mở: gõ ô vùng mở / ô khoá | ✅ Ô mở gõ được, ô khoá bị chặn |
 | Danh sách chọn `setAllowInvalid(false)` | ✅ Gõ tên ngoài danh sách bị từ chối → chặn nhập việc của đơn vị khác |
 
-### Protect cả tab thì người dùng KHÔNG chèn được dòng
-**Triệu chứng** · bảng cần thêm dòng (Khó khăn – Kiến nghị) bị chặn chèn dòng,
-kể cả trong vùng mở. **Cách đúng** · khoá theo cài đặt từng bảng: bảng
-"không thêm dòng" → protect cả tab + vùng mở; bảng "cho thêm dòng" → chưa có
-cách, phải thử (chỉ protect dòng tiêu đề + cột công thức?).
+### Bảng "cho thêm dòng": vùng khoá cứng cắt ngang dòng thì KHÔNG chèn được dòng
+**Triệu chứng** · protect cả tab, hay protect cả cột (`A:B`) → người được mời
+không chèn dòng, nút *Thêm hàng* ở cuối cũng bị chặn. **Cách đúng** · khoá cột
+**tới dòng cuối** (`A5:B1000`) + khoá dòng tiêu đề: thêm ở cuối được, chèn giữa
+/ xoá dòng vẫn chặn. `setWarningOnly` thì chèn được nhưng gõ đè được.
+
+### Cột tự điền cho dòng đơn vị tự thêm: một ARRAYFORMULA ở dòng dữ liệu đầu
+**Cách đúng** · mã: `=ARRAYFORMULA(IF(LEN(C5:C&…&L5:L)=0;"";"<mã>"))`, STT:
+`=ARRAYFORMULA(IF(C5:C="";"";ROW(C5:C)-4))` → gõ cột C là A, B tự hiện. ⚠ Công
+thức trải tới dòng cuối nên `getLastRow()` = số dòng tối đa, đừng dùng để đếm.
 
 ### Khoá + ẩn tab chặn SỬA, không giữ kín
 **Cách đúng** · kết kỳ = chống sửa/bỏ ẩn. Ai mở được file đều tải Excel đọc hết

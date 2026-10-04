@@ -12,8 +12,12 @@
 Rồi `sheet.copyTo(fileCon)` để nhân tab mẫu sang file đơn vị.
 
 ### Web app chưa nhận mã mới ngay sau `update-deployment`
-**Triệu chứng** · gọi `/exec` vẫn chạy mã cũ. **Cách đúng** · chờ ~1 phút rồi
-gọi lại; đừng sửa tiếp vì tưởng mã sai.
+**Triệu chứng** · gọi `/exec` vẫn chạy mã cũ (số dòng trong `stack` khớp file cũ).
+**Cách đúng** · chờ ~1 phút rồi gọi lại; đừng sửa tiếp vì tưởng mã sai.
+
+### `setFrozenColumns` lỗi "chỉ chứa một phần của ô hợp nhất"
+**Cách đúng** · mẫu có ô gộp ngang (tiêu đề `B2:P2`) thì không cố định cột;
+chỉ cố định dòng tới dòng tiêu đề.
 
 ### `Session.getEffectiveUser()` lỗi thiếu quyền `userinfo.email`
 **Cách đúng** · khỏi thêm quyền: lấy email chủ bằng
