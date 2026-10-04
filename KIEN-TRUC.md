@@ -51,8 +51,11 @@ của đơn vị** (một đơn vị nhiều Gmail), **không gửi thư**.
 2. Nhập Gmail → GAS kiểm Gmail có thuộc đơn vị không → trả danh sách bảng.
 3. Mở giao diện nhập; iframe Sheet gắn `authuser=<gmail>`.
    - Trình duyệt **đã** đăng nhập Gmail đó → sửa được ngay.
-   - **Chưa** → nút "Đăng nhập Google" mở trang **của Google**
-     (`accounts.google.com`, điền sẵn Gmail, `continue=` quay về app).
+   - **Chưa** → nút "Đăng nhập Google" mở trang **của Google ở tab mới**
+     (phép thử b02: Google **không** điền sẵn Gmail, **không** quay về app) →
+     ghi rõ Gmail cần dùng trên nút + nút "Tôi đã đăng nhập" nạp lại khung.
+   - Chrome ẩn danh / chặn cookie bên thứ ba: iframe **không hiện** → nút
+     "Mở sheet trong tab mới" làm đường dự phòng (`so-tay/dang-nhap.md`).
 
 **App KHÔNG BAO GIỜ có ô nhập mật khẩu Gmail** — ô "mật khẩu" ở pptx thành
 nút chuyển sang Google. Tự thu mật khẩu Gmail là sai luật Google và giống trang

@@ -7,6 +7,8 @@
 | File | Chức năng | Mở khi |
 |---|---|---|
 | `cong-cu.md` | gh · git · clasp | Lệnh công cụ treo, sai quyền |
+| `khoa-ky.md` | Khoá kỳ · gọi Apps Script | Protect/ẩn tab, độ trễ, `clasp push` lỗi |
+| `dang-nhap.md` | Đăng nhập · iframe Sheet | Iframe trắng, cookie, nút đăng nhập Google |
 
 ## Luật chống phình
 
