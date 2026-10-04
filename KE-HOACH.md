@@ -44,5 +44,3 @@
 - Kiểu dòng "Cha cố định – con tự do" cần **chèn dòng giữa** (dưới dòng cha) —
   khoá cứng chặn việc này (T5). Khi làm tới: nút "Thêm dòng" trên app gọi GAS,
   hoặc khoá cảnh báo.
-- Đề xuất thêm vào thiết kế mục 5.1 (chờ chủ dự án): "Cho thêm dòng = thêm ở
-  cuối bảng; không chèn giữa, không xoá dòng (bỏ dòng = xoá nội dung)".
