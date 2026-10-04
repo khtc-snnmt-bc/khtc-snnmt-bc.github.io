@@ -6,7 +6,7 @@
 
 | File | Chức năng | Mở khi |
 |---|---|---|
-| *(chưa có — thêm một dòng khi tạo file đầu tiên)* | | |
+| `cong-cu.md` | gh · git · clasp | Lệnh công cụ treo, sai quyền |
 
 ## Luật chống phình
 
