@@ -9,6 +9,7 @@
 | `cong-cu.md` | gh · git · clasp | Lệnh công cụ treo, sai quyền |
 | `khoa-ky.md` | Khoá kỳ · gọi Apps Script | Protect/ẩn tab, độ trễ, `clasp push` lỗi |
 | `dang-nhap.md` | Đăng nhập · iframe Sheet | Iframe trắng, cookie, nút đăng nhập Google |
+| `dung-mau.md` | Dựng mẫu · tạo file Sheet bằng GAS | Công thức `#ERROR!`, chuyển xlsx, mã cũ |
 
 ## Luật chống phình
 

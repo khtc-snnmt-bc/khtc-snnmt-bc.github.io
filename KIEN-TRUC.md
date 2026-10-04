@@ -1,6 +1,6 @@
 # KIẾN TRÚC
 
-*Cập nhật: 04/10/2026 10:19*
+*Cập nhật: 04/10/2026 13:30*
 
 > Thiết kế nghiệp vụ + quyết định nền tảng: `../tai-lieu/thiet-ke-webapp-baocao.md`
 > (của chủ dự án). File này **không chép lại** thiết kế — chỉ ghi điều kỹ thuật
@@ -100,12 +100,31 @@ link đã lộ dùng mãi. Chỉ cho số liệu không nhạy cảm. Phép th�
 **Sau đó:**
 - **T3 Tách–gộp dòng:** tách 2 dòng sang file con, người dùng **chèn thêm dòng**
   ở file con, đồng bộ về vẫn đúng chỗ (mã định danh ẩn).
+- **T5 Bảng cho thêm dòng:** protect cả tab thì chặn chèn dòng (b03). Thử chỉ
+  protect dòng tiêu đề + cột A + cột công thức → đơn vị chèn dòng được không,
+  công thức có tự chép xuống dòng mới không.
 - **T4 Hạn mức:** `addEditor` có gửi email và có trừ hạn mức 100/ngày không;
   tạo 20 file theo lô có ngắt–chạy tiếp được không.
 
 Kết quả ghi `so-tay/<chức-năng>.md`; điều gì lật đổ thiết kế thì báo chủ dự án.
 
-## 6. Bố cục mã dự kiến *(tạo khi cần, đừng tạo thư mục rỗng trước)*
+## 6. Bảng mẫu · cài đặt bảng *(chốt 04/10/2026 — chi tiết: thiết kế mục 5, 5.1)*
+
+Mỗi bảng một file cho mỗi đơn vị · cột A = Mã đơn vị · tab kỳ tên `dd.mm.yyyy` ·
+khoá theo cài đặt bảng (cột nhập, cho thêm dòng, tab chú thích kèm).
+
+**Cài đặt bảng lưu ở đâu** — đề xuất **(a)**, chờ chủ dự án chốt:
+
+| | (a) Tab *Bảng* trong Sheet quản lý | (b) Tab ẩn + khoá trong từng file | (c) Trong phần mềm (Script Properties / file cấu hình) |
+|---|---|---|---|
+| Đơn vị thấy được? | Không — file chỉ chủ mở | **Có** — tải Excel là thấy tab ẩn (phép thử K2) | Không |
+| Sửa một cài đặt | 1 dòng | Sửa 49–168 file, dễ lệch nhau | (c1) Script Properties: chỉ qua mã · (c2) file cấu hình: sửa mã + đẩy git, lên GitHub công khai |
+| GAS đọc | 1 lần cho mọi bảng | Mở từng file (~400 ms/file) | Nhanh nhất |
+| Trang quản trị sửa được? | Có | Có, nhưng ghi N file | (c1) có · (c2) không |
+
+Cài đặt **không phải bí mật**, cần sửa dễ và có một nguồn duy nhất → (a).
+
+## 7. Bố cục mã dự kiến *(tạo khi cần, đừng tạo thư mục rỗng trước)*
 
 ```
 app/

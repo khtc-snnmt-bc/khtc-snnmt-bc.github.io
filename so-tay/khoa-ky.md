@@ -6,11 +6,20 @@
 | K2 Protect + ẩn, người được mời | ✅ Menu *Xem → Trang tính ẩn → Hiện T09-2026* **bị xám**, không bỏ ẩn được |
 | K1/K2 người ẩn danh (file công khai) | ⚠ Tải được file Excel **đủ các tab**, kể cả tab ẩn |
 | K2 người được mời: tải Excel | ⚠ Tải được **đủ các tab**, kể cả tab ẩn |
+| Tab protect (có/không vùng mở), người được mời: xoá tab, đổi tên tab, xoá cột, chèn dòng | ✅ Đều **bị chặn** |
+| Tab protect + vùng mở: gõ ô vùng mở / ô khoá | ✅ Ô mở gõ được, ô khoá bị chặn |
+| Danh sách chọn `setAllowInvalid(false)` | ✅ Gõ tên ngoài danh sách bị từ chối → chặn nhập việc của đơn vị khác |
+
+### Protect cả tab thì người dùng KHÔNG chèn được dòng
+**Triệu chứng** · bảng cần thêm dòng (Khó khăn – Kiến nghị) bị chặn chèn dòng,
+kể cả trong vùng mở. **Cách đúng** · khoá theo cài đặt từng bảng: bảng
+"không thêm dòng" → protect cả tab + vùng mở; bảng "cho thêm dòng" → chưa có
+cách, phải thử (chỉ protect dòng tiêu đề + cột công thức?).
 
 ### Khoá + ẩn tab chặn SỬA, không giữ kín
 **Cách đúng** · kết kỳ = chống sửa/bỏ ẩn. Ai mở được file đều tải Excel đọc hết
 tab — chấp nhận, vì mỗi file chỉ chứa dữ liệu của chính đơn vị đó; **không** để
-dữ liệu đơn vị khác chung file. ⏳ Chưa thử: xoá tab khoá, chèn dòng/cột.
+dữ liệu đơn vị khác chung file.
 | K3 `fetch` POST `text/plain` tới web app GAS | ✅ chạy, không dính CORS; lỗi: xem dưới |
 
 ### K3 — thời gian và lỗi thoảng
