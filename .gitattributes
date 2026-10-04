@@ -1,0 +1,5 @@
+# Mọi file chữ dùng LF — ba AI trên Windows sửa không bị lệch CRLF
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.svg text eol=lf

@@ -1,0 +1,23 @@
+# Repo PUBLIC — không bao giờ đưa lên: ID Sheet thật, email cán bộ, số liệu thật, mật khẩu (AGENTS.md mục 3)
+
+# Hệ điều hành, trình soạn thảo
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+
+# Dropbox tạo khi hai máy sửa cùng lúc
+*conflicted copy*
+*Bản sao xung đột*
+.dropbox
+.dropbox.attr
+
+# clasp: thông tin đăng nhập (nằm ở thư mục người dùng, chặn phòng khi chép nhầm vào đây)
+.clasprc.json
+
+# File số liệu, tạm
+*.xlsx
+*.xls
+*.csv
+*.tmp
+node_modules/
