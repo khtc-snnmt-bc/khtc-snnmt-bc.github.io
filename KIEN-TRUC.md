@@ -41,7 +41,7 @@ GitHub Pages (HTML/JS tĩnh)          Apps Script (chỉ trả JSON)
 | Tổng thời gian trigger | 90 phút/ngày | Quét 168 file mỗi giờ là vượt → chỉ quét file có `getLastUpdated` mới |
 | Chạy đồng thời | 30/người | 50 người cùng lúc dồn vào tài khoản chủ → **gọi GAS ít**: đăng nhập + lấy danh sách một lần, gõ số thì đi thẳng iframe, không qua GAS |
 
-## 4. Đăng nhập *(chủ dự án chốt 04/10/2026 10:19 — bỏ C, bỏ OAuth)*
+## 4. Đăng nhập *(chủ dự án chốt 04/10/2026 — bỏ OAuth; C giữ cho "bảng công khai", làm sau)*
 
 **Mỗi đơn vị một file** cho mỗi nhóm lĩnh vực · mỗi kỳ một tab · **kết kỳ =
 Protect tab (chỉ chủ sửa) + ẩn tab** · file chia sẻ Editor cho **các Gmail
@@ -65,6 +65,11 @@ không được chỉ dựa vào Gmail → thêm **mật khẩu quản trị** (
 Script Properties). ⚠ **Ẩn tab chỉ là gọn mắt, không phải bảo mật** — người có
 quyền sửa có thể bỏ ẩn; phép thử K2 kiểm điều này.
 
+**Bảng công khai (C — làm sau):** tùy chọn theo bảng, nhập **không cần đăng
+nhập**; file "Bất kỳ ai có link đều sửa được". ⚠ Link nằm trong `src` iframe,
+F12 là thấy, chép gửi được; lịch sử ghi "Ẩn danh"; file giữ ID qua các kỳ nên
+link đã lộ dùng mãi. Chỉ cho số liệu không nhạy cảm. Phép thử C1–C4 dưới đây.
+
 ## 5. Phép thử — làm TRƯỚC khi dựng (trên file thử, Gmail thử)
 
 **Chung (K):**
@@ -81,6 +86,13 @@ quyền sửa có thể bỏ ẩn; phép thử K2 kiểm điều này.
 - D3 Chia sẻ bằng Drive API `sendNotificationEmail: false` → có quyền, không có thư.
 - D4 Một file chia sẻ cho 2 Gmail cùng đơn vị → cả hai sửa được, lịch sử
   ghi đúng người.
+
+**Bảng công khai (C) — khi làm tới:**
+- C1 Trình duyệt chưa đăng nhập Google **sửa được** file công khai trong iframe trên Pages.
+- C2 Chép link từ F12 sang trình duyệt khác → sửa được (xác nhận rủi ro).
+- C3 GAS tắt chia sẻ công khai khi người dùng **đang mở** file → bị chặn ngay
+  hay còn sửa tiếp được bao lâu.
+- C4 Bật lại chia sẻ → link cũ sống lại.
 
 **Sau đó:**
 - **T3 Tách–gộp dòng:** tách 2 dòng sang file con, người dùng **chèn thêm dòng**
