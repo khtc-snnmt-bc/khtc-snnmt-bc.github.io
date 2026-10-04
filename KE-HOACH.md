@@ -9,7 +9,7 @@
 > Lĩnh vực làm trước: **Bồi thường, hỗ trợ, tái định cư (BTTĐC)**. Các hướng đã
 > bàn và bỏ: form do GAS vẽ / nhúng web app GAS; Google Sites làm app nhập.
 
-**Đang làm:** *(trống — AI nhận bước thì ghi `<tên AI> · bxx · từ dd/mm/yyyy HH:mm`, kết thúc phiên thì xoá; luật ở `AGENTS.md` mục 0)*
+**Đang làm:** Claude Code · b02 · từ 04/10/2026 10:36
 
 > Chỉ ghi việc **chưa xong**. Xong thì xoá dòng đó — việc đã làm nằm ở `../nhatky/`.
 

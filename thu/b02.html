@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!-- ============================================================
+bcsnn · thu/b02.html
+Vai trò  : Trang thử b02 — K3 (gọi GAS text/plain), D1 (iframe + authuser),
+           D2 (nút "Đăng nhập Google" quay về app). Xoá sau b02.
+Lớp      : trang thử, đứng riêng — không dùng chung mã app
+Lưu ý    : KHÔNG ghi ID file / URL GAS / Gmail vào file này (repo Public).
+           Nhập vào ô, hoặc gắn sau dấu # : #gas=...&a=...&b=...&gmail=...
+Phiên bản: 0.1.0 · Cập nhật: 04/10/2026 10:45
+============================================================ -->
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thử b02</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 12px; }
+    fieldset { margin-bottom: 10px; }
+    label { display: block; margin: 4px 0; }
+    input { width: 100%; max-width: 520px; }
+    button, a.nut { margin: 4px 4px 4px 0; padding: 6px 10px; }
+    pre { background: #f3f3f3; padding: 8px; white-space: pre-wrap; }
+    iframe { width: 100%; height: 70vh; border: 1px solid #999; }
+  </style>
+</head>
+<body>
+  <h2>Trang thử b02</h2>
+
+  <fieldset>
+    <legend>Thông số (lưu trong trình duyệt này)</legend>
+    <label>URL web app GAS <input id="gas"></label>
+    <label>ID file A (chia sẻ Gmail) <input id="a"></label>
+    <label>ID file B (công khai) <input id="b"></label>
+    <label>Gmail <input id="gmail"></label>
+    <button id="luu">Lưu</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>K3 — Gọi GAS bằng POST text/plain</legend>
+    <button id="ping">Gọi 5 lần (ping)</button>
+    <button id="docFile">Gọi 1 lần (đọc file A)</button>
+    <pre id="kqK3">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>D1 / D2 — Nhúng Sheet, đăng nhập Google</legend>
+    <button id="moA">Nhúng file A (authuser=Gmail)</button>
+    <button id="moB">Nhúng file B (công khai)</button>
+    <a class="nut" id="dnApp" href="#">Đăng nhập Google → quay về trang này</a>
+    <a class="nut" id="dnSheet" href="#">Đăng nhập Google → mở thẳng file A</a>
+    <p id="srcIframe"></p>
+    <iframe id="khung" title="Google Sheet"></iframe>
+  </fieldset>
+
+  <script>
+    const O = ['gas', 'a', 'b', 'gmail'];
+    const $ = (id) => document.getElementById(id);
+
+    function napThongSo() {
+      const hash = new URLSearchParams(location.hash.slice(1));
+      O.forEach((k) => {
+        let v = hash.get(k);
+        if (!v) { try { v = localStorage.getItem('b02_' + k); } catch (e) { v = ''; } }
+        $(k).value = v || '';
+      });
+      if (location.hash) luu();
+    }
+
+    function luu() {
+      O.forEach((k) => { try { localStorage.setItem('b02_' + k, $(k).value.trim()); } catch (e) {} });
+      // Bỏ thông số khỏi thanh địa chỉ để không lộ khi chụp màn hình
+      history.replaceState(null, '', location.pathname);
+      capNhatLink();
+    }
+
+    function urlSheet(id, gmail) {
+      const u = 'https://docs.google.com/spreadsheets/d/' + id + '/edit';
+      return gmail ? u + '?authuser=' + encodeURIComponent(gmail) : u;
+    }
+
+    function capNhatLink() {
+      const gmail = $('gmail').value.trim();
+      const veApp = location.origin + location.pathname;
+      $('dnApp').href = 'https://accounts.google.com/AccountChooser?Email=' +
+        encodeURIComponent(gmail) + '&continue=' + encodeURIComponent(veApp);
+      $('dnSheet').href = 'https://accounts.google.com/AccountChooser?Email=' +
+        encodeURIComponent(gmail) + '&continue=' + encodeURIComponent(urlSheet($('a').value.trim(), gmail));
+    }
+
+    async function goiGas(action) {
+      const t0 = performance.now();
+      const res = await fetch($('gas').value.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, guiLuc: new Date().toISOString() })
+      });
+      const json = await res.json();
+      return { ms: Math.round(performance.now() - t0), json: json };
+    }
+
+    async function chay(action, soLan) {
+      const out = $('kqK3');
+      out.textContent = 'Đang gọi...';
+      const dong = [];
+      for (let i = 1; i <= soLan; i++) {
+        try {
+          const kq = await goiGas(action);
+          dong.push('Lần ' + i + ': ' + kq.ms + ' ms (máy chủ ' + kq.json.msMay + ' ms)');
+          if (i === soLan) dong.push(JSON.stringify(kq.json, null, 2));
+        } catch (e) {
+          dong.push('Lần ' + i + ': LỖI ' + e);
+        }
+        out.textContent = dong.join('\n');
+      }
+    }
+
+    function nhung(id, gmail) {
+      const src = urlSheet(id, gmail);
+      $('khung').src = src;
+      $('srcIframe').textContent = 'Đang nhúng: ' + (gmail ? 'file A, authuser=' + gmail : 'file B');
+    }
+
+    $('luu').onclick = luu;
+    $('ping').onclick = () => chay('ping', 5);
+    $('docFile').onclick = () => chay('docFile', 1);
+    $('moA').onclick = () => nhung($('a').value.trim(), $('gmail').value.trim());
+    $('moB').onclick = () => nhung($('b').value.trim(), '');
+    napThongSo();
+    capNhatLink();
+  </script>
+</body>
+</html>
