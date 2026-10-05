@@ -1,12 +1,176 @@
 <!DOCTYPE html>
+<!-- ============================================================
+bcsnn · index.html
+Vai trò  : Trang chính WebApp Báo cáo định kỳ Sở NN&MT
+Lớp      : trang tĩnh GitHub Pages — đăng nhập & khung nhập liệu
+Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:45
+============================================================ -->
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Phòng KHTC - Sở NN&MT</title>
+  <title>Cổng Báo cáo định kỳ · Sở Nông nghiệp và Môi trường TP.HCM</title>
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <h1>Phòng Kế hoạch - Tài chính</h1>
-  <p>Sở Nông nghiệp và Môi trường TP.HCM</p>
+
+  <!-- ==================== HEADER CHUNG ==================== -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="agency-name">Sở Nông nghiệp và Môi trường TP.HCM</span>
+      <span class="app-title">Hệ thống Báo cáo Định kỳ &amp; Đột xuất</span>
+      <span class="sub-title">Phòng Kế hoạch – Tài chính · Phòng Bồi thường, hỗ trợ, tái định cư</span>
+    </div>
+    <div class="user-info">
+      <div id="nhap-lieu-user-badge" class="user-badge an"></div>
+      <button id="btn-dang-xuat" class="btn-logout an">Đăng xuất</button>
+    </div>
+  </header>
+
+  <!-- ==================== MÀN HÌNH ĐĂNG NHẬP (pptx trang 2) ==================== -->
+  <main id="trang-dang-nhap" class="login-container">
+    <!-- Cột trái: Form đăng nhập -->
+    <div class="login-card">
+      <div class="login-card-header">
+        <h2>Cổng nhập liệu nội bộ</h2>
+        <p>Báo cáo công tác bồi thường giải phóng mặt bằng</p>
+      </div>
+
+      <div class="login-card-body">
+        <div id="thong-bao-dang-nhap" class="alert an"></div>
+
+        <form id="form-dang-nhap" onsubmit="return false;">
+          <div class="form-group">
+            <label for="select-don-vi">ĐƠN VỊ BÁO CÁO</label>
+            <select id="select-don-vi" class="form-control">
+              <option value="">-- Đang nạp danh sách đơn vị... --</option>
+            </select>
+            <div class="form-hint">Nhập hoặc chọn nhanh từ danh sách bên phải</div>
+          </div>
+
+          <div class="form-group">
+            <label for="input-email">NGƯỜI NHẬP (GMAIL)</label>
+            <input type="email" id="input-email" class="form-control" placeholder="Nhập địa chỉ Gmail được cấp quyền nhập liệu" autocomplete="email">
+            <div class="form-hint">Dùng đúng tài khoản Gmail đã đăng ký với Sở</div>
+          </div>
+
+          <div class="auth-note">
+            💡 <strong>Xác thực qua Google:</strong> Nếu bạn đã đăng nhập tài khoản Google trên trình duyệt, chỉ cần chọn đơn vị, nhập Gmail và bấm <strong>Đăng nhập</strong> mà không cần nhập mật khẩu.<br>
+            <em>Hệ thống không thu thập mật khẩu Google, chỉ phân quyền mở đúng biểu mẫu báo cáo.</em>
+          </div>
+
+          <button id="btn-dang-nhap" type="submit" class="btn-primary">Đăng nhập</button>
+        </form>
+
+        <div class="config-trigger">
+          <a id="link-cau-hinh-gas" href="#">⚙ Cài đặt URL kết nối máy chủ (GAS)</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cột phải: Chọn nhanh đơn vị -->
+    <div class="quick-units-card">
+      <div class="quick-units-header">
+        <h3>⚡ Chọn nhanh đơn vị</h3>
+        <input type="text" id="loc-don-vi" class="form-control" placeholder="Lọc tên đơn vị...">
+      </div>
+      <ul id="danh-sach-chon-nhanh" class="quick-units-list">
+        <!-- Tự động vẽ bằng JS -->
+      </ul>
+    </div>
+  </main>
+
+  <!-- ==================== MÀN HÌNH NHẬP LIỆU (pptx trang 3) ==================== -->
+  <div id="trang-nhap-lieu" class="workspace-container an">
+    <!-- Sidebar danh sách biểu được giao -->
+    <aside class="workspace-sidebar">
+      <div class="sidebar-section-title">Bảng báo cáo (BTTĐC)</div>
+      <ul id="danh-sach-bang-sidebar" class="sidebar-tables-list">
+        <!-- Danh sách bảng nạp bằng JS -->
+      </ul>
+
+      <div class="sidebar-footer">
+        <button id="btn-mo-tab-moi" class="sidebar-btn btn-outline" title="Mở trong tab mới nếu bị chặn cookie">
+          Mở sheet trong tab mới ↗
+        </button>
+        <button id="btn-dang-nhap-google" class="sidebar-btn btn-outline" style="margin-top: 6px;">
+          Đăng nhập Google
+        </button>
+        <button id="btn-tai-lai-iframe" class="sidebar-btn btn-outline" style="margin-top: 6px;">
+          Tải lại khung nhúng ↻
+        </button>
+      </div>
+    </aside>
+
+    <!-- Khung chính: Iframe Google Sheet -->
+    <section class="workspace-main">
+      <div class="sheet-toolbar">
+        <span id="tieu-de-bang-hien-tai" class="sheet-title">—</span>
+        <div class="sheet-actions">
+          <span style="font-size: 11px; color: #777;">Chỉnh sửa tự động lưu trên Google Drive</span>
+        </div>
+      </div>
+
+      <div class="cookie-banner">
+        <span>⚠ <strong>Lưu ý:</strong> Nếu khung bên dưới hiện thông báo <em>"Cho phép Google Trang tính truy cập cookie"</em> hoặc báo cần đăng nhập, hãy bấm vào nút <strong>Mở sheet trong tab mới</strong> ở sidebar.</span>
+      </div>
+
+      <div class="iframe-wrapper">
+        <iframe id="khung-nhung-sheet" class="sheet-iframe" title="Google Sheet báo cáo"></iframe>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <script src="js/config/cau-hinh.js"></script>
+  <script src="js/utils/dom.js"></script>
+  <script src="js/utils/bo-dau.js"></script>
+  <script src="js/services/api.js"></script>
+  <script src="js/domains/phien-dang-nhap.js"></script>
+  <script src="js/domains/don-vi.js"></script>
+  <script src="js/domains/ky-bao-cao.js"></script>
+  <script src="js/pages/dang-nhap.js"></script>
+  <script src="js/pages/nhap-lieu.js"></script>
+
+  <script>
+    // Bootstrap ứng dụng
+    (function () {
+      'use strict';
+
+      var elUserBadge = DOM.$('#nhap-lieu-user-badge');
+      var elBtnLogout = DOM.$('#btn-dang-xuat');
+
+      function batDau() {
+        PAGE_DANG_NHAP.khoiTao(function (thongTinPhien) {
+          DOM.hien(elUserBadge);
+          DOM.hien(elBtnLogout);
+          PAGE_NHAP_LIEU.hien(thongTinPhien);
+        });
+
+        PAGE_NHAP_LIEU.khoiTao(function () {
+          DOM.an(elUserBadge);
+          DOM.an(elBtnLogout);
+          PAGE_DANG_NHAP.hien();
+        });
+
+        // Kiểm tra xem đã có phiên đăng nhập trước đó trong sessionStorage không
+        var phien = PHIEN.doc();
+        if (phien && phien.email && phien.unitCode) {
+          PAGE_DANG_NHAP.an();
+          DOM.hien(elUserBadge);
+          DOM.hien(elBtnLogout);
+          PAGE_NHAP_LIEU.hien(phien);
+        } else {
+          PAGE_DANG_NHAP.hien();
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', batDau);
+      } else {
+        batDau();
+      }
+    })();
+  </script>
 </body>
 </html>
