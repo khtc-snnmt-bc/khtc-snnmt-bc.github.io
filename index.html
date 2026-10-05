@@ -6,7 +6,7 @@ Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 1: Điều hướng các lĩnh vực báo cáo
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
-Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 06:05
+Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 06:02
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -34,18 +34,22 @@ Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 06:05
   <!-- Phủ kín màn hình, che header chung. Ô có link = <a>/<button>; ô chưa làm = chữ thường -->
   <main id="trang-dieu-huong" class="portal">
     <div class="portal-tieu-de">
-      <div>SỞ NÔNG NGHIỆP VÀ MÔI TRƯỜNG</div>
-      <div>Phòng Kế hoạch – Tài chính</div>
+      <h1>SỞ NÔNG NGHIỆP VÀ MÔI TRƯỜNG</h1>
+      <p>Phòng Kế hoạch – Tài chính</p>
     </div>
 
-    <img class="portal-logo" src="img/logo.svg" alt="Logo Sở Nông nghiệp và Môi trường">
+    <div class="portal-logo"><img src="img/logo.svg" alt="Logo Sở Nông nghiệp và Môi trường"></div>
 
     <div class="portal-luoi">
-      <a class="o-linh-vuc co-link" href="https://khtc-snnmt.github.io/">Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</a>
-      <div class="o-linh-vuc">Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</div>
-      <div class="o-linh-vuc">Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản của các xã, phường, đặc khu</div>
-      <button id="o-linh-vuc-bttdc" type="button" class="o-linh-vuc co-link">Công tác bồi thường giải phóng mặt bằng</button>
-      <div class="o-linh-vuc o-giua">Bản đồ<br>Thực trạng và định hướng sản xuất nông nghiệp</div>
+      <a class="o-linh-vuc co-link" href="https://khtc-snnmt.github.io/">
+        <span>Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</span><span class="mui-ten" aria-hidden="true">→</span>
+      </a>
+      <div class="o-linh-vuc"><span>Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</span></div>
+      <div class="o-linh-vuc"><span>Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản của các xã, phường, đặc khu</span></div>
+      <button id="o-linh-vuc-bttdc" type="button" class="o-linh-vuc co-link">
+        <span>Công tác bồi thường giải phóng mặt bằng</span><span class="mui-ten" aria-hidden="true">→</span>
+      </button>
+      <div class="o-linh-vuc o-giua"><span>Bản đồ thực trạng và định hướng sản xuất nông nghiệp</span></div>
     </div>
   </main>
 
