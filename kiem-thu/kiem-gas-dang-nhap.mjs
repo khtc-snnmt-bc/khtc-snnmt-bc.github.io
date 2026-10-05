@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 const ma = readFileSync(new URL('../gas/DangNhap.js', import.meta.url), 'utf8');
 const sandbox = {};
 vm.createContext(sandbox);
-vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_ };', sandbox);
+vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -24,7 +24,7 @@ function bai(ten, fn) {
 // Dữ liệu mẫu giả lập Sheet Quản lý
 const mauTaiKhoan = [
   ['email', 'unitCode', 'role'],
-  ['trongdungs@gmail.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
+  ['thu1@example.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
   ['admin@snnmt.gov.vn', 'KHTC.SNNMT', 'Quản trị']
 ];
 
@@ -49,12 +49,12 @@ const mauFile = [
 
 // 1. Kiểm tra tài khoản
 bai('Kiểm tra quyền tài khoản đúng', () => {
-  const kq = h.kiemTraTaiKhoan_(mauTaiKhoan, 'trongdungs@gmail.com', 'BQLDA.BinhThoi');
+  const kq = h.kiemTraTaiKhoan_(mauTaiKhoan, 'thu1@example.com', 'BQLDA.BinhThoi');
   assert.equal(kq.hopLe, true);
   assert.equal(kq.role, 'Nhập liệu');
 
   // Thử viết hoa email / đơn vị
-  const kqHoa = h.kiemTraTaiKhoan_(mauTaiKhoan, 'TRONGDUNGS@GMAIL.COM ', 'BQLDA.BinhThoi ');
+  const kqHoa = h.kiemTraTaiKhoan_(mauTaiKhoan, 'THU1@EXAMPLE.COM ', 'BQLDA.BinhThoi ');
   assert.equal(kqHoa.hopLe, true);
 });
 
@@ -62,7 +62,7 @@ bai('Kiểm tra tài khoản sai bị từ chối', () => {
   const kqSaiEmail = h.kiemTraTaiKhoan_(mauTaiKhoan, 'nguoila@gmail.com', 'BQLDA.BinhThoi');
   assert.equal(kqSaiEmail.hopLe, false);
 
-  const kqSaiDonVi = h.kiemTraTaiKhoan_(mauTaiKhoan, 'trongdungs@gmail.com', 'BQLDA.Khac');
+  const kqSaiDonVi = h.kiemTraTaiKhoan_(mauTaiKhoan, 'thu1@example.com', 'BQLDA.Khac');
   assert.equal(kqSaiDonVi.hopLe, false);
 
   const kqRong = h.kiemTraTaiKhoan_(mauTaiKhoan, '', '');
@@ -102,6 +102,33 @@ bai('Ghép danh sách bảng theo đơn vị', () => {
   // Đơn vị không có file
   const dsRong = h.ghepDanhSachBang_(mauBang, mauFile, 'KHONG_CO');
   assert.equal(dsRong.length, 0);
+});
+
+// 4. Tài khoản theo đơn vị · đơn vị theo Gmail (hai chiều của màn hình đăng nhập)
+bai('Chỉ trả Gmail của đúng một đơn vị', () => {
+  const tk = [
+    ['email', 'unitCode', 'role'],
+    ['A@gmail.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
+    ['b@gmail.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
+    ['b@gmail.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
+    ['c@gmail.com', 'KHTC.SNNMT', 'Quản trị']
+  ];
+  assert.deepEqual(sach(h.layEmailCuaDonVi_(tk, 'BQLDA.BinhThoi')), ['a@gmail.com', 'b@gmail.com']);
+  assert.deepEqual(sach(h.layEmailCuaDonVi_(tk, '')), []);
+  assert.deepEqual(sach(h.layEmailCuaDonVi_(tk, 'KHONG_CO')), []);
+});
+
+bai('Tìm đơn vị theo Gmail gõ đủ, không khớp một phần', () => {
+  const tk = [
+    ['email', 'unitCode', 'role'],
+    ['a@gmail.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
+    ['a@gmail.com', 'KHTC.SNNMT', 'Quản trị']
+  ];
+  const kq = sach(h.timDonViTheoEmail_(tk, mauDonVi, ' A@Gmail.com '));
+  assert.equal(kq.length, 2);
+  assert.equal(kq[0].unitName, 'Ban QLDA ĐTXD phường Bình Thới');
+  assert.deepEqual(sach(h.timDonViTheoEmail_(tk, mauDonVi, 'a@gmail')), []);
+  assert.deepEqual(sach(h.timDonViTheoEmail_(tk, mauDonVi, '')), []);
 });
 
 console.log('kiem-gas-dang-nhap: ' + soBai + ' bài ĐẠT!');

@@ -103,4 +103,30 @@ bai('Lưu, đọc, xoá phiên đăng nhập', () => {
   assert.equal(sandbox.PHIEN.doc(), null);
 });
 
+bai('Tìm đơn vị khớp chính xác tên/mã, không khớp một phần', () => {
+  const ds = [
+    { unitCode: 'KHTC.SNNMT', unitName: 'Phòng Kế hoạch - Tài chính Sở', role: 'Quản trị' },
+    { unitCode: 'BQLDA.BinhThoi', unitName: 'Ban QLDA ĐTXD phường Bình Thới', role: 'Đơn vị báo cáo' }
+  ];
+  const D = sandbox.DON_VI;
+  assert.equal(D.timChinhXac(ds, ' ban qlda dtxd phuong binh thoi ').unitCode, 'BQLDA.BinhThoi');
+  assert.equal(D.timChinhXac(ds, 'khtc.snnmt').unitCode, 'KHTC.SNNMT');
+  assert.equal(D.timChinhXac(ds, 'Ban QLDA'), null);
+  assert.equal(D.timChinhXac(ds, ''), null);
+});
+
+bai('Chia nhóm cột chọn nhanh: Quản trị / Quản lý báo cáo lên trước', () => {
+  const ds = [
+    { unitCode: 'A', unitName: 'A', role: 'Đơn vị báo cáo' },
+    { unitCode: 'B', unitName: 'B', role: 'Quản lý báo cáo' },
+    { unitCode: 'C', unitName: 'C', role: 'Quản trị' }
+  ];
+  const nhom = sandbox.DON_VI.nhomTheoVaiTro(ds);
+  assert.equal(nhom.length, 2);
+  assert.equal(nhom[0].ten, 'Quản trị');
+  assert.equal(nhom[0].ds.length, 2);
+  assert.equal(nhom[1].ds[0].unitCode, 'A');
+  assert.equal(sandbox.DON_VI.nhomTheoVaiTro([ds[0]]).length, 1);
+});
+
 console.log('kiem-b05: ' + soBai + ' bài ĐẠT!');

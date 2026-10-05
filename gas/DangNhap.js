@@ -2,7 +2,7 @@
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
 // Lớp      : gas backend — đọc Sheet quản lý, trả JSON
-// Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:50
+// Phiên bản: 0.2.0 · Cập nhật: 05/10/2026 22:32
 // ============================================================
 
 /**
@@ -68,6 +68,65 @@ function kiemTraTaiKhoan_(dsTaiKhoan, email, unitCode) {
 }
 
 /**
+ * Gmail được phân công của MỘT đơn vị (hàm thuần). Không bao giờ trả cả bảng.
+ * @returns {Array<string>}
+ */
+function layEmailCuaDonVi_(dsTaiKhoan, unitCode) {
+  var uc = String(unitCode || '').trim();
+  var kq = [];
+  if (!uc) return kq;
+  for (var i = 1; i < dsTaiKhoan.length; i++) {
+    var email = String(dsTaiKhoan[i][0] || '').toLowerCase().trim();
+    if (email && String(dsTaiKhoan[i][1] || '').trim() === uc && kq.indexOf(email) < 0) kq.push(email);
+  }
+  return kq;
+}
+
+/**
+ * Các đơn vị của một Gmail gõ đủ — chỉ khớp chính xác, không liệt kê (hàm thuần).
+ * @returns {Array<{unitCode: string, unitName: string}>}
+ */
+function timDonViTheoEmail_(dsTaiKhoan, dsDonVi, email) {
+  var em = String(email || '').toLowerCase().trim();
+  var kq = [];
+  if (!em) return kq;
+  for (var i = 1; i < dsTaiKhoan.length; i++) {
+    if (String(dsTaiKhoan[i][0] || '').toLowerCase().trim() !== em) continue;
+    var uc = String(dsTaiKhoan[i][1] || '').trim();
+    if (uc && !kq.some(function (d) { return d.unitCode === uc; })) {
+      kq.push({ unitCode: uc, unitName: layTenDonVi_(dsDonVi, uc) });
+    }
+  }
+  return kq;
+}
+
+/** Đọc một tab của Sheet quản lý thành mảng dòng (kèm tiêu đề), tab thiếu → []. */
+function docTabQuanLy_(ss, ten) {
+  var tab = ss.getSheetByName(ten);
+  return tab ? tab.getDataRange().getValues() : [];
+}
+
+function xuLyLayTaiKhoan_(quanLyId, unitCode) {
+  if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
+  try {
+    var ss = SpreadsheetApp.openById(quanLyId);
+    return { ok: true, emails: layEmailCuaDonVi_(docTabQuanLy_(ss, 'Tài khoản'), unitCode) };
+  } catch (err) {
+    return { ok: false, loi: 'Lỗi đọc tài khoản: ' + String(err) };
+  }
+}
+
+function xuLyTimDonViTheoEmail_(quanLyId, email) {
+  if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
+  try {
+    var ss = SpreadsheetApp.openById(quanLyId);
+    return { ok: true, donVi: timDonViTheoEmail_(docTabQuanLy_(ss, 'Tài khoản'), docTabQuanLy_(ss, 'Đơn vị'), email) };
+  } catch (err) {
+    return { ok: false, loi: 'Lỗi tìm đơn vị: ' + String(err) };
+  }
+}
+
+/**
  * Lấy tên đơn vị từ bảng Đơn vị (hàm thuần).
  */
 function layTenDonVi_(dsDonVi, unitCode) {
@@ -130,7 +189,7 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
 /**
  * Xử lý đăng nhập toàn trình: kiểm quyền và lấy danh sách file.
  */
-function xuLyDangNhap_(quanLyId, email, unitCode, matKhau) {
+function xuLyDangNhap_(quanLyId, email, unitCode) {
   if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
 
   try {
