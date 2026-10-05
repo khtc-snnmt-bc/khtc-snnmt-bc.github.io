@@ -2,7 +2,7 @@
    bcsnn · css/app.css
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Thiết kế chuẩn xác theo giaodien.pptx trang 1, 2, 3
-   Phiên bản: 0.3.0 · Cập nhật: 05/10/2026 22:32
+   Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 06:05
    ============================================================ */
 
 :root {
@@ -128,143 +128,86 @@ body {
 /* ============================================================
    TRANG 1: MÀN HÌNH ĐIỀU HƯỚNG CÁC LĨNH VỰC (pptx trang 1)
    ============================================================ */
-.portal-container {
-  max-width: 1100px;
-  margin: 36px auto;
-  padding: 0 20px;
-}
-
-.portal-title-block {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.portal-title-block h1 {
-  font-size: 24px;
-  color: var(--primary-dark);
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.portal-title-block p {
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
-.portal-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  align-items: stretch;
-}
-
-.card-linh-vuc {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Bố cục theo slide 1: nền xanh lá đậm, khung tiêu đề, logo, 5 ô xếp 2–2–1 */
+.portal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  background: #214d3a;
+  color: #ffffff;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  box-shadow: var(--shadow);
-  position: relative;
-  overflow: hidden;
+  align-items: center;
+  padding: 24px 16px 40px;
 }
 
-.card-linh-vuc:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-  border-color: var(--primary);
+.portal-tieu-de {
+  background: #175f80;
+  border: 2px solid #0e3b50;
+  padding: 8px 32px;
+  text-align: center;
+  font-size: 26px;
+  line-height: 1.4;
+  width: min(100%, 750px);
 }
 
-.card-linh-vuc.active-service {
-  border-top: 4px solid var(--primary);
+.portal-logo {
+  width: 150px;
+  height: 150px;
+  margin: 12px 0 20px;
 }
 
-.card-linh-vuc.pending-service {
-  opacity: 0.85;
-  border-top: 4px solid #b0bec5;
-  cursor: default;
+.portal-luoi {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 435px));
+  column-gap: 120px;
+  row-gap: 32px;
+  justify-content: center;
+  width: 100%;
 }
 
-.card-linh-vuc.pending-service:hover {
-  transform: none;
-  box-shadow: var(--shadow);
-  border-color: var(--border);
-  border-top-color: #b0bec5;
-}
-
-.card-linh-vuc-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.card-icon {
-  font-size: 28px;
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+.o-linh-vuc {
+  background: #175f80;
+  border: 2px solid #0e3b50;
+  border-radius: 14px;
+  min-height: 146px;
+  padding: 12px 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--primary-light);
-}
-
-.pending-service .card-icon {
-  background: #eceff1;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
+  text-align: center;
+  font: inherit;
+  font-size: 26px;
   line-height: 1.4;
+  color: #ffffff;
+  text-decoration: none;
 }
 
-.card-desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 20px;
-  flex: 1;
+.o-linh-vuc.co-link {
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
 }
 
-.card-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 14px;
-  border-top: 1px solid #f0f0f0;
+.o-linh-vuc.co-link:hover,
+.o-linh-vuc.co-link:focus-visible {
+  background: #1d7299;
+  transform: translateY(-2px);
+  outline: none;
 }
 
-.badge-status {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-weight: 600;
+/* Ô thứ 5 nằm giữa hàng cuối */
+.o-linh-vuc.o-giua {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, 435px);
 }
 
-.badge-active {
-  background: #e8f5e9;
-  color: var(--primary);
-}
-
-.badge-pending {
-  background: #eceff1;
-  color: #546e7a;
-}
-
-.btn-link-action {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
+@media (max-width: 1040px) {
+  .portal-tieu-de { font-size: 17px; padding: 8px 16px; }
+  .portal-logo { width: 110px; height: 110px; }
+  .portal-luoi { grid-template-columns: minmax(0, 420px); row-gap: 16px; }
+  .o-linh-vuc { font-size: 17px; min-height: 84px; }
 }
 
 /* ============================================================

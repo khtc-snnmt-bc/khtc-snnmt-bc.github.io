@@ -6,7 +6,7 @@ Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 1: Điều hướng các lĩnh vực báo cáo
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
-Phiên bản: 0.3.0 · Cập nhật: 05/10/2026 22:32
+Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 06:05
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -31,103 +31,21 @@ Phiên bản: 0.3.0 · Cập nhật: 05/10/2026 22:32
   </header>
 
   <!-- ==================== TRANG 1: ĐIỀU HƯỚNG CÁC LĨNH VỰC (pptx trang 1) ==================== -->
-  <main id="trang-dieu-huong" class="portal-container">
-    <div class="portal-title-block">
-      <h1>HỆ THỐNG BÁO CÁO NỘI BỘ</h1>
-      <p>Chọn lĩnh vực hoặc nhóm nhiệm vụ cần thực hiện báo cáo</p>
+  <!-- Phủ kín màn hình, che header chung. Ô có link = <a>/<button>; ô chưa làm = chữ thường -->
+  <main id="trang-dieu-huong" class="portal">
+    <div class="portal-tieu-de">
+      <div>SỞ NÔNG NGHIỆP VÀ MÔI TRƯỜNG</div>
+      <div>Phòng Kế hoạch – Tài chính</div>
     </div>
 
-    <div class="portal-grid">
-      <!-- Thẻ 1: Bồi thường giải phóng mặt bằng (Đang hoạt động) -->
-      <div id="card-linh-vuc-bttdc" class="card-linh-vuc active-service">
-        <div>
-          <div class="card-linh-vuc-header">
-            <div class="card-icon">🏗️</div>
-            <div>
-              <div class="card-title">Công tác bồi thường giải phóng mặt bằng</div>
-            </div>
-          </div>
-          <div class="card-desc">
-            Phòng Bồi thường, hỗ trợ, tái định cư · Tiến độ bồi thường các dự án, tổng hợp khó khăn vướng mắc và kiến nghị.
-          </div>
-        </div>
-        <div class="card-action">
-          <span class="badge-status badge-active">● Đang hoạt động</span>
-          <span class="btn-link-action">Vào báo cáo →</span>
-        </div>
-      </div>
+    <img class="portal-logo" src="img/logo.svg" alt="Logo Sở Nông nghiệp và Môi trường">
 
-      <!-- Thẻ 2: Báo cáo định kỳ phòng ban đơn vị trực thuộc Sở -->
-      <div class="card-linh-vuc pending-service">
-        <div>
-          <div class="card-linh-vuc-header">
-            <div class="card-icon">🏛️</div>
-            <div>
-              <div class="card-title">Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</div>
-            </div>
-          </div>
-          <div class="card-desc">
-            Báo cáo tháng, quý, năm của các phòng ban chuyên môn và các chi cục trực thuộc Sở.
-          </div>
-        </div>
-        <div class="card-action">
-          <span class="badge-status badge-pending">Sắp triển khai</span>
-        </div>
-      </div>
-
-      <!-- Thẻ 3: Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở -->
-      <div class="card-linh-vuc pending-service">
-        <div>
-          <div class="card-linh-vuc-header">
-            <div class="card-icon">📋</div>
-            <div>
-              <div class="card-title">Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</div>
-            </div>
-          </div>
-          <div class="card-desc">
-            Theo dõi phân công, đôn đốc tiến độ thực hiện các kết luận chỉ đạo của UBND TP và Ban Giám đốc Sở.
-          </div>
-        </div>
-        <div class="card-action">
-          <span class="badge-status badge-pending">Sắp triển khai</span>
-        </div>
-      </div>
-
-      <!-- Thẻ 4: Sản xuất nông, lâm, thuỷ sản -->
-      <div class="card-linh-vuc pending-service">
-        <div>
-          <div class="card-linh-vuc-header">
-            <div class="card-icon">🌾</div>
-            <div>
-              <div class="card-title">Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản</div>
-            </div>
-          </div>
-          <div class="card-desc">
-            Số liệu chỉ tiêu trồng trọt, chăn nuôi, nuôi trồng thủy sản của các xã, phường, đặc khu.
-          </div>
-        </div>
-        <div class="card-action">
-          <span class="badge-status badge-pending">Sắp triển khai</span>
-        </div>
-      </div>
-
-      <!-- Thẻ 5: Bản đồ Thực trạng & định hướng -->
-      <div class="card-linh-vuc pending-service">
-        <div>
-          <div class="card-linh-vuc-header">
-            <div class="card-icon">🗺️</div>
-            <div>
-              <div class="card-title">Bản đồ Thực trạng và định hướng sản xuất nông nghiệp</div>
-            </div>
-          </div>
-          <div class="card-desc">
-            Hệ thống bản đồ số hoá vùng sản xuất chuyên canh, vùng bảo tồn nông nghiệp và định hướng quy hoạch.
-          </div>
-        </div>
-        <div class="card-action">
-          <span class="badge-status badge-pending">Sắp triển khai</span>
-        </div>
-      </div>
+    <div class="portal-luoi">
+      <a class="o-linh-vuc co-link" href="https://khtc-snnmt.github.io/">Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</a>
+      <div class="o-linh-vuc">Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</div>
+      <div class="o-linh-vuc">Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản của các xã, phường, đặc khu</div>
+      <button id="o-linh-vuc-bttdc" type="button" class="o-linh-vuc co-link">Công tác bồi thường giải phóng mặt bằng</button>
+      <div class="o-linh-vuc o-giua">Bản đồ<br>Thực trạng và định hướng sản xuất nông nghiệp</div>
     </div>
   </main>
 
