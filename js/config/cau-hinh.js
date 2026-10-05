@@ -9,8 +9,7 @@
 
 var CAU_HINH = {
   // URL web app GAS (Deploy → Thực thi bằng: Tôi · Truy cập: Bất kỳ ai)
-  // Ví dụ: 'https://script.google.com/macros/s/AKfyc.../exec'
-  GAS_URL: '',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzLeaUrVN6FFPr-hpaLmwYecmvTMBb1okM7Ej4aOhDhipDDmOcw38JoDNowEfemoON_kQ/exec',
 
   // Thời gian chờ tối đa khi gọi GAS (ms) — lần đầu thường 3–10 giây
   GAS_TIMEOUT: 15000,

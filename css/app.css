@@ -1,8 +1,8 @@
 /* ============================================================
    bcsnn · css/app.css
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
-   Thiết kế theo giaodien.pptx trang 2 & 3
-   Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:40
+   Thiết kế chuẩn xác theo giaodien.pptx trang 1, 2, 3
+   Phiên bản: 0.2.0 · Cập nhật: 05/10/2026 14:55
    ============================================================ */
 
 :root {
@@ -12,17 +12,17 @@
   --accent: #2e7d32;
   --text-main: #212121;
   --text-muted: #616161;
-  --bg-page: #f4f6f8;
+  --bg-page: #f0f2f5;
   --bg-card: #ffffff;
-  --border: #e0e0e0;
-  --border-focus: #4caf50;
+  --border: #d0d7de;
+  --border-focus: #2e7d32;
   --error: #d32f2f;
   --error-bg: #ffebee;
-  --warn: #ed6c02;
-  --warn-bg: #fff4e5;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --warn: #e65100;
+  --warn-bg: #fff3e0;
   --radius: 8px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -47,13 +47,13 @@ body {
    HEADER CHUNG
    ============================================================ */
 .app-header {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, #0d3b13 0%, #1b5e20 100%);
   color: #ffffff;
   padding: 12px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 10;
 }
@@ -65,18 +65,21 @@ body {
 
 .app-header .agency-name {
   font-size: 11px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  opacity: 0.85;
+  color: #a5d6a7;
+  font-weight: 600;
 }
 
 .app-header .app-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .app-header .sub-title {
   font-size: 12px;
+  color: #e8f5e9;
   opacity: 0.9;
 }
 
@@ -88,8 +91,8 @@ body {
 
 .user-badge {
   background: rgba(255, 255, 255, 0.15);
-  padding: 4px 10px;
-  border-radius: 14px;
+  padding: 4px 12px;
+  border-radius: 16px;
   font-size: 13px;
   display: flex;
   flex-direction: column;
@@ -109,10 +112,11 @@ body {
   background: transparent;
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
@@ -122,157 +126,353 @@ body {
 }
 
 /* ============================================================
-   TRANG ĐĂNG NHẬP (pptx slide 2)
+   TRANG 1: MÀN HÌNH ĐIỀU HƯỚNG CÁC LĨNH VỰC (pptx trang 1)
    ============================================================ */
-.login-container {
-  max-width: 1050px;
-  margin: 32px auto;
-  padding: 0 16px;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 24px;
-  align-items: start;
+.portal-container {
+  max-width: 1100px;
+  margin: 36px auto;
+  padding: 0 20px;
 }
 
-@media (max-width: 850px) {
-  .login-container {
+.portal-title-block {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.portal-title-block h1 {
+  font-size: 24px;
+  color: var(--primary-dark);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.portal-title-block p {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.card-linh-vuc {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-linh-vuc:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--primary);
+}
+
+.card-linh-vuc.active-service {
+  border-top: 4px solid var(--primary);
+}
+
+.card-linh-vuc.pending-service {
+  opacity: 0.85;
+  border-top: 4px solid #b0bec5;
+  cursor: default;
+}
+
+.card-linh-vuc.pending-service:hover {
+  transform: none;
+  box-shadow: var(--shadow);
+  border-color: var(--border);
+  border-top-color: #b0bec5;
+}
+
+.card-linh-vuc-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.card-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--primary-light);
+}
+
+.pending-service .card-icon {
+  background: #eceff1;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.4;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  flex: 1;
+}
+
+.card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.badge-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.badge-active {
+  background: #e8f5e9;
+  color: var(--primary);
+}
+
+.badge-pending {
+  background: #eceff1;
+  color: #546e7a;
+}
+
+.btn-link-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ============================================================
+   TRANG 2: MÀN HÌNH ĐĂNG NHẬP BỒI THƯỜNG (pptx trang 2)
+   ============================================================ */
+.login-page-wrapper {
+  max-width: 1150px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.top-nav-bar {
+  margin-bottom: 16px;
+}
+
+.btn-back {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.btn-back:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.login-sub-header {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 16px 24px;
+  border-bottom: 2px solid var(--primary);
+}
+
+.login-sub-header .org-hierarchy {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.login-sub-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.login-sub-header .portal-tag {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.login-body-layout {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .login-body-layout {
     grid-template-columns: 1fr;
   }
 }
 
-.login-card, .quick-units-card {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  overflow: hidden;
+/* Cột trái: Form nhập */
+.login-form-pane {
+  padding: 28px 32px;
+  border-right: 1px solid var(--border);
 }
 
-.login-card-header {
-  background: var(--primary-light);
-  border-bottom: 1px solid rgba(27, 94, 32, 0.15);
-  padding: 16px 20px;
+@media (max-width: 900px) {
+  .login-form-pane {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
 }
 
-.login-card-header h2 {
-  font-size: 16px;
-  color: var(--primary-dark);
-  margin-bottom: 4px;
+.login-field {
+  margin-bottom: 22px;
 }
 
-.login-card-header p {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.login-card-body {
-  padding: 24px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
+.login-field label {
   display: block;
-  font-weight: 600;
   font-size: 13px;
-  margin-bottom: 6px;
-  color: #333;
-}
-
-.form-group .form-hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 4px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #263238;
+  margin-bottom: 8px;
 }
 
 .form-control {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 14px;
   font-size: 14px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
   background-color: #fff;
 }
 
 .form-control:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
 }
 
-.auth-note {
-  background: #f9fbe7;
-  border-left: 4px solid #9e9d24;
-  padding: 12px;
+.form-control[readonly] {
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.field-hint {
   font-size: 12px;
-  color: #555;
-  margin-bottom: 20px;
-  border-radius: 0 4px 4px 0;
-  line-height: 1.6;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
-.btn-primary {
+.auth-notice-box {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-left: 4px solid #1976d2;
+  padding: 14px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: #0d47a1;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.btn-login-main {
   width: 100%;
   background: var(--primary);
-  color: #fff;
+  color: #ffffff;
   border: none;
   padding: 12px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-login-main:hover:not(:disabled) {
   background: var(--primary-dark);
 }
 
-.btn-primary:disabled {
+.btn-login-main:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.alert {
-  padding: 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.alert-error {
-  background: var(--error-bg);
-  color: var(--error);
-  border: 1px solid #ffcdd2;
-}
-
-.alert-info {
-  background: #e3f2fd;
-  color: #0d47a1;
-  border: 1px solid #bbdefb;
-}
-
-/* Thẻ chọn nhanh đơn vị (bên phải pptx trang 2) */
-.quick-units-card {
+/* Cột phải: Chọn nhanh đơn vị */
+.quick-select-pane {
+  background: #fafafa;
   display: flex;
   flex-direction: column;
-  height: 520px;
+  height: 580px;
 }
 
-.quick-units-header {
+.pane-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #f0f0f0;
+}
+
+.pane-tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pane-tab-btn.active {
+  background: #fafafa;
+  color: var(--primary-dark);
+  border-bottom: 2px solid var(--primary);
+}
+
+.quick-filter-box {
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
-  background: #fafafa;
 }
 
-.quick-units-header h3 {
-  font-size: 14px;
+.quick-filter-box h4 {
+  font-size: 13px;
   font-weight: 700;
   color: var(--primary-dark);
   margin-bottom: 8px;
@@ -288,17 +488,16 @@ body {
 }
 
 .quick-unit-item {
-  padding: 10px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 11px 16px;
+  border-bottom: 1px solid #eaeaea;
   font-size: 13px;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .quick-unit-item:hover {
-  background: var(--primary-light);
+  background: #e8f5e9;
   color: var(--primary-dark);
-  font-weight: 500;
 }
 
 .quick-unit-item.selected {
@@ -308,31 +507,36 @@ body {
   border-left: 4px solid var(--primary);
 }
 
-/* Cài đặt GAS URL modal / dropdown */
-.config-trigger {
-  text-align: center;
-  margin-top: 16px;
+.alert {
+  padding: 12px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 18px;
 }
 
-.config-trigger a {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-decoration: underline;
-  cursor: pointer;
+.alert-error {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid #ffcdd2;
+}
+
+.alert-info {
+  background: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
 }
 
 /* ============================================================
-   TRANG NHẬP LIỆU (pptx slide 3)
+   TRANG 3: MÀN HÌNH NHẬP LIỆU (pptx trang 3)
    ============================================================ */
 .workspace-container {
   display: flex;
-  height: calc(100vh - 65px);
+  height: calc(100vh - 66px);
   overflow: hidden;
 }
 
-/* Sidebar bên trái */
 .workspace-sidebar {
-  width: 280px;
+  width: 290px;
   background: #ffffff;
   border-right: 1px solid var(--border);
   display: flex;
@@ -340,8 +544,25 @@ body {
   flex-shrink: 0;
 }
 
-.sidebar-section-title {
+.sidebar-header-block {
   padding: 14px 16px 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sidebar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 2px;
+}
+
+.sidebar-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sidebar-section-title {
+  padding: 12px 16px 6px 16px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -378,35 +599,42 @@ body {
 }
 
 .sidebar-footer {
-  padding: 12px 16px;
+  padding: 12px 14px;
   border-top: 1px solid var(--border);
   background: #fafafa;
-  font-size: 12px;
 }
 
 .sidebar-btn {
   display: block;
   width: 100%;
   text-align: center;
-  padding: 8px 10px;
+  padding: 7px 10px;
   border-radius: 4px;
   font-size: 12px;
   margin-top: 6px;
   text-decoration: none;
   cursor: pointer;
-}
-
-.btn-outline {
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text-main);
+  transition: background 0.15s;
 }
 
-.btn-outline:hover {
+.sidebar-btn:hover {
   background: #f0f0f0;
 }
 
-/* Khung hiển thị Google Sheet chính */
+.sidebar-btn-primary {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-weight: 600;
+  border-color: #a5d6a7;
+}
+
+.sidebar-btn-primary:hover {
+  background: #c8e6c9;
+}
+
 .workspace-main {
   flex: 1;
   display: flex;
@@ -426,28 +654,8 @@ body {
 }
 
 .sheet-title {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary-dark);
-}
-
-.sheet-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.sheet-actions a, .sheet-actions button {
-  font-size: 12px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  background: #ffffff;
-  border-radius: 4px;
-  text-decoration: none;
-  color: var(--text-main);
-  cursor: pointer;
-}
-
-.sheet-actions a:hover, .sheet-actions button:hover {
-  background: #f5f5f5;
 }
 
 .iframe-wrapper {
@@ -464,7 +672,6 @@ body {
   display: block;
 }
 
-/* Banner nhắc nhở cookie/đăng nhập */
 .cookie-banner {
   background: var(--warn-bg);
   border-bottom: 1px solid #ffe0b2;
@@ -478,16 +685,15 @@ body {
 
 .cookie-banner a {
   color: var(--primary-dark);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: underline;
   margin-left: 6px;
 }
 
-/* Vòng tròn tải dữ liệu */
 .spinner {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   border-top-color: #fff;
@@ -498,18 +704,4 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255, 255, 255, 0.85);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 14px;
-  color: var(--primary-dark);
-  z-index: 5;
 }

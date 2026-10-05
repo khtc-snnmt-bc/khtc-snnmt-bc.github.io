@@ -1,33 +1,65 @@
 // ============================================================
 // bcsnn · js/pages/dang-nhap.js
-// Vai trò  : Màn hình đăng nhập (pptx trang 2): chọn đơn vị, nhập Gmail
+// Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị, nhập Gmail
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:45
+// Phiên bản: 0.2.0 · Cập nhật: 05/10/2026 14:55
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
   'use strict';
 
   var dsDonViGoc = [];
-  var elTrang, elSelectDonVi, elInputLoc, elListChonNhanh, elInputEmail, elBtnDangNhap;
-  var elThongBao, elNutCauHinhGas, onDangNhapThanhCong;
+  var tabHienTai = 'don-vi'; // 'don-vi' hoặc 'quan-tri'
+  var elTrang, elSelectDonVi, elInputDonViHienThi, elInputLoc, elListChonNhanh, elInputEmail, elInputMatKhau, elNhomMatKhau;
+  var elBtnDangNhap, elThongBao, elBtnQuayLai, elTabDonVi, elTabQuanTri;
+  var onDangNhapThanhCong, onQuayLaiCallback;
 
-  function khoiTao(callbackThanhCong) {
+  function khoiTao(callbackThanhCong, callbackQuayLai) {
     onDangNhapThanhCong = callbackThanhCong;
+    onQuayLaiCallback = callbackQuayLai;
+
     elTrang = DOM.$('#trang-dang-nhap');
     elSelectDonVi = DOM.$('#select-don-vi');
+    elInputDonViHienThi = DOM.$('#input-don-vi-hien-thi');
     elInputLoc = DOM.$('#loc-don-vi');
     elListChonNhanh = DOM.$('#danh-sach-chon-nhanh');
     elInputEmail = DOM.$('#input-email');
+    elInputMatKhau = DOM.$('#input-mat-khau');
+    elNhomMatKhau = DOM.$('#nhom-mat-khau');
     elBtnDangNhap = DOM.$('#btn-dang-nhap');
     elThongBao = DOM.$('#thong-bao-dang-nhap');
-    elNutCauHinhGas = DOM.$('#link-cau-hinh-gas');
+    elBtnQuayLai = DOM.$('#btn-quay-lai-dieu-huong');
+    elTabDonVi = DOM.$('#tab-loai-don-vi');
+    elTabQuanTri = DOM.$('#tab-loai-quan-tri');
 
     ganSuKien();
     taiDanhSachDonVi();
   }
 
   function ganSuKien() {
+    // Nút quay lại trang điều hướng
+    if (elBtnQuayLai) {
+      elBtnQuayLai.addEventListener('click', function (e) {
+        e.preventDefault();
+        an();
+        if (typeof onQuayLaiCallback === 'function') {
+          onQuayLaiCallback();
+        }
+      });
+    }
+
+    // Chuyển tab Đơn vị báo cáo / Quản trị
+    if (elTabDonVi) {
+      elTabDonVi.addEventListener('click', function () {
+        chuyenTab('don-vi');
+      });
+    }
+    if (elTabQuanTri) {
+      elTabQuanTri.addEventListener('click', function () {
+        chuyenTab('quan-tri');
+      });
+    }
+
     // Lọc danh sách chọn nhanh theo từ khoá
     if (elInputLoc) {
       elInputLoc.addEventListener('input', function () {
@@ -35,10 +67,12 @@ var PAGE_DANG_NHAP = (function () {
       });
     }
 
-    // Chọn từ dropdown → cập nhật highlight bên danh sách nhanh
+    // Chọn từ dropdown
     if (elSelectDonVi) {
       elSelectDonVi.addEventListener('change', function () {
         var ma = elSelectDonVi.value;
+        var ten = elSelectDonVi.options[elSelectDonVi.selectedIndex].text;
+        if (elInputDonViHienThi) elInputDonViHienThi.value = ma ? ten : '';
         capNhatChonNhanh(ma);
       });
     }
@@ -50,20 +84,26 @@ var PAGE_DANG_NHAP = (function () {
         xuLyDangNhap();
       });
     }
+  }
 
-    // Cài đặt GAS URL thủ công (tiện thử nghiệm)
-    if (elNutCauHinhGas) {
-      elNutCauHinhGas.addEventListener('click', function (e) {
-        e.preventDefault();
-        var hienTai = CAU_HINH.layGasUrl();
-        var moi = prompt('Nhập URL Web App Apps Script (Deploy > Web app):', hienTai);
-        if (moi !== null) {
-          CAU_HINH.luuGasUrl(moi);
-          baoLoi('', '');
-          taiDanhSachDonVi();
-        }
-      });
+  function chuyenTab(loai) {
+    tabHienTai = loai;
+    if (elTabDonVi) DOM.batTat(elTabDonVi, 'active', loai === 'don-vi');
+    if (elTabQuanTri) DOM.batTat(elTabQuanTri, 'active', loai === 'quan-tri');
+
+    if (elNhomMatKhau) {
+      if (loai === 'quan-tri') {
+        DOM.hien(elNhomMatKhau);
+      } else {
+        DOM.an(elNhomMatKhau);
+      }
     }
+
+    // Nếu chọn Quản trị, tự gán đơn vị là KHTC.SNNMT
+    if (loai === 'quan-tri') {
+      chonDonVi('KHTC.SNNMT', 'Phòng Kế hoạch – Tài chính');
+    }
+    baoLoi('', '');
   }
 
   function baoLoi(thongDiep, kieu) {
@@ -91,55 +131,28 @@ var PAGE_DANG_NHAP = (function () {
 
   function taiDanhSachDonVi() {
     var gasUrl = CAU_HINH.layGasUrl();
-    if (!gasUrl) {
-      baoLoi('Chưa cấu hình URL GAS. Bấm "Cài đặt URL kết nối" bên dưới để thiết lập.', 'info');
-      // Đặt trước 1 đơn vị mẫu thử nghiệm (Ban Bình Thới) để giao diện không trống
-      dsDonViGoc = [
-        { unitCode: 'BQLDA.BinhThoi', unitName: 'Ban QLDA ĐTXD phường Bình Thới' },
-        { unitCode: 'KHTC.SNNMT', unitName: 'Phòng Kế hoạch – Tài chính' }
-      ];
-      napDonViVaoGiaoDien(dsDonViGoc);
-      return;
-    }
+    if (!gasUrl) return;
 
-    baoLoi('Đang tải danh mục đơn vị...', 'info');
     API.layDanhSachDonVi()
       .then(function (res) {
         if (res.ok && res.donVi && res.donVi.length) {
           dsDonViGoc = DON_VI.sapXepDonVi(res.donVi);
           napDonViVaoGiaoDien(dsDonViGoc);
-          baoLoi('', '');
-        } else {
-          // Fallback đơn vị thử b04 nếu GAS chưa có endpoint layDonVi
-          dsDonViGoc = [
-            { unitCode: 'BQLDA.BinhThoi', unitName: 'Ban QLDA ĐTXD phường Bình Thới' }
-          ];
-          napDonViVaoGiaoDien(dsDonViGoc);
-          baoLoi('', '');
         }
       })
       .catch(function (err) {
-        console.warn('Lỗi tải đơn vị:', err);
-        // Fallback đơn vị thử nghiệm
-        dsDonViGoc = [
-          { unitCode: 'BQLDA.BinhThoi', unitName: 'Ban QLDA ĐTXD phường Bình Thới' }
-        ];
-        napDonViVaoGiaoDien(dsDonViGoc);
-        baoLoi('', '');
+        console.warn('Lỗi tải đơn vị từ GAS:', err);
       });
   }
 
   function napDonViVaoGiaoDien(ds) {
-    // 1. Nạp dropdown
     if (elSelectDonVi) {
-      elSelectDonVi.innerHTML = '<option value="">-- Chọn đơn vị báo cáo --</option>';
+      elSelectDonVi.innerHTML = '<option value="">-- Nhập hoặc chọn nhanh danh sách bên phải --</option>';
       ds.forEach(function (dv) {
         var opt = DOM.tao('option', { value: dv.unitCode }, dv.unitName);
         elSelectDonVi.appendChild(opt);
       });
     }
-
-    // 2. Nạp danh sách chọn nhanh
     veDanhSachChonNhanh('');
   }
 
@@ -163,15 +176,16 @@ var PAGE_DANG_NHAP = (function () {
       }, dv.unitName);
 
       li.addEventListener('click', function () {
-        chonDonVi(dv.unitCode);
+        chonDonVi(dv.unitCode, dv.unitName);
       });
 
       elListChonNhanh.appendChild(li);
     });
   }
 
-  function chonDonVi(unitCode) {
+  function chonDonVi(unitCode, unitName) {
     if (elSelectDonVi) elSelectDonVi.value = unitCode;
+    if (elInputDonViHienThi) elInputDonViHienThi.value = unitName || unitCode;
     capNhatChonNhanh(unitCode);
   }
 
@@ -187,10 +201,11 @@ var PAGE_DANG_NHAP = (function () {
   function xuLyDangNhap() {
     var unitCode = elSelectDonVi ? elSelectDonVi.value.trim() : '';
     var email = elInputEmail ? elInputEmail.value.trim().toLowerCase() : '';
+    var matKhau = elInputMatKhau ? elInputMatKhau.value : '';
 
     if (!unitCode) {
-      baoLoi('Vui lòng chọn đơn vị báo cáo.');
-      if (elSelectDonVi) elSelectDonVi.focus();
+      baoLoi('Vui lòng chọn đơn vị báo cáo từ danh sách bên phải.');
+      if (elInputLoc) elInputLoc.focus();
       return;
     }
     if (!email) {
@@ -198,11 +213,16 @@ var PAGE_DANG_NHAP = (function () {
       if (elInputEmail) elInputEmail.focus();
       return;
     }
+    if (tabHienTai === 'quan-tri' && !matKhau) {
+      baoLoi('Vui lòng nhập mật khẩu quản trị.');
+      if (elInputMatKhau) elInputMatKhau.focus();
+      return;
+    }
 
     baoLoi('', '');
     datTrangThaiNut(true);
 
-    API.dangNhap(email, unitCode)
+    API.dangNhap(email, unitCode, matKhau)
       .then(function (res) {
         datTrangThaiNut(false);
         if (!res.ok) {
@@ -210,17 +230,16 @@ var PAGE_DANG_NHAP = (function () {
           return;
         }
 
-        // Lưu thông tin phiên đăng nhập
+        var tenDonVi = res.unitName || (elSelectDonVi.options[elSelectDonVi.selectedIndex] || {}).text || unitCode;
         var thongTinPhien = {
           email: email,
           unitCode: unitCode,
-          unitName: res.unitName || (elSelectDonVi.options[elSelectDonVi.selectedIndex] || {}).text || unitCode,
-          role: res.role || 'Nhập liệu',
+          unitName: tenDonVi,
+          role: res.role || (tabHienTai === 'quan-tri' ? 'Quản trị' : 'Nhập liệu'),
           tables: res.tables || []
         };
         PHIEN.luu(thongTinPhien);
 
-        // Chuyển sang màn hình nhập liệu
         an();
         if (typeof onDangNhapThanhCong === 'function') {
           onDangNhapThanhCong(thongTinPhien);
@@ -234,6 +253,7 @@ var PAGE_DANG_NHAP = (function () {
 
   function hien() {
     DOM.hien(elTrang);
+    if (!dsDonViGoc.length) taiDanhSachDonVi();
   }
 
   function an() {
