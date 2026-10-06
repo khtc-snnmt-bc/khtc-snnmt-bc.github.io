@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · js/domains/phien-dang-nhap.js
-// Vai trò  : Nghiệp vụ thuần: phiên đăng nhập (sessionStorage) + đơn vị truy cập gần đây
+// Vai trò  : Nghiệp vụ thuần: phiên đăng nhập + phiên quản trị (sessionStorage), đơn vị gần đây
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 07:18
+// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 11:20
 // ============================================================
 // Phiên chỉ giữ tới khi đóng tab (sessionStorage — người dùng có thể đăng nhập
 // Gmail khác ở tab khác). Chỉ danh sách đơn vị gần đây dùng localStorage, và
@@ -57,5 +57,41 @@ var PHIEN = (function () {
     } catch (e) { /* chế độ riêng tư: bỏ qua */ }
   }
 
-  return { luu: luu, doc: doc, xoa: xoa, themGanDay: themGanDay, docGanDay: docGanDay, ghiGanDay: ghiGanDay };
+  // ---------- Quản trị ----------
+
+  var VAI_TRO_QUAN_TRI = 'Quản trị';
+  var KHOA_QUAN_TRI = 'bcsnn_quan_tri';
+
+  /** Hàm thuần: phiên nhập liệu có vai trò Quản trị không */
+  function laQuanTri(phien) {
+    return !!(phien && phien.role === VAI_TRO_QUAN_TRI);
+  }
+
+  /** Hàm thuần: phiên quản trị còn hạn tại thời điểm bayGio (ms) không */
+  function conHanQuanTri(pq, bayGio) {
+    return !!(pq && pq.token && pq.hetHan > bayGio);
+  }
+
+  /** Lưu mã phiên quản trị GAS trả về; hết hạn tính theo đồng hồ trình duyệt */
+  function luuQuanTri(token, hetHanSauGiay, bayGio) {
+    try {
+      sessionStorage.setItem(KHOA_QUAN_TRI, JSON.stringify({ token: token, hetHan: bayGio + hetHanSauGiay * 1000 }));
+    } catch (e) { /* private mode */ }
+  }
+
+  function docQuanTri() {
+    try {
+      var raw = sessionStorage.getItem(KHOA_QUAN_TRI);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function xoaQuanTri() {
+    try { sessionStorage.removeItem(KHOA_QUAN_TRI); } catch (e) { /* ok */ }
+  }
+
+  return {
+    luu: luu, doc: doc, xoa: xoa, themGanDay: themGanDay, docGanDay: docGanDay, ghiGanDay: ghiGanDay,
+    laQuanTri: laQuanTri, conHanQuanTri: conHanQuanTri, luuQuanTri: luuQuanTri, docQuanTri: docQuanTri, xoaQuanTri: xoaQuanTri
+  };
 })();

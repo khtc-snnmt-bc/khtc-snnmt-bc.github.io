@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!-- ============================================================
+bcsnn · quantri.html
+Vai trò  : Trang quản trị (pptx trang 4) — chỉ vai trò Quản trị, thêm mật khẩu quản trị
+Lớp      : trang tĩnh GitHub Pages — phiên nhập liệu lấy từ index.html (sessionStorage)
+Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 11:30
+============================================================ -->
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản trị · Báo cáo định kỳ Sở Nông nghiệp và Môi trường</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="workspace-container">
+    <header class="app-header">
+      <div class="brand">
+        <img src="img/logo.svg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="app-title">Quản trị · Báo cáo định kỳ Sở Nông nghiệp và Môi trường</span>
+          <span class="sub-title">Công tác bồi thường giải phóng mặt bằng</span>
+        </div>
+      </div>
+      <div class="user-info">
+        <div id="qt-user-badge" class="user-badge"></div>
+      </div>
+    </header>
+
+    <div class="workspace-body">
+      <aside class="workspace-sidebar">
+        <div id="qt-menu-tieu-de" class="sidebar-section-title">Quản lý</div>
+        <ul id="qt-menu" class="sidebar-tables-list"></ul>
+        <div class="sidebar-footer">
+          <a class="sidebar-btn" href="index.html">← Quay về trang nhập liệu</a>
+        </div>
+      </aside>
+
+      <section class="workspace-main">
+        <div class="sheet-toolbar">
+          <span id="qt-tieu-de" class="sheet-title">Quản trị</span>
+        </div>
+
+        <div id="qt-mat-khau" class="qt-khoa an">
+          <form id="form-mat-khau" class="qt-khoa-the">
+            <label for="input-mat-khau" class="qt-khoa-nhan">Mật khẩu quản trị</label>
+            <div id="qt-thong-bao" class="alert alert-error an"></div>
+            <input type="text" id="input-ten-qt" class="an" autocomplete="username" tabindex="-1" aria-hidden="true">
+            <input type="password" id="input-mat-khau" class="form-control" autocomplete="current-password" required>
+            <button id="btn-mat-khau" type="submit" class="btn-login-main">Vào trang quản trị</button>
+          </form>
+        </div>
+
+        <div id="qt-noi-dung" class="qt-noi-dung an"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="js/config/cau-hinh.js"></script>
+  <script src="js/utils/dom.js"></script>
+  <script src="js/services/api.js"></script>
+  <script src="js/domains/phien-dang-nhap.js"></script>
+  <script src="js/pages/quan-tri.js"></script>
+  <script>PAGE_QUAN_TRI.khoiTao();</script>
+</body>
+</html>

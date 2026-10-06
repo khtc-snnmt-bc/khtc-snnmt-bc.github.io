@@ -2,7 +2,7 @@
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 07:18
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 11:25
 // ============================================================
 
 var PAGE_NHAP_LIEU = (function () {
@@ -63,6 +63,9 @@ var PAGE_NHAP_LIEU = (function () {
 
     // 2. Vẽ danh sách bảng được giao ở sidebar
     veSidebarBang(phienHienTai.tables || []);
+
+    // 3. Vai trò Quản trị thấy lối sang trang quản trị
+    DOM.batTat(DOM.$('#lien-ket-quan-tri'), 'an', !PHIEN.laQuanTri(phienHienTai));
   }
 
   function veSidebarBang(dsBang) {
@@ -136,6 +139,9 @@ var PAGE_NHAP_LIEU = (function () {
 
   function xuLyDangXuat() {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+      var pq = PHIEN.docQuanTri();
+      if (pq && pq.token) API.quanTriDangXuat(pq.token).catch(function () { /* phiên tự hết hạn */ });
+      PHIEN.xoaQuanTri();
       PHIEN.xoa();
       phienHienTai = null;
       bangDangChon = null;

@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-b05.mjs
 // Vai trò  : Kiểm thử các hàm thuần của b05 bằng Node.js
 // Chạy     : node app/kiem-thu/kiem-b05.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:45
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 11:40
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -137,6 +137,20 @@ bai('Ghi đơn vị gần đây: mới nhất lên đầu, bỏ trùng, tối đ
   assert.deepEqual(P.themGanDay(['A'], 'B'), ['B', 'A']);
   assert.deepEqual(P.themGanDay(['B', 'A'], 'A'), ['A', 'B']);
   assert.deepEqual(P.themGanDay(['B', 'A'], 'C'), ['C', 'B']);
+});
+
+bai('b06a: vai trò Quản trị và hạn phiên quản trị', () => {
+  const P = sandbox.PHIEN;
+  assert.equal(P.laQuanTri({ role: 'Quản trị' }), true);
+  assert.equal(P.laQuanTri({ role: 'Quản lý báo cáo' }), false);
+  assert.equal(P.laQuanTri(null), false);
+  assert.equal(P.conHanQuanTri({ token: 't', hetHan: 2000 }, 1000), true);
+  assert.equal(P.conHanQuanTri({ token: 't', hetHan: 1000 }, 1000), false);
+  assert.equal(P.conHanQuanTri({ hetHan: 2000 }, 1000), false);
+  P.luuQuanTri('t', 60, 1000);
+  assert.equal(P.docQuanTri().hetHan, 61000);
+  P.xoaQuanTri();
+  assert.equal(P.docQuanTri(), null);
 });
 
 console.log('kiem-b05: ' + soBai + ' bài ĐẠT!');

@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.2.0 · Cập nhật: 05/10/2026 22:32
+// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 11:20
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -94,11 +94,26 @@ var API = (function () {
     return goi('timDonViTheoEmail', { email: email });
   }
 
+  /**
+   * Đăng nhập quản trị: tài khoản vai trò Quản trị + mật khẩu quản trị.
+   * @returns {Promise<object>} { ok, token, hetHanSau (giây) } | { ok:false, loi }
+   */
+  function quanTriDangNhap(email, unitCode, matKhau) {
+    return goi('quanTriDangNhap', { email: email, unitCode: unitCode, matKhau: matKhau });
+  }
+
+  /** Huỷ phiên quản trị trên máy chủ. */
+  function quanTriDangXuat(token) {
+    return goi('quanTriDangXuat', { token: token });
+  }
+
   return {
     goi: goi,
     layDanhSachDonVi: layDanhSachDonVi,
     layTaiKhoan: layTaiKhoan,
     timDonViTheoEmail: timDonViTheoEmail,
-    dangNhap: dangNhap
+    dangNhap: dangNhap,
+    quanTriDangNhap: quanTriDangNhap,
+    quanTriDangXuat: quanTriDangXuat
   };
 })();
