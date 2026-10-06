@@ -2,8 +2,8 @@
 // bcsnn · gas/PhanQuyen.js
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
-// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_)
-// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 22:47
+// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_, docLinhVuc_)
+// Phiên bản: 0.5.0 · Cập nhật: 07/10/2026 05:13
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị + Gmail của đơn vị quản lý bảng → SỬA.
@@ -272,7 +272,8 @@ function xuLyQtLayDuLieu_(token) {
       giao: docFileQuanLy_(docTabQuanLy_(ss, 'File')).map(function (f) {
         return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId };
       }),
-      ky: docKyQuanLy_(docTabQuanLy_(ss, TAB_KY))
+      ky: docKyQuanLy_(docTabQuanLy_(ss, TAB_KY)),
+      linhVuc: docLinhVuc_(docTabQuanLy_(ss, TAB_LINH_VUC), gtBang)
     };
   });
 }

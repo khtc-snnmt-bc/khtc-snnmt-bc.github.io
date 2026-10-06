@@ -2,8 +2,8 @@
 // bcsnn · gas/KyBaoCao.js
 // Vai trò  : Kỳ báo cáo — tạo tab kỳ ở mọi file đơn vị của một bảng (thiếu file
 //            thì tạo file), khoá / mở khoá kỳ; sổ kỳ ở tab "Kỳ" của Sheet quản lý
-// Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử) · gọi: PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.1.1 · Cập nhật: 06/10/2026 22:47
+// Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử) · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
+// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 05:13
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -13,6 +13,7 @@
 // KY_MS_TOI_DA rồi trả `tiepTu`; trang gọi lại với batDau = tiepTu tới khi null.
 
 var NHAN_COT_A = 'Mã đơn vị';
+var MA_MOI_DON_VI = 'all';      // cột A của mẫu ghi 'all' = dòng giao cho mọi đơn vị
 var TIEN_TO_KHOA_KY = 'Khoá kỳ';
 var META_KHOA_KY = 'bcsnn_khoaKy';
 var TAB_KY = 'Kỳ';
@@ -90,11 +91,13 @@ function timDongTieuDe_(cotA) {
   return 0;
 }
 
-// Dòng dữ liệu của mẫu giữ lại ở file đơn vị: bảng gộp–tách chỉ giữ dòng có mã đơn vị đó
+// Dòng dữ liệu của mẫu giữ lại ở file đơn vị: bảng gộp–tách chỉ giữ dòng có mã
+// đơn vị đó hoặc 'all' (dòng chung mọi đơn vị — bảng Tổng các đơn vị)
 function dongGiuLai_(cotA, dongTieuDe, maDonVi, laTachDong) {
   var giu = [];
   for (var dong = dongTieuDe + 1; dong <= cotA.length; dong++) {
-    if (!laTachDong || String(cotA[dong - 1]).trim() === maDonVi) giu.push(dong);
+    var ma = String(cotA[dong - 1]).trim();
+    if (!laTachDong || ma === maDonVi || ma === MA_MOI_DON_VI) giu.push(dong);
   }
   return giu;
 }
@@ -151,6 +154,8 @@ function docCaiDat_(tieuDe, dong) {
   caiDat.tableCode = String(caiDat.tableCode || '').trim();
   caiDat.templateFileId = String(caiDat.templateFileId || '').trim();
   caiDat.allowAddRows = caiDat.allowAddRows === true || String(caiDat.allowAddRows).trim().toUpperCase() === 'TRUE';
+  caiDat.aggregateType = String(caiDat.aggregateType || '').trim() === 'tong' ? 'tong' : 'ghep';
+  if (caiDat.aggregateType === 'tong') caiDat.allowAddRows = false;   // bảng tổng: đơn vị không thêm dòng
   caiDat.noteTabs = String(caiDat.noteTabs || '').split(',')
     .map(function (t) { return t.trim(); }).filter(function (t) { return t; });
   return caiDat;
@@ -230,7 +235,13 @@ function taoTabKy_(ss, mau, caiDat, maDonVi, tenKy) {
   if (!caiDat.allowAddRows && tab.getMaxRows() > dongCuoi) tab.deleteRows(dongCuoi + 1, tab.getMaxRows() - dongCuoi);
   var cotCuoi = mau.getSheets()[0].getLastColumn();   // bỏ cột trống thừa → khỏi phải khoá
   if (tab.getMaxColumns() > cotCuoi) tab.deleteColumns(cotCuoi + 1, tab.getMaxColumns() - cotCuoi);
+  if (laTach && giuLai.length) {
+    // Cột A file đơn vị: 'all' → mã đơn vị đó; bỏ danh sách chọn mã (cột A luôn khoá)
+    var vungA = tab.getRange(dongTieuDe + 1, 1, giuLai.length, 1).clearDataValidations();
+    vungA.setValues(vungA.getValues().map(function (d) { return [String(d[0]).trim() === MA_MOI_DON_VI ? maDonVi : d[0]]; }));
+  }
   if (!laTach) {
+    tab.getRange(dongTieuDe + 1, 1, Math.max(giuLai.length, 1), 1).clearDataValidations();
     tab.getRange(dongTieuDe + 1, 1).setFormula(
       congThucMaDonVi_(maDonVi, caiDat.inputCols, dongTieuDe + 1).replace(/;/g, nganCongThuc_(ss)));
   }
@@ -346,6 +357,10 @@ function taoKy_(ss, tableCode, tenKy, batDau) {
   var caiDat = caiDatBang_(ss, tableCode);
   if (!caiDat) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
   if (!caiDat.templateFileId) return { ok: false, loi: 'Bảng chưa có file tổng (mẫu)' };
+  if (!Number(batDau)) {   // lô đầu: mẫu sai thì không tạo (sinh 168 file sai rất khó dọn)
+    var kiem = kiemMauBang_(ss, tableCode).kiem || [];
+    if (kiem.length) return { ok: false, loi: 'Mẫu chưa đúng ' + kiem.length + ' chỗ — vào Quản lý bảng, bấm Kiểm mẫu để xem và sửa', kiem: kiem };
+  }
 
   var tabKy = tabKyQuanLy_(ss);
   var dsKy = tabKy.getDataRange().getValues();

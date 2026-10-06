@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.13.0 · Cập nhật: 06/10/2026 22:47
+   Phiên bản: 0.14.0 · Cập nhật: 07/10/2026 05:13
    ============================================================ */
 
 :root {
@@ -1041,6 +1041,7 @@ a.sidebar-btn {
 }
 
 .qt-file-tong a.qt-nut-them { text-decoration: none; }
+.qt-so-giao { font-size: 14px; margin-right: 6px; font-variant-numeric: tabular-nums; }
 
 .qt-tich input {
   width: 20px;
@@ -1084,6 +1085,24 @@ a.sidebar-btn {
 .qt-cot .qt-nut-xoa { align-self: stretch; }
 
 .qt-an-giu-cho { visibility: hidden; }
+
+.qt-them-linh-vuc {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.qt-them-linh-vuc.an { display: none; }
+.qt-linh-vuc .alert { margin: 8px 0 0; }
+.qt-cot-quan-ly select:disabled, .qt-dong select:disabled { opacity: 0.65; }
+
+/* Tạo bảng nhập liệu: tách khỏi phần cài đặt bằng một đường kẻ */
+.qt-tao-bang-nhap {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
 
 .qt-ds-loi {
   margin: 6px 0 0;

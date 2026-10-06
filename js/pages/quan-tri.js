@@ -2,9 +2,10 @@
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá), Tài khoản (Gmail theo đơn vị),
-//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (dựng mẫu, cài đặt, kiểm mẫu)
+//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (dựng mẫu, cài đặt,
+//            lĩnh vực, kiểm mẫu, tạo bảng nhập liệu cho đơn vị)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 22:47
+// Phiên bản: 0.7.0 · Cập nhật: 07/10/2026 05:13
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -120,7 +121,8 @@ var PAGE_QUAN_TRI = (function () {
     API.qtLayDuLieu(token())
       .then(kiemPhien)
       .then(function (res) {
-        duLieu = { donVi: PHAN_QUYEN.xepDonVi(res.donVi), taiKhoan: res.taiKhoan, bang: res.bang, giao: res.giao, ky: res.ky || [] };
+        duLieu = { donVi: PHAN_QUYEN.xepDonVi(res.donVi), taiKhoan: res.taiKhoan, bang: res.bang, giao: res.giao,
+          ky: res.ky || [], linhVuc: res.linhVuc || [] };
         veNoiDung();
       })
       .catch(function (err) {
@@ -488,14 +490,76 @@ var PAGE_QUAN_TRI = (function () {
     return d;
   }
 
-  function oNhom(giaTri) {
-    var o = oNhap(giaTri, { list: 'qt-ds-nhom' });
-    var ds = DOM.tao('datalist', { id: 'qt-ds-nhom' });
-    QUAN_LY_BANG.dsNhom(duLieu.bang).forEach(function (n) { ds.appendChild(DOM.tao('option', { value: n })); });
-    var boc = DOM.tao('div');
-    boc.appendChild(o);
-    boc.appendChild(ds);
-    return { o: o, el: boc };
+  // Lĩnh vực: chỉ chọn trong danh mục (tránh gõ tràn lan); "+ Thêm lĩnh vực" mở ô tên + mã
+  function oLinhVuc(giaTri) {
+    var boc = DOM.tao('div', { class: 'qt-linh-vuc' });
+    var hangChon = boc.appendChild(DOM.tao('div', { class: 'qt-hang-loc' }));
+    var sel = hangChon.appendChild(DOM.tao('select', { class: 'form-control' }));
+    var nutMo = hangChon.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm lĩnh vực'));
+    var form = boc.appendChild(DOM.tao('div', { class: 'qt-them-linh-vuc an' }));
+    var oTen = form.appendChild(oNhap('', { placeholder: 'Tên lĩnh vực' }));
+    var oMa = form.appendChild(oNhap('', { placeholder: 'Mã', maxlength: '15' }));
+    var nutThem = form.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Thêm'));
+    var bao = boc.appendChild(DOM.tao('div'));
+
+    function veLuaChon(chonMa) {
+      sel.innerHTML = '';
+      [{ giaTri: '', nhan: '— Chọn lĩnh vực —' }].concat(QUAN_LY_BANG.luaChonLinhVuc(duLieu.linhVuc)).forEach(function (lc) {
+        var op = sel.appendChild(DOM.tao('option', { value: lc.giaTri }, lc.nhan));
+        if (lc.giaTri === chonMa) op.selected = true;
+      });
+    }
+    veLuaChon(giaTri || '');
+
+    var maTuSua = false;
+    oTen.addEventListener('input', function () { if (!maTuSua) oMa.value = QUAN_LY_BANG.maLinhVucTuTen(oTen.value); });
+    oMa.addEventListener('input', function () { maTuSua = !!oMa.value; });
+    nutMo.addEventListener('click', function () {
+      DOM.batTat(form, 'an', !form.classList.contains('an'));
+      if (!form.classList.contains('an')) oTen.focus();
+    });
+    nutThem.addEventListener('click', function () {
+      chayNut(nutThem, 'Đang thêm…', function () {
+        return API.qtThemLinhVuc(token(), oMa.value.trim(), oTen.value.trim());
+      }, function (res) {
+        duLieu.linhVuc = res.linhVuc;
+        veLuaChon(res.moi.groupCode);
+        oTen.value = oMa.value = '';
+        maTuSua = false;
+        DOM.an(form);
+      }, bao);
+    });
+    return { o: sel, el: boc };
+  }
+
+  /**
+   * Lĩnh vực · Cách tổng hợp · Cách nhập dòng · Cho thêm dòng (chung bảng mới / bảng đã có).
+   * Bảng tổng các đơn vị: luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
+   */
+  function vePhanLoai(khung, cd, khiDoiCach) {
+    var linhVuc = oLinhVuc(cd.group);
+    var selTong = oChon(QUAN_LY_BANG.CACH_TONG_HOP.map(function (c) { return { giaTri: c.ma, nhan: c.ten }; }), cd.aggregateType || 'ghep');
+    var selCach = oCachNhapDong(cd.sourceType);
+    var them = oTich(cd.allowAddRows);
+    khung.appendChild(hang('Lĩnh vực', linhVuc.el)).classList.add('qt-dong-tren');
+    khung.appendChild(dong('Cách tổng hợp', selTong));
+    khung.appendChild(dong('Cách nhập dòng', selCach));
+    var hangThem = dong('Cho thêm dòng', them.el);
+    function apLuat() {
+      var laTong = selTong.value === 'tong';
+      if (laTong) { selCach.value = 'gopTach'; them.o.checked = false; }
+      selCach.disabled = laTong;
+      them.o.disabled = laTong;
+      khiDoiCach(selCach.value);
+    }
+    selTong.addEventListener('change', apLuat);
+    selCach.addEventListener('change', function () { khiDoiCach(selCach.value); });
+    return {
+      hangThem: hangThem, apLuat: apLuat,
+      giaTri: function () {
+        return { group: linhVuc.o.value, aggregateType: selTong.value, sourceType: selCach.value, allowAddRows: them.o.checked };
+      }
+    };
   }
 
   function veKiem(noi, kiem) {
@@ -542,9 +606,7 @@ var PAGE_QUAN_TRI = (function () {
   function veCaiDatBang(khung, bang) {
     var cd = bang.caiDat || {};
     var oTen = oNhap(bang.tableName);
-    var nhom = oNhom(bang.group);
     khung.appendChild(dong('Tên bảng', oTen));
-    khung.appendChild(dong('Nhóm lĩnh vực', nhom.el));
 
     var hangFile = DOM.tao('div', { class: 'qt-file-tong' });
     if (cd.templateFileId) {
@@ -554,23 +616,21 @@ var PAGE_QUAN_TRI = (function () {
     var nutKiem = hangFile.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Kiểm mẫu'));
     khung.appendChild(hang('File tổng', hangFile));
 
-    var selCach = oCachNhapDong(cd.sourceType);
     var oCot = oNhap(cd.inputCols, { placeholder: 'C:J, L' });
     var oDongNhap = oNhap(cd.inputRows, { placeholder: 'Mọi dòng' });
     var oDongKhoa = oNhap(cd.lockedRows);
     var oSoDong = oNhap(cd.dataRows, { type: 'number', min: '1', max: '500' });
-    var them = oTich(cd.allowAddRows);
     var oChuThich = oNhap(cd.noteTabs);
-    khung.appendChild(dong('Cách nhập dòng', selCach));
+    var hangSoDong = dong('Số dòng sẵn', oSoDong);
+    var phanLoai = vePhanLoai(khung, { group: bang.group, aggregateType: cd.aggregateType, sourceType: cd.sourceType,
+      allowAddRows: cd.allowAddRows }, function (cach) { DOM.batTat(hangSoDong, 'an', cach !== 'docLap'); });
     khung.appendChild(dong('Cột được nhập', oCot));
     khung.appendChild(dong('Dòng được nhập', oDongNhap));
     khung.appendChild(dong('Dòng khoá', oDongKhoa));
-    var hangSoDong = khung.appendChild(dong('Số dòng sẵn', oSoDong));
-    khung.appendChild(dong('Cho thêm dòng', them.el));
+    khung.appendChild(hangSoDong);
+    khung.appendChild(phanLoai.hangThem);
     khung.appendChild(dong('Tab chú thích', oChuThich));
-    function anHien() { DOM.batTat(hangSoDong, 'an', selCach.value !== 'docLap'); }
-    selCach.addEventListener('change', anHien);
-    anHien();
+    phanLoai.apLuat();
 
     var hangNut = khung.appendChild(DOM.tao('div', { class: 'qt-hang-nut' }));
     var nut = hangNut.appendChild(DOM.tao('button', { type: 'button', class: 'btn-login-main qt-nut-luu' }, 'Lưu'));
@@ -581,6 +641,7 @@ var PAGE_QUAN_TRI = (function () {
       veKiem(noiKiem, ketQuaBang.kiem);
     }
     ketQuaBang = null;
+    veTaoBangNhap(khung, bang);
 
     nutKiem.addEventListener('click', function () {
       chayNut(nutKiem, 'Đang kiểm…', function () { return API.qtKiemMau(token(), bang.tableCode); },
@@ -588,12 +649,11 @@ var PAGE_QUAN_TRI = (function () {
     });
 
     nut.addEventListener('click', function () {
-      var caiDat = {
-        tableName: oTen.value.trim(), group: nhom.o.value.trim(), sourceType: selCach.value,
-        inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(), lockedRows: oDongKhoa.value.trim(),
-        allowAddRows: them.o.checked, noteTabs: oChuThich.value.trim(),
-        dataRows: selCach.value === 'docLap' ? oSoDong.value.trim() : cd.dataRows
-      };
+      var caiDat = Object.assign(phanLoai.giaTri(), {
+        tableName: oTen.value.trim(), inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(),
+        lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim()
+      });
+      caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {
         bang.tableName = caiDat.tableName;
         bang.group = caiDat.group;
@@ -604,20 +664,71 @@ var PAGE_QUAN_TRI = (function () {
     });
   }
 
+  // Giao theo mã ở cột A file tổng (bảng Sở giao dòng) → tạo bảng nhập liệu cho các đơn vị
+  // được giao = tạo kỳ đầu (file + tab kỳ + chia quyền), dùng lại đúng việc Tạo kỳ.
+  // Máy chủ kiểm mẫu trước — mẫu sai thì không tạo.
+  function veTaoBangNhap(khung, bang) {
+    var vung = khung.appendChild(DOM.tao('div', { class: 'qt-tao-bang-nhap' }));
+    var hangGiao = DOM.tao('div', { class: 'qt-file-tong' });
+    var soGiao = hangGiao.appendChild(DOM.tao('span', { class: 'qt-so-giao' }));
+    function demGiao() {
+      soGiao.textContent = Object.keys(PHAN_QUYEN.giaoCuaBang(duLieu.giao, bang.tableCode)).length + ' đơn vị';
+    }
+    demGiao();
+    if ((bang.caiDat || {}).sourceType === 'gopTach') {
+      var nutGiao = hangGiao.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Giao theo mã trong bảng'));
+      nutGiao.addEventListener('click', function () {
+        chayNut(nutGiao, 'Đang giao…', function () { return API.qtGiaoTheoMau(token(), bang.tableCode); }, function (res) {
+          duLieu.giao = res.giao;
+          demGiao();
+          var tt = QUAN_LY_BANG.tomTatGiaoTheoMau(res);
+          bao.appendChild(thongBao(tt.chu, tt.laLoi));
+        }, bao);
+      });
+    }
+    vung.appendChild(hang('Đơn vị được giao', hangGiao));
+    var o = DOM.tao('div', { class: 'qt-ky-moi' });
+    var oNgay = o.appendChild(DOM.tao('input', { type: 'date', class: 'form-control' }));
+    var nut = o.appendChild(DOM.tao('button', { type: 'button', class: 'btn-login-main qt-nut-luu' }, 'Tạo cho các đơn vị'));
+    vung.appendChild(hang('Bảng nhập liệu', o));
+    var bao = vung.appendChild(DOM.tao('div'));   // dùng chung cho Giao theo mã và Tạo
+
+    nut.addEventListener('click', function () {
+      bao.innerHTML = '';
+      if (!Object.keys(PHAN_QUYEN.giaoCuaBang(duLieu.giao, bang.tableCode)).length) {
+        bao.appendChild(thongBao('Bảng chưa giao cho đơn vị nào — vào mục Phân quyền để giao.', true));
+        return;
+      }
+      if (!oNgay.value) { oNgay.focus(); return; }
+      nut.disabled = true;
+      chayTheoLo(function (batDau) {
+        return API.qtTaoKy(token(), bang.tableCode, oNgay.value, batDau);
+      }, nut, 'Đang tạo')
+        .then(function (kq) {
+          var cu = KY_BAO_CAO.kyCuaBang(duLieu.ky, bang.tableCode).filter(function (k) { return k.periodName === kq.tenKy; })[0];
+          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, kq.tenKy, cu ? cu.locked : false);
+          if (kq.fileMoi) taiLaiNgam();
+          bao.appendChild(thongBao(KY_BAO_CAO.tomTatTaoKy(kq), (kq.loi.length + ((kq.quyen && kq.quyen.loi.length) || 0)) > 0));
+        })
+        .catch(function (err) { bao.appendChild(thongBao(err.message, true)); })
+        .then(function () {
+          nut.disabled = false;
+          nut.textContent = 'Tạo cho các đơn vị';
+        });
+    });
+  }
+
   // Bảng mới: khai cột → GAS dựng file tổng (dòng 1 tên bảng, dòng 2 tiêu đề, dữ liệu từ dòng 3)
   function veBangMoi(khung) {
     var oTen = oNhap('');
     var oMa = oNhap('');
-    var nhom = oNhom('');
-    var selCach = oCachNhapDong('docLap');
     var oSoDong = oNhap('20', { type: 'number', min: '1', max: '500' });
-    var them = oTich(false);
     khung.appendChild(dong('Tên bảng', oTen));
     khung.appendChild(dong('Mã bảng', oMa));
-    khung.appendChild(dong('Nhóm lĩnh vực', nhom.el));
-    khung.appendChild(dong('Cách nhập dòng', selCach));
+    var phanLoai = vePhanLoai(khung, { sourceType: 'docLap', aggregateType: 'ghep', allowAddRows: false }, function () {});
     khung.appendChild(dong('Số dòng sẵn', oSoDong));
-    khung.appendChild(dong('Cho thêm dòng', them.el));
+    khung.appendChild(phanLoai.hangThem);
+    phanLoai.apLuat();
 
     // Mã bảng tự theo tên tới khi quản trị tự sửa mã
     var maTuSua = false;
@@ -666,15 +777,14 @@ var PAGE_QUAN_TRI = (function () {
     var bao = khung.appendChild(DOM.tao('div'));
 
     nut.addEventListener('click', function () {
-      var khai = {
-        tableCode: oMa.value.trim(), tableName: oTen.value.trim(), group: nhom.o.value.trim(),
-        sourceType: selCach.value, dataRows: oSoDong.value.trim(), allowAddRows: them.o.checked,
+      var khai = Object.assign(phanLoai.giaTri(), {
+        tableCode: oMa.value.trim(), tableName: oTen.value.trim(), dataRows: oSoDong.value.trim(),
         cot: DOM.$$('.qt-cot:not(.qt-cot-co-dinh)', dsCot).map(function (h) {
           var kieu = DOM.$('select', h).value, phu = DOM.$('[data-truong="phu"]', h).value.trim();
           return { ten: DOM.$('[data-truong="ten"]', h).value.trim(), kieu: kieu,
             congThuc: kieu === 'congThuc' ? phu : '', luaChon: kieu === 'chon' ? phu : '' };
         })
-      };
+      });
       var maYeuCau = Date.now().toString(36) + Math.random().toString(36).slice(2);
       chayNut(nut, 'Đang tạo…', function () { return API.qtTaoBang(token(), khai, maYeuCau); }, function (res) {
         duLieu.bang.push(res.bang);
