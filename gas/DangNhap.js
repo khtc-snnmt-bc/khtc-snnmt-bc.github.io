@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
-// Lớp      : gas backend — đọc Sheet quản lý, trả JSON
-// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 20:11
+// Lớp      : gas backend — đọc Sheet quản lý, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_)
+// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 20:54
 // ============================================================
 
 /**
@@ -204,6 +204,31 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
 }
 
 /**
+ * Bảng mà đơn vị là đơn vị quản lý (hàm thuần): fileId = file tổng, donVi = file
+ * từng đơn vị đã tạo (xếp theo tên). Bảng chưa có file tổng vẫn hiện nếu có file đơn vị.
+ * @returns {Array<object>} [{ tableCode, tableName, group, fileId, donVi: [{unitCode, unitName, fileId}] }]
+ */
+function bangQuanLyCuaDonVi_(dsBang, dsFile, dsDonVi, unitCode) {
+  var uc = String(unitCode || '').trim();
+  var file = docFileQuanLy_(dsFile);
+  return docBangQuanLy_(dsBang).filter(function (b) { return uc && b.managerUnit === uc; }).map(function (b) {
+    var donVi = file.filter(function (f) { return f.tableCode === b.tableCode && f.fileId; }).map(function (f) {
+      return { unitCode: f.unitCode, unitName: layTenDonVi_(dsDonVi, f.unitCode), fileId: f.fileId };
+    }).sort(function (a, c) { return a.unitName.localeCompare(c.unitName, 'vi', { numeric: true }); });
+    return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, fileId: b.templateFileId, donVi: donVi };
+  }).filter(function (b) { return b.fileId || b.donVi.length; });
+}
+
+/** Danh sách bảng ở sidebar: bảng mình quản lý trước, rồi bảng được giao nhập (bỏ trùng). */
+function danhSachBangDangNhap_(dsBang, dsFile, dsDonVi, unitCode) {
+  var quanLy = bangQuanLyCuaDonVi_(dsBang, dsFile, dsDonVi, unitCode);
+  var maQl = quanLy.map(function (b) { return b.tableCode; });
+  return quanLy.concat(ghepDanhSachBang_(dsBang, dsFile, unitCode).filter(function (b) {
+    return maQl.indexOf(b.tableCode) < 0;
+  }));
+}
+
+/**
  * Xử lý đăng nhập toàn trình: kiểm quyền và lấy danh sách file.
  */
 function xuLyDangNhap_(quanLyId, email, unitCode) {
@@ -238,7 +263,7 @@ function xuLyDangNhap_(quanLyId, email, unitCode) {
     var duLieuBang = tabBang ? tabBang.getDataRange().getValues() : [];
     var duLieuFile = tabFile ? tabFile.getDataRange().getValues() : [];
 
-    var dsBang = ghepDanhSachBang_(duLieuBang, duLieuFile, unitCode);
+    var dsBang = danhSachBangDangNhap_(duLieuBang, duLieuFile, duLieuDV, unitCode);
 
     return {
       ok: true,

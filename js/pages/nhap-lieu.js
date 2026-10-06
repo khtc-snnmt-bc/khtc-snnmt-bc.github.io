@@ -2,7 +2,8 @@
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 13:33
+// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 20:54
+// Bảng có donVi (đơn vị quản lý bảng): hộp chọn Bảng tổng / file từng đơn vị dưới tên bảng.
 // ============================================================
 
 var PAGE_NHAP_LIEU = (function () {
@@ -11,7 +12,7 @@ var PAGE_NHAP_LIEU = (function () {
   var elTrang, elUserBadge, elBtnLogout, elListTables, elIframe, elSheetTitle;
   var elBtnMoTabMoi, elBtnTaiLaiIframe, elLienKetMoSheet;
   var phienHienTai = null;
-  var bangDangChon = null;
+  var fileDangMo = '';        // fileId đang hiện trong iframe (bảng tổng hoặc file một đơn vị)
   var onDangXuatCallback = null;
 
   function khoiTao(callbackDangXuat) {
@@ -101,29 +102,39 @@ var PAGE_NHAP_LIEU = (function () {
   }
 
   function chonBang(bang, elLi) {
-    bangDangChon = bang;
-
     // Cập nhật active class ở sidebar
     var cacLi = DOM.$$('.sidebar-table-item', elListTables);
     cacLi.forEach(function (li) { DOM.batTat(li, 'active', li === elLi); });
 
-    // Cập nhật tiêu đề bảng
-    if (elSheetTitle) {
-      elSheetTitle.textContent = bang.tableName || bang.tableCode;
+    // Bảng mình quản lý: hộp chọn Bảng tổng / từng đơn vị ngay dưới tên bảng
+    DOM.$$('.sidebar-chon-file', elListTables).forEach(function (el) { el.remove(); });
+    var dsFile = KY_BAO_CAO.dsFileBang(bang);
+    if (bang.donVi) {
+      var sel = DOM.tao('select', { class: 'sidebar-chon-file-o', 'aria-label': 'Chọn file' });
+      dsFile.forEach(function (f, i) { sel.appendChild(DOM.tao('option', { value: String(i) }, f.nhan)); });
+      sel.addEventListener('change', function () { moFile(bang, dsFile[Number(sel.value)]); });
+      var liChon = DOM.tao('li', { class: 'sidebar-chon-file' });
+      liChon.appendChild(sel);
+      elLi.after(liChon);
     }
+    moFile(bang, dsFile[0]);
+  }
 
-    // Nạp iframe Google Sheet + lối dự phòng mở tab mới
-    if (bang.fileId) {
-      var src = KY_BAO_CAO.taoUrlSheet(bang.fileId, phienHienTai ? phienHienTai.email : '');
-      if (elIframe) elIframe.src = src;
-      if (elLienKetMoSheet) elLienKetMoSheet.href = src;
+  /** Nạp iframe Google Sheet + lối dự phòng mở tab mới; tiêu đề ghi kèm tên file đang xem. */
+  function moFile(bang, file) {
+    fileDangMo = file ? file.fileId : '';
+    if (elSheetTitle) {
+      elSheetTitle.textContent = (bang.tableName || bang.tableCode) + (bang.donVi && file ? ' · ' + file.nhan : '');
     }
+    if (!fileDangMo) return;
+    var src = KY_BAO_CAO.taoUrlSheet(fileDangMo, phienHienTai ? phienHienTai.email : '');
+    if (elIframe) elIframe.src = src;
+    if (elLienKetMoSheet) elLienKetMoSheet.href = src;
   }
 
   function moSheetTabMoi() {
-    if (!bangDangChon || !bangDangChon.fileId) return;
-    var url = KY_BAO_CAO.taoUrlSheet(bangDangChon.fileId, phienHienTai ? phienHienTai.email : '');
-    window.open(url, '_blank');
+    if (!fileDangMo) return;
+    window.open(KY_BAO_CAO.taoUrlSheet(fileDangMo, phienHienTai ? phienHienTai.email : ''), '_blank');
   }
 
   function taiLaiIframe() {
@@ -147,7 +158,7 @@ var PAGE_NHAP_LIEU = (function () {
       PHIEN.xoaQuanTri();
       PHIEN.xoa();
       phienHienTai = null;
-      bangDangChon = null;
+      fileDangMo = '';
       datIframeRong();
       an();
       if (typeof onDangXuatCallback === 'function') {

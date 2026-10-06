@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 20:11
+// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 20:54
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -15,9 +15,11 @@ var API = (function () {
    * Gửi POST tới GAS, trả Promise<object>.
    * @param {string} action — tên hành động GAS
    * @param {object} duLieu — dữ liệu kèm theo (ngoài action)
+   * @param {number} [thoiGianCho] — ms; mặc định CAU_HINH.GAS_TIMEOUT
    * @returns {Promise<object>}
    */
-  function goi(action, duLieu) {
+  function goi(action, duLieu, thoiGianCho) {
+    var cho = thoiGianCho || CAU_HINH.GAS_TIMEOUT || 15000;
     var url = CAU_HINH.layGasUrl();
     if (!url) return Promise.reject(new Error('Chưa cấu hình URL web app GAS. Vui lòng cài đặt URL GAS trước.'));
 
@@ -28,7 +30,7 @@ var API = (function () {
     function thuMot() {
       soLanThu++;
       var controller = new AbortController();
-      var timer = setTimeout(function () { controller.abort(); }, CAU_HINH.GAS_TIMEOUT || 15000);
+      var timer = setTimeout(function () { controller.abort(); }, cho);
 
       return fetch(url, {
         method: 'POST',
@@ -51,7 +53,7 @@ var API = (function () {
         })
         .catch(function (err) {
           clearTimeout(timer);
-          if (err.name === 'AbortError') throw new Error('GAS không phản hồi sau ' + (CAU_HINH.GAS_TIMEOUT / 1000) + ' giây');
+          if (err.name === 'AbortError') throw new Error('GAS không phản hồi sau ' + (cho / 1000) + ' giây');
           if (soLanThu < soLanMax) return thuMot();
           throw err;
         });
@@ -152,8 +154,32 @@ var API = (function () {
     return goi('quanTriDangXuat', { token: token });
   }
 
+  /**
+   * Dữ liệu trang quản trị (cần mã phiên quản trị).
+   * @returns {Promise<object>} { ok, donVi, taiKhoan, bang, giao } | { ok:false, hetPhien }
+   */
+  function qtLayDuLieu(token) {
+    return goi('qtLayDuLieu', { token: token });
+  }
+
+  // Lưu kèm chia quyền Drive từng file → có thể lâu (đơn vị quản lý: mọi file của bảng)
+  var CHO_LUU = 300000;
+
+  /** Thay Gmail của một đơn vị: ds = [{email, role}]; GAS tự chia sẻ / gỡ quyền file. */
+  function qtLuuTaiKhoan(token, unitCode, ds) {
+    return goi('qtLuuTaiKhoan', { token: token, unitCode: unitCode, ds: ds }, CHO_LUU);
+  }
+
+  /** Đơn vị quản lý + đơn vị được giao của một bảng; GAS tự chia sẻ / gỡ quyền file. */
+  function qtLuuPhanQuyen(token, tableCode, managerUnit, units) {
+    return goi('qtLuuPhanQuyen', { token: token, tableCode: tableCode, managerUnit: managerUnit, units: units }, CHO_LUU);
+  }
+
   return {
     goi: goi,
+    qtLayDuLieu: qtLayDuLieu,
+    qtLuuTaiKhoan: qtLuuTaiKhoan,
+    qtLuuPhanQuyen: qtLuuPhanQuyen,
     layDanhSachDonVi: layDanhSachDonVi,
     layTaiKhoan: layTaiKhoan,
     timDonViTheoEmail: timDonViTheoEmail,
