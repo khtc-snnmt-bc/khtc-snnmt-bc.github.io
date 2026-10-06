@@ -2,7 +2,7 @@
 // bcsnn · js/domains/don-vi.js
 // Vai trò  : Nghiệp vụ thuần về đơn vị: lọc theo từ khoá, sắp xếp
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 07:18
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 07:22
 // ============================================================
 
 var DON_VI = (function () {
@@ -50,27 +50,36 @@ var DON_VI = (function () {
     return null;
   }
 
-  /**
-   * Tách cột chọn nhanh: các đơn vị truy cập gần đây (theo thứ tự gần nhất
-   * trước) và phần còn lại (giữ nguyên thứ tự đã sắp abc của danh sách vào).
-   * @param {Array} danhSach — đã lọc + sắp abc
-   * @param {Array<string>} maGanDay
-   * @returns {{ganDay: Array, conLai: Array}}
-   */
-  function tachGanDay(danhSach, maGanDay) {
+  /** Xếp đơn vị dùng gần đây (đúng thứ tự gần nhất) lên đầu, còn lại giữ nguyên thứ tự vào */
+  function ganDayLenDau(danhSach, maGanDay) {
     var ganDay = [];
     (maGanDay || []).forEach(function (ma) {
       var dv = danhSach.filter(function (d) { return d.unitCode === ma; })[0];
       if (dv) ganDay.push(dv);
     });
-    var conLai = danhSach.filter(function (d) { return ganDay.indexOf(d) < 0; });
-    return { ganDay: ganDay, conLai: conLai };
+    return ganDay.concat(danhSach.filter(function (d) { return ganDay.indexOf(d) < 0; }));
+  }
+
+  /**
+   * Cột chọn nhanh: hai nhóm cố định — Quản trị (gồm Quản lý báo cáo) và Đơn vị
+   * báo cáo. Trong mỗi nhóm, đơn vị truy cập gần đây xếp lên đầu (ngầm, không
+   * ghi nhãn), còn lại abc.
+   * @param {Array} danhSach — đã lọc + sắp abc
+   * @param {Array<string>} maGanDay
+   * @returns {Array<{ten: string, ds: Array}>} — bỏ nhóm rỗng
+   */
+  function nhomChonNhanh(danhSach, maGanDay) {
+    var laQuanTri = function (dv) { return dv.role === 'Quản trị' || dv.role === 'Quản lý báo cáo'; };
+    return [
+      { ten: 'Quản trị', ds: ganDayLenDau(danhSach.filter(laQuanTri), maGanDay) },
+      { ten: 'Đơn vị báo cáo', ds: ganDayLenDau(danhSach.filter(function (d) { return !laQuanTri(d); }), maGanDay) }
+    ].filter(function (n) { return n.ds.length; });
   }
 
   return {
     locDonVi: locDonVi,
     sapXepDonVi: sapXepDonVi,
     timChinhXac: timChinhXac,
-    tachGanDay: tachGanDay
+    nhomChonNhanh: nhomChonNhanh
   };
 })();

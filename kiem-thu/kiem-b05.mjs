@@ -112,15 +112,23 @@ bai('Tìm đơn vị khớp chính xác tên/mã, không khớp một phần', (
   assert.equal(D.timChinhXac(ds, ''), null);
 });
 
-bai('Cột chọn nhanh: đơn vị gần đây lên hàng đầu, còn lại giữ thứ tự abc', () => {
+bai('Cột chọn nhanh: hai nhóm cố định, trong nhóm gần đây lên đầu rồi abc', () => {
   const sach = (x) => JSON.parse(JSON.stringify(x));
-  const ds = ['A', 'B', 'C', 'D'].map((m) => ({ unitCode: m, unitName: 'Đơn vị ' + m }));
-  const { ganDay, conLai } = sandbox.DON_VI.tachGanDay(ds, ['C', 'KHONG_CO', 'A']);
-  assert.deepEqual(sach(ganDay.map((d) => d.unitCode)), ['C', 'A']);   // đúng thứ tự gần nhất, bỏ mã không còn
-  assert.deepEqual(sach(conLai.map((d) => d.unitCode)), ['B', 'D']);
-  const khong = sandbox.DON_VI.tachGanDay(ds, []);
-  assert.equal(khong.ganDay.length, 0);
-  assert.equal(khong.conLai.length, 4);
+  const ds = [
+    { unitCode: 'Q1', unitName: 'Q1', role: 'Quản trị' },
+    { unitCode: 'Q2', unitName: 'Q2', role: 'Quản lý báo cáo' },
+    { unitCode: 'A', unitName: 'A', role: 'Đơn vị báo cáo' },
+    { unitCode: 'B', unitName: 'B', role: 'Đơn vị báo cáo' },
+    { unitCode: 'C', unitName: 'C', role: 'Đơn vị báo cáo' },
+    { unitCode: 'D', unitName: 'D', role: 'Đơn vị báo cáo' }
+  ];
+  const nhom = sach(sandbox.DON_VI.nhomChonNhanh(ds, ['C', 'KHONG_CO', 'Q2']));
+  assert.deepEqual(nhom.map((n) => n.ten), ['Quản trị', 'Đơn vị báo cáo']);
+  assert.deepEqual(nhom[0].ds.map((d) => d.unitCode), ['Q2', 'Q1']);
+  assert.deepEqual(nhom[1].ds.map((d) => d.unitCode), ['C', 'A', 'B', 'D']);
+  const khongGanDay = sach(sandbox.DON_VI.nhomChonNhanh(ds, []));
+  assert.deepEqual(khongGanDay[1].ds.map((d) => d.unitCode), ['A', 'B', 'C', 'D']);
+  assert.equal(sandbox.DON_VI.nhomChonNhanh([ds[2]], []).length, 1); // bỏ nhóm rỗng
 });
 
 bai('Ghi đơn vị gần đây: mới nhất lên đầu, bỏ trùng, tối đa 2', () => {
