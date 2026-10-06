@@ -2,8 +2,8 @@
 // bcsnn · gas/PhanQuyen.js
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
-// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_)
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 21:41
+// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_)
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 22:47
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị + Gmail của đơn vị quản lý bảng → SỬA.
@@ -258,14 +258,16 @@ function xuLyQtLayDuLieu_(token) {
   return quanTriChay_(token, function (ss) {
     var dv = xuLyLayDonVi_(ss.getId());
     if (!dv.ok) return dv;
+    var gtBang = docTabQuanLy_(ss, 'Bảng'), caiDat = caiDatChoTrang_(gtBang);
     return {
       ok: true,
       donVi: dv.donVi.map(function (d) { return { unitCode: d.unitCode, unitName: d.unitName }; }),
       taiKhoan: docTabQuanLy_(ss, 'Tài khoản').slice(1).filter(function (r) { return r[0]; }).map(function (r) {
         return { email: chuanHoaEmail_(r[0]), unitCode: String(r[1]).trim(), role: String(r[2] || 'Nhập liệu').trim() };
       }),
-      bang: docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) {
-        return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, managerUnits: b.managerUnits };
+      bang: docBangQuanLy_(gtBang).map(function (b) {
+        return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, managerUnits: b.managerUnits,
+          caiDat: caiDat[b.tableCode] };
       }),
       giao: docFileQuanLy_(docTabQuanLy_(ss, 'File')).map(function (f) {
         return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId };

@@ -2,8 +2,8 @@
 // bcsnn · gas/KyBaoCao.js
 // Vai trò  : Kỳ báo cáo — tạo tab kỳ ở mọi file đơn vị của một bảng (thiếu file
 //            thì tạo file), khoá / mở khoá kỳ; sổ kỳ ở tab "Kỳ" của Sheet quản lý
-// Lớp      : gas — gọi bởi: Code.js, B04.js (thử) · gọi: PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 21:41
+// Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử) · gọi: PhanQuyen.js, DangNhap.js
+// Phiên bản: 0.1.1 · Cập nhật: 06/10/2026 22:47
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -221,6 +221,8 @@ function taoTabKy_(ss, mau, caiDat, maDonVi, tenKy) {
   var dongTieuDe = timDongTieuDe_(cotA);
   if (!dongTieuDe) throw new Error('Mẫu ' + caiDat.tableCode + ': không có dòng nào ô A ghi "' + NHAN_COT_A + '"');
   var laTach = caiDat.sourceType === 'gopTach';
+  // Mẫu dựng trên app: dòng trống chưa có chữ nên getLastRow không đếm → bù theo dataRows
+  if (!laTach) while (cotA.length < dongTieuDe + (Number(caiDat.dataRows) || 0)) cotA.push('');
   var giuLai = dongGiuLai_(cotA, dongTieuDe, maDonVi, laTach);
   var dongXoa = khoangSo_(dongTieuDe + 1, cotA.length).filter(function (d) { return giuLai.indexOf(d) < 0; });
   gomDoan_(dongXoa).reverse().forEach(function (doan) { tab.deleteRows(doan[0], doan[1] - doan[0] + 1); });

@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.7.1 · Cập nhật: 06/10/2026 22:16
+// Phiên bản: 0.8.0 · Cập nhật: 06/10/2026 22:47
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -187,8 +187,29 @@ var API = (function () {
     return goi('qtKhoaKy', { token: token, tableCode: tableCode, tenKy: tenKy, khoa: khoa, batDau: batDau }, CHO_LUU);
   }
 
+  /**
+   * Tạo bảng mới: GAS dựng file tổng theo khai báo cột + ghi tab Bảng.
+   * maYeuCau: mã riêng mỗi lần bấm — GAS trả HTML rồi gọi lại thì không tạo hai lần.
+   */
+  function qtTaoBang(token, khai, maYeuCau) {
+    return goi('qtTaoBang', { token: token, khai: khai, maYeuCau: maYeuCau }, CHO_LUU);
+  }
+
+  /** Lưu cài đặt bảng đã có; GAS trả kèm kết quả kiểm mẫu. */
+  function qtLuuBang(token, tableCode, caiDat) {
+    return goi('qtLuuBang', { token: token, tableCode: tableCode, caiDat: caiDat }, CHO_LUU);
+  }
+
+  /** Kiểm file tổng của bảng theo quy ước 5.1 → { kiem: [{cho, loi, cach}] } */
+  function qtKiemMau(token, tableCode) {
+    return goi('qtKiemMau', { token: token, tableCode: tableCode }, CHO_LUU);
+  }
+
   return {
     goi: goi,
+    qtTaoBang: qtTaoBang,
+    qtLuuBang: qtLuuBang,
+    qtKiemMau: qtKiemMau,
     qtLayDuLieu: qtLayDuLieu,
     qtLuuTaiKhoan: qtLuuTaiKhoan,
     qtLuuPhanQuyen: qtLuuPhanQuyen,
