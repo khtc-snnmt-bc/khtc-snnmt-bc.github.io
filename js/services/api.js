@@ -2,11 +2,11 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 21:41
+// Phiên bản: 0.7.1 · Cập nhật: 06/10/2026 22:16
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
-// HTML thay vì JSON → thử lại (so-tay/khoa-ky.md mục K3).
+// HTML thay vì JSON, hoặc chậm quá thời gian chờ → thử lại (so-tay/khoa-ky.md mục K3).
 
 var API = (function () {
   'use strict';
@@ -48,13 +48,15 @@ var API = (function () {
           } catch (e) {
             // GAS trả HTML (lỗi thoảng) → thử lại
             if (soLanThu < soLanMax) return thuMot();
-            throw new Error('GAS trả dữ liệu không đọc được (lần ' + soLanThu + ')');
+            throw new Error('Máy chủ trả lời lỗi. Vui lòng thử lại.');
           }
         })
         .catch(function (err) {
           clearTimeout(timer);
-          if (err.name === 'AbortError') throw new Error('GAS không phản hồi sau ' + (cho / 1000) + ' giây');
+          // Chậm quá thời gian chờ (Google "thức dậy" sau lúc nghỉ) cũng gọi lại;
+          // việc ghi phía GAS đều gọi lại được (so-tay/khoa-ky.md mục K3)
           if (soLanThu < soLanMax) return thuMot();
+          if (err.name === 'AbortError') throw new Error('Máy chủ phản hồi chậm. Vui lòng tải lại trang và thử lại.');
           throw err;
         });
     }
