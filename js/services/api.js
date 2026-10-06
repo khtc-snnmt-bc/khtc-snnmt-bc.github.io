@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.6.1 · Cập nhật: 06/10/2026 21:12
+// Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 21:41
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -175,11 +175,23 @@ var API = (function () {
     return goi('qtLuuPhanQuyen', { token: token, tableCode: tableCode, managerUnits: managerUnits, units: units }, CHO_LUU);
   }
 
+  /** Tạo kỳ (ngay 'yyyy-mm-dd') cho một bảng, từ đơn vị thứ batDau; GAS trả tiepTu nếu chưa xong. */
+  function qtTaoKy(token, tableCode, ngay, batDau) {
+    return goi('qtTaoKy', { token: token, tableCode: tableCode, ngay: ngay, batDau: batDau }, CHO_LUU);
+  }
+
+  /** Khoá (khoa = true) / mở khoá kỳ tenKy ('dd.mm.yyyy') của một bảng, từ file thứ batDau. */
+  function qtKhoaKy(token, tableCode, tenKy, khoa, batDau) {
+    return goi('qtKhoaKy', { token: token, tableCode: tableCode, tenKy: tenKy, khoa: khoa, batDau: batDau }, CHO_LUU);
+  }
+
   return {
     goi: goi,
     qtLayDuLieu: qtLayDuLieu,
     qtLuuTaiKhoan: qtLuuTaiKhoan,
     qtLuuPhanQuyen: qtLuuPhanQuyen,
+    qtTaoKy: qtTaoKy,
+    qtKhoaKy: qtKhoaKy,
     layDanhSachDonVi: layDanhSachDonVi,
     layTaiKhoan: layTaiKhoan,
     timDonViTheoEmail: timDonViTheoEmail,

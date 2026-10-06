@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · js/domains/ky-bao-cao.js
-// Vai trò  : Sinh tên tab cho kỳ báo cáo (tháng/quý/năm/đột xuất), URL iframe, file của bảng
+// Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ + câu báo tạo/khoá kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 21:41
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -31,5 +31,65 @@ var KY_BAO_CAO = (function () {
     return ds.concat(bang.donVi.map(function (d) { return { fileId: d.fileId, nhan: d.unitName || d.unitCode }; }));
   }
 
-  return { taoUrlSheet: taoUrlSheet, dsFileBang: dsFileBang };
+  /** 'dd.mm.yyyy' → số yyyymmdd để xếp; sai dạng → 0. */
+  function soNgayKy(ten) {
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(ten || ''));
+    return m ? Number(m[3] + m[2] + m[1]) : 0;
+  }
+
+  /** Kỳ của một bảng, mới nhất lên đầu. */
+  function kyCuaBang(dsKy, tableCode) {
+    return (dsKy || []).filter(function (k) { return k.tableCode === tableCode; })
+      .sort(function (a, b) { return soNgayKy(b.periodName) - soNgayKy(a.periodName); });
+  }
+
+  /** Ghi trạng thái một kỳ vào danh sách (thêm nếu chưa có) — trả mảng mới. */
+  function datKy(dsKy, tableCode, tenKy, locked) {
+    var co = false;
+    var kq = (dsKy || []).map(function (k) {
+      if (k.tableCode !== tableCode || k.periodName !== tenKy) return k;
+      co = true;
+      return { tableCode: tableCode, periodName: tenKy, locked: locked };
+    });
+    return co ? kq : kq.concat([{ tableCode: tableCode, periodName: tenKy, locked: locked }]);
+  }
+
+  /** Cộng kết quả các lô GAS trả về (tạo / khoá kỳ chạy nhiều lần nối tiếp). */
+  function gopLo(tong, lo) {
+    if (!tong) return lo;
+    var kq = Object.assign({}, lo);
+    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab'].forEach(function (k) {
+      if (k in lo) kq[k] = (tong[k] || 0) + lo[k];
+    });
+    kq.loi = (tong.loi || []).concat(lo.loi || []);
+    if (tong.quyen || lo.quyen) {
+      kq.quyen = { loi: ((tong.quyen && tong.quyen.loi) || []).concat((lo.quyen && lo.quyen.loi) || []) };
+    }
+    return kq;
+  }
+
+  /** Câu báo sau khi tạo kỳ. */
+  function tomTatTaoKy(kq) {
+    if (!kq.tong) return 'Đã ghi kỳ ' + kq.tenKy + '. Bảng chưa giao cho đơn vị nào.';
+    var chu = 'Đã tạo kỳ ' + kq.tenKy + ' cho ' + (kq.daTao + kq.daCo) + '/' + kq.tong + ' đơn vị';
+    if (kq.fileMoi) chu += ' (tạo mới ' + kq.fileMoi + ' file)';
+    return chu + '.' + phanLoi(kq);
+  }
+
+  /** Câu báo sau khi khoá / mở khoá kỳ. */
+  function tomTatKhoaKy(kq) {
+    var chu = (kq.khoa ? 'Đã khoá' : 'Đã mở khoá') + ' kỳ ' + kq.tenKy + ' ở ' + kq.daLam + '/' + kq.tong + ' file.';
+    if (kq.khongCoTab) chu += ' ' + kq.khongCoTab + ' file chưa có tab kỳ này.';
+    return chu + phanLoi(kq);
+  }
+
+  function phanLoi(kq) {
+    var loi = (kq.loi || []).concat((kq.quyen && kq.quyen.loi) || []);
+    return loi.length ? ' Lỗi: ' + loi.join(' · ') : '';
+  }
+
+  return {
+    taoUrlSheet: taoUrlSheet, dsFileBang: dsFileBang,
+    kyCuaBang: kyCuaBang, datKy: datKy, gopLo: gopLo, tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy
+  };
 })();
