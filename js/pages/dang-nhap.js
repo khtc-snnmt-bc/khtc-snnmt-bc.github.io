@@ -1,8 +1,10 @@
 // ============================================================
 // bcsnn · js/pages/dang-nhap.js
 // Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
-// Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.8.0 · Cập nhật: 06/10/2026 13:50
+//            Hai cách, cùng giao diện: index.html — Google xác minh Gmail;
+//            index2.html — tin Gmail đã gõ (cách cũ, giữ tới khi chốt b06h)
+// Lớp      : pages — được gọi bởi: index.html, index2.html · được phép gọi: domains, services, utils, config
+// Phiên bản: 0.9.0 · Cập nhật: 06/10/2026 19:26
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -19,10 +21,15 @@ var PAGE_DANG_NHAP = (function () {
   var elTrang, elInputDonVi, elDsDonVi, elInputLoc, elListChonNhanh, elInputEmail, elDsTaiKhoan;
   var elBtnDangNhap, elThongBao, elBtnQuayLai;
   var onDangNhapThanhCong, onQuayLaiCallback;
+  var laGoogle = false;       // true: Google xác minh Gmail (index.html) · false: tin Gmail đã gõ (index2.html)
 
-  function khoiTao(callbackThanhCong, callbackQuayLai) {
+  /**
+   * @param {object} [tuyChon] — { google: true } bật cách đăng nhập mới
+   */
+  function khoiTao(callbackThanhCong, callbackQuayLai, tuyChon) {
     onDangNhapThanhCong = callbackThanhCong;
     onQuayLaiCallback = callbackQuayLai;
+    laGoogle = !!(tuyChon && tuyChon.google);
 
     elTrang = DOM.$('#trang-dang-nhap');
     elInputDonVi = DOM.$('#input-don-vi');
@@ -218,7 +225,8 @@ var PAGE_DANG_NHAP = (function () {
   function xuLyDangNhap() {
     var email = elInputEmail.value.trim().toLowerCase();
 
-    if (!email) {
+    // Cách Google: chưa gõ Gmail vẫn được — Google cho chọn tài khoản
+    if (!email && !laGoogle) {
       baoLoi('Vui lòng nhập Gmail được cấp quyền nhập liệu.');
       elInputEmail.focus();
       return;
@@ -231,7 +239,14 @@ var PAGE_DANG_NHAP = (function () {
     luotHoiEmail++; // bỏ kết quả tìm đơn vị theo Gmail còn đang chờ
     datTrangThaiNut(true);
 
-    API.dangNhap(email, maDonVi)
+    // Cửa sổ Google phải mở ngay trong lượt bấm → gọi layMaGoogle trước mọi việc chờ
+    var hoi = laGoogle
+      ? API.layMaGoogle(email).then(
+          function (ma) { return API.dangNhapGoogle(ma, maDonVi); },
+          function (err) { return { ok: false, loi: err.message }; })
+      : API.dangNhap(email, maDonVi);
+
+    hoi
       .then(function (res) {
         datTrangThaiNut(false);
         if (!res.ok) {
@@ -239,6 +254,7 @@ var PAGE_DANG_NHAP = (function () {
           baoLoi(res.loi || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
           return;
         }
+        email = res.email || email; // cách Google: Gmail do Google xác nhận
         var thongTinPhien = {
           email: email,
           unitCode: res.unitCode || maDonVi,

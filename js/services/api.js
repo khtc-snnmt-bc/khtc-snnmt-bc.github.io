@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · js/services/api.js
-// Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch
+// Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 11:20
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 19:26
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -79,6 +79,46 @@ var API = (function () {
   }
 
   /**
+   * Mở cửa sổ Google để người dùng chứng minh là chủ Gmail → access token.
+   * PHẢI gọi ngay trong sự kiện bấm nút (không chờ gì trước), kẻo trình duyệt chặn cửa sổ.
+   * @param {string} goiY — Gmail đã gõ (Google điền sẵn), có thể trống
+   * @returns {Promise<string>}
+   */
+  function layMaGoogle(goiY) {
+    return new Promise(function (resolve, reject) {
+      var g = window.google;
+      if (!g || !g.accounts || !g.accounts.oauth2) {
+        reject(new Error('Chưa tải xong phần đăng nhập Google. Vui lòng tải lại trang.'));
+        return;
+      }
+      g.accounts.oauth2.initTokenClient({
+        client_id: CAU_HINH.GOOGLE_CLIENT_ID,
+        scope: 'openid email',
+        hint: goiY || '',
+        prompt: goiY ? '' : 'select_account', // chưa gõ Gmail → luôn cho chọn tài khoản
+        callback: function (res) {
+          if (res && res.access_token) resolve(res.access_token);
+          else reject(new Error('Google chưa xác nhận tài khoản. Vui lòng thử lại.'));
+        },
+        error_callback: function (err) {
+          var dong = err && (err.type === 'popup_closed' || err.type === 'popup_failed_to_open');
+          reject(new Error(dong
+            ? 'Cửa sổ đăng nhập Google đã đóng hoặc bị chặn. Vui lòng bấm Đăng nhập lại.'
+            : 'Không đăng nhập được Google. Vui lòng thử lại.'));
+        }
+      }).requestAccessToken();
+    });
+  }
+
+  /**
+   * Đăng nhập cách mới: GAS lấy Gmail từ mã Google, không tin Gmail gửi lên.
+   * @returns {Promise<object>} như dangNhap, kèm email đã xác minh
+   */
+  function dangNhapGoogle(accessToken, unitCode) {
+    return goi('dangNhapGoogle', { accessToken: accessToken, unitCode: unitCode });
+  }
+
+  /**
    * Tài khoản được phân công của MỘT đơn vị (GAS không trả toàn bộ một lần).
    * @returns {Promise<object>} { ok, emails: [string] }
    */
@@ -113,6 +153,8 @@ var API = (function () {
     layTaiKhoan: layTaiKhoan,
     timDonViTheoEmail: timDonViTheoEmail,
     dangNhap: dangNhap,
+    layMaGoogle: layMaGoogle,
+    dangNhapGoogle: dangNhapGoogle,
     quanTriDangNhap: quanTriDangNhap,
     quanTriDangXuat: quanTriDangXuat
   };

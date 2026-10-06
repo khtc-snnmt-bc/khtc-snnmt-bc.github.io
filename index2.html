@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <!-- ============================================================
-bcsnn · index.html
-Vai trò  : Trang chính WebApp Báo cáo định kỳ Sở NN&MT
-           Đăng nhập: bấm Đăng nhập → Google xác minh Gmail (cách cũ ở index2.html)
+bcsnn · index2.html
+Vai trò  : Trang chính — CÁCH ĐĂNG NHẬP CŨ (tin Gmail đã gõ, không hỏi Google).
+           Bản sao index.html trước b06g, giữ để so sánh tới khi chốt b06h.
 Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 1: Điều hướng các lĩnh vực báo cáo
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
            Trang quản trị (pptx trang 4) là file riêng quantri.html
-Phiên bản: 0.10.0 · Cập nhật: 06/10/2026 19:26
+Phiên bản: 0.9.0 · Cập nhật: 06/10/2026 11:25
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -162,8 +162,6 @@ Phiên bản: 0.10.0 · Cập nhật: 06/10/2026 19:26
   <script src="js/pages/dieu-huong.js"></script>
   <script src="js/pages/dang-nhap.js"></script>
   <script src="js/pages/nhap-lieu.js"></script>
-  <!-- Thư viện đăng nhập của Google — ngoại lệ CDN duy nhất (AGENTS.md mục 3) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <script>
     // Bootstrap điều khiển luồng 3 trang
@@ -192,8 +190,7 @@ Phiên bản: 0.10.0 · Cập nhật: 06/10/2026 19:26
           function () { // Bấm nút Quay lại -> về Trang 1
             PAGE_DANG_NHAP.an();
             PAGE_DIEU_HUONG.hien();
-          },
-          { google: true }
+          }
         );
 
         // Khởi tạo Trang 3: Nhập liệu

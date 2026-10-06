@@ -2,7 +2,7 @@
 // bcsnn · js/config/cau-hinh.js
 // Vai trò  : Hằng số cấu hình duy nhất — chủ dự án sửa tay file này
 // Lớp      : config — không gọi ai
-// Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:25
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 19:26
 // ============================================================
 // ⚠ KHÔNG ghi ID file, Gmail thật vào đây — repo Public!
 // Chủ dự án: dán URL web app GAS vào dòng GAS_URL bên dưới.
@@ -16,6 +16,9 @@ var CAU_HINH = {
 
   // Số lần thử lại khi GAS trả lỗi (HTML thay vì JSON)
   GAS_THU_LAI: 2,
+
+  // Client ID "Đăng nhập bằng Google" (mã công khai, không phải bí mật)
+  GOOGLE_CLIENT_ID: '237899473140-bqtoitjtpstbv9hu0j0jsdljfnn4hpv2.apps.googleusercontent.com',
 
   // Lấy URL GAS: ưu tiên biến cấu hình, sau đó tới localStorage, rồi URL hash #gas=
   layGasUrl: function () {
