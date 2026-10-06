@@ -2,11 +2,11 @@
 // bcsnn · js/domains/phien-dang-nhap.js
 // Vai trò  : Nghiệp vụ thuần: phiên đăng nhập + phiên quản trị (sessionStorage), đơn vị gần đây
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 11:20
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 13:50
 // ============================================================
 // Phiên chỉ giữ tới khi đóng tab (sessionStorage — người dùng có thể đăng nhập
-// Gmail khác ở tab khác). Chỉ danh sách đơn vị gần đây dùng localStorage, và
-// chỉ lưu mã đơn vị, không lưu Gmail.
+// Gmail khác ở tab khác). localStorage chỉ giữ mã đơn vị gần đây và vài Gmail
+// đăng nhập gần đây (để gợi ý, theo từng trình duyệt) — không lưu mật khẩu.
 
 var PHIEN = (function () {
   'use strict';
@@ -39,9 +39,9 @@ var PHIEN = (function () {
   var TOI_DA_GAN_DAY = 2; // vừa đủ một hàng 2 cột ở cột chọn nhanh
 
   /** Hàm thuần: đưa mã vừa dùng lên đầu, bỏ trùng, giữ tối đa TOI_DA_GAN_DAY */
-  function themGanDay(danhSach, ma) {
+  function themGanDay(danhSach, ma, toiDa) {
     var kq = [ma].concat((danhSach || []).filter(function (m) { return m !== ma; }));
-    return kq.slice(0, TOI_DA_GAN_DAY);
+    return kq.slice(0, toiDa || TOI_DA_GAN_DAY);
   }
 
   function docGanDay() {
@@ -54,6 +54,24 @@ var PHIEN = (function () {
   function ghiGanDay(ma) {
     try {
       localStorage.setItem(KHOA_GAN_DAY, JSON.stringify(themGanDay(docGanDay(), ma)));
+    } catch (e) { /* chế độ riêng tư: bỏ qua */ }
+  }
+
+  // ---------- Gmail đăng nhập gần đây (gợi ý ở ô Người nhập) ----------
+
+  var KHOA_EMAIL = 'bcsnn_email_gan_day';
+  var TOI_DA_EMAIL = 5;
+
+  function docEmailGanDay() {
+    try {
+      var ds = JSON.parse(localStorage.getItem(KHOA_EMAIL) || '[]');
+      return Array.isArray(ds) ? ds : [];
+    } catch (e) { return []; }
+  }
+
+  function ghiEmailGanDay(email) {
+    try {
+      localStorage.setItem(KHOA_EMAIL, JSON.stringify(themGanDay(docEmailGanDay(), email, TOI_DA_EMAIL)));
     } catch (e) { /* chế độ riêng tư: bỏ qua */ }
   }
 
@@ -92,6 +110,7 @@ var PHIEN = (function () {
 
   return {
     luu: luu, doc: doc, xoa: xoa, themGanDay: themGanDay, docGanDay: docGanDay, ghiGanDay: ghiGanDay,
+    docEmailGanDay: docEmailGanDay, ghiEmailGanDay: ghiEmailGanDay,
     laQuanTri: laQuanTri, conHanQuanTri: conHanQuanTri, luuQuanTri: luuQuanTri, docQuanTri: docQuanTri, xoaQuanTri: xoaQuanTri
   };
 })();

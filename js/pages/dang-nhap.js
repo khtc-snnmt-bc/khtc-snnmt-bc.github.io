@@ -2,7 +2,7 @@
 // bcsnn · js/pages/dang-nhap.js
 // Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 13:33
+// Phiên bản: 0.8.0 · Cập nhật: 06/10/2026 13:50
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -36,6 +36,7 @@ var PAGE_DANG_NHAP = (function () {
     elBtnQuayLai = DOM.$('#btn-quay-lai-dieu-huong');
 
     ganSuKien();
+    xoaDanhSachTaiKhoan();
     taiDanhSachDonVi();
   }
 
@@ -135,10 +136,11 @@ var PAGE_DANG_NHAP = (function () {
     var maDangChon = donViDangChon ? donViDangChon.unitCode : '';
     // Hai nhóm Quản trị / Đơn vị báo cáo; trong nhóm, đơn vị dùng gần đây lên đầu (ngầm)
     DON_VI.nhomChonNhanh(ds, PHIEN.docGanDay()).forEach(function (nhom) {
-      elListChonNhanh.appendChild(DOM.tao('li', { class: 'quick-group-label' }, nhom.ten));
+      var lop = nhom.ten === 'Quản trị' ? ' nhom-quan-tri' : ' nhom-don-vi';
+      elListChonNhanh.appendChild(DOM.tao('li', { class: 'quick-group-label' + lop }, nhom.ten));
       nhom.ds.forEach(function (dv) {
         var li = DOM.tao('li', {
-          class: 'quick-unit-item' + (dv.unitCode === maDangChon ? ' selected' : ''),
+          class: 'quick-unit-item' + lop + (dv.unitCode === maDangChon ? ' selected' : ''),
           'data-code': dv.unitCode
         }, dv.unitName);
         li.addEventListener('click', function () { chonDonVi(dv, true); });
@@ -169,8 +171,9 @@ var PAGE_DANG_NHAP = (function () {
     if (doiDonVi) taiTaiKhoanCuaDonVi(dv.unitCode);
   }
 
+  // Hộp xổ ở ô Gmail: Gmail của đơn vị đang chọn (nếu có) rồi tới Gmail đã đăng nhập gần đây
   function xoaDanhSachTaiKhoan() {
-    elDsTaiKhoan.innerHTML = '';
+    napDatalistTaiKhoan([]);
   }
 
   function taiTaiKhoanCuaDonVi(unitCode) {
@@ -188,8 +191,9 @@ var PAGE_DANG_NHAP = (function () {
   }
 
   function napDatalistTaiKhoan(dsEmail) {
-    xoaDanhSachTaiKhoan();
-    dsEmail.forEach(function (email) {
+    elDsTaiKhoan.innerHTML = '';
+    var tatCa = dsEmail.concat(PHIEN.docEmailGanDay().filter(function (e) { return dsEmail.indexOf(e) < 0; }));
+    tatCa.forEach(function (email) {
       elDsTaiKhoan.appendChild(DOM.tao('option', { value: email }));
     });
   }
@@ -244,6 +248,8 @@ var PAGE_DANG_NHAP = (function () {
         };
         PHIEN.luu(thongTinPhien);
         PHIEN.ghiGanDay(thongTinPhien.unitCode);
+        PHIEN.ghiEmailGanDay(email);
+        napDatalistTaiKhoan([]);
         an();
         if (typeof onDangNhapThanhCong === 'function') onDangNhapThanhCong(thongTinPhien);
       })

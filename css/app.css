@@ -494,6 +494,14 @@ body {
   transition: background 0.12s;
 }
 
+/* Hai nhóm tô nền khác nhau để phân biệt: Quản trị (xanh dương nhạt) · Đơn vị báo cáo (xanh lá nhạt) */
+.quick-group-label.nhom-quan-tri { background: #d6e4f5; color: #1f4e79; }
+.quick-group-label.nhom-don-vi   { background: #d8f3dc; color: var(--xd); }
+.quick-unit-item.nhom-quan-tri   { background: #eef4fb; }
+.quick-unit-item.nhom-don-vi     { background: #f3fbf5; }
+.quick-unit-item.nhom-quan-tri:hover { background: #dbe8f7; }
+.quick-unit-item.nhom-don-vi:hover   { background: var(--xp); }
+
 .quick-unit-item:hover {
   background: var(--xp);
 }
@@ -503,6 +511,11 @@ body {
   color: #ffffff;
   font-weight: 600;
   border-left-color: var(--xn);
+}
+
+.quick-unit-item.selected.nhom-quan-tri,
+.quick-unit-item.selected.nhom-don-vi {
+  background: var(--xd);
 }
 
 .quick-unit-item.muted {
