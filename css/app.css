@@ -822,6 +822,50 @@ a.sidebar-btn {
   gap: 8px;
 }
 
+/* Tài khoản: mỗi đơn vị một khối */
+.qt-khung:has(.qt-luoi-khoi) { max-width: 1200px; }
+
+.qt-loc { max-width: 360px; margin-bottom: 16px; }
+
+.qt-luoi-khoi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.qt-khoi {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.qt-khoi-dau {
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--xd);
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+}
+
+.qt-khoi .qt-ds-gmail { margin: 0; padding: 12px 14px 0; }
+.qt-khoi .qt-ds-gmail:empty { display: none; }
+.qt-khoi .form-control { padding: 7px 10px; font-size: 13.5px; }
+.qt-khoi .qt-gmail { grid-template-columns: 1fr 160px 34px; }
+.qt-khoi .alert { margin: 0 14px 12px; }
+
+.qt-khoi-chan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 12px;
+}
+
+.qt-khoi-chan .qt-nut-luu { margin-top: 0; min-width: 100px; padding: 7px 18px; }
+
 .qt-gmail {
   display: grid;
   grid-template-columns: 1fr 180px 36px;
@@ -892,7 +936,8 @@ a.sidebar-btn {
   .qt-khoa { align-items: flex-start; }
   .qt-khung { padding: 16px 14px 24px; }
   .qt-dong { grid-template-columns: 1fr; gap: 6px; }
-  .qt-gmail { grid-template-columns: 1fr 36px; }
+  .qt-luoi-khoi { grid-template-columns: 1fr; }
+  .qt-gmail, .qt-khoi .qt-gmail { grid-template-columns: 1fr 36px; }
   .qt-gmail select { grid-row: 2; }
 }
 

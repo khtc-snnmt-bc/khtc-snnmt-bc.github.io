@@ -3,7 +3,7 @@
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Tài khoản (Gmail theo đơn vị) và Phân quyền (giao bảng, đơn vị quản lý)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 21:03
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -23,7 +23,7 @@ var PAGE_QUAN_TRI = (function () {
   var phien, elMenu, elTieuDe, elKhoa, elNoiDung, elThongBao, elMatKhau, elNut;
   var duLieu = null;          // { donVi, taiKhoan, bang, giao } từ GAS
   var mucDangChon = MUC[0];
-  var chon = { donVi: '', bang: '' };
+  var chon = { bang: '' };
 
   function khoiTao() {
     phien = PHIEN.doc();
@@ -218,40 +218,67 @@ var PAGE_QUAN_TRI = (function () {
 
   // ---------- Tài khoản ----------
 
+  // Mỗi đơn vị một khối: dòng đầu tên đơn vị, dưới là Gmail. Khối nào sửa thì
+  // hiện nút Lưu của khối đó; lưu xong chỉ vẽ lại khối đó (khối khác giữ phần đang sửa).
   function veTaiKhoan(khung) {
-    if (!chon.donVi) chon.donVi = phien.unitCode;
-    var selDv = oChon(luaChonDonVi(), chon.donVi);
-    selDv.addEventListener('change', function () { chon.donVi = selDv.value; veNoiDung(); });
-    khung.appendChild(dong('Đơn vị', selDv));
+    var loc = khung.appendChild(DOM.tao('input', { type: 'search', class: 'form-control qt-loc', placeholder: 'Lọc đơn vị…' }));
+    var luoi = khung.appendChild(DOM.tao('div', { class: 'qt-luoi-khoi' }));
+    duLieu.donVi.forEach(function (d) { luoi.appendChild(veKhoiTaiKhoan(d)); });
+    loc.addEventListener('input', function () {
+      var hien = PHAN_QUYEN.locDonVi(duLieu.donVi, loc.value).map(function (d) { return d.unitCode; });
+      DOM.$$('.qt-khoi', luoi).forEach(function (el) {
+        DOM.batTat(el, 'an', hien.indexOf(el.getAttribute('data-ma')) < 0);
+      });
+    });
+  }
 
-    var ds = PHAN_QUYEN.taiKhoanCuaDonVi(duLieu.taiKhoan, chon.donVi);
-    var bang = khung.appendChild(DOM.tao('div', { class: 'qt-ds-gmail' }));
+  function veKhoiTaiKhoan(d) {
+    var khoi = DOM.tao('section', { class: 'qt-khoi', 'data-ma': d.unitCode });
+    khoi.appendChild(DOM.tao('div', { class: 'qt-khoi-dau' }, d.unitName));
+    var ds = khoi.appendChild(DOM.tao('div', { class: 'qt-ds-gmail' }));
+    var chan = khoi.appendChild(DOM.tao('div', { class: 'qt-khoi-chan' }));
+    var them = chan.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm Gmail'));
+    var nut = chan.appendChild(DOM.tao('button', { type: 'button', class: 'btn-login-main qt-nut-luu an' }, 'Lưu'));
+    var bao = khoi.appendChild(DOM.tao('div'));
+
+    function daSua() { DOM.hien(nut); bao.innerHTML = ''; }
 
     function themDong(tk) {
-      var hang = bang.appendChild(DOM.tao('div', { class: 'qt-gmail' }));
+      var hang = ds.appendChild(DOM.tao('div', { class: 'qt-gmail' }));
       var o = hang.appendChild(DOM.tao('input', { type: 'email', class: 'form-control', placeholder: 'Gmail', value: tk.email || '' }));
-      var vaiTro = hang.appendChild(oChon(PHAN_QUYEN.VAI_TRO.map(function (v) { return { giaTri: v, nhan: v }; }),
+      hang.appendChild(oChon(PHAN_QUYEN.VAI_TRO.map(function (v) { return { giaTri: v, nhan: v }; }),
         tk.role || PHAN_QUYEN.VAI_TRO[0]));
       var xoa = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-xoa', title: 'Gỡ Gmail này' }, '×'));
-      xoa.addEventListener('click', function () { hang.remove(); });
+      xoa.addEventListener('click', function () { hang.remove(); daSua(); });
       return o;
     }
-    ds.forEach(themDong);
+    PHAN_QUYEN.taiKhoanCuaDonVi(duLieu.taiKhoan, d.unitCode).forEach(themDong);
+    ds.addEventListener('input', daSua);
+    ds.addEventListener('change', daSua);
+    them.addEventListener('click', function () { themDong({}).focus(); daSua(); });
 
-    var them = khung.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm Gmail'));
-    them.addEventListener('click', function () { themDong({}).focus(); });
-
-    nutLuu(khung, function () {
-      var dsMoi = DOM.$$('.qt-gmail', bang).map(function (h) {
+    nut.addEventListener('click', function () {
+      var dsMoi = DOM.$$('.qt-gmail', ds).map(function (h) {
         return { email: DOM.$('input', h).value.trim(), role: DOM.$('select', h).value };
       }).filter(function (t) { return t.email; });
-      return API.qtLuuTaiKhoan(token(), chon.donVi, dsMoi).then(function (res) {
-        if (res && res.ok) res.dsMoi = dsMoi;
-        return res;
-      });
-    }, function (res) {
-      duLieu.taiKhoan = PHAN_QUYEN.thayTaiKhoan(duLieu.taiKhoan, chon.donVi, res.dsMoi);
+      nut.disabled = true;
+      nut.innerHTML = '<span class="spinner"></span>Đang lưu…';
+      bao.innerHTML = '';
+      API.qtLuuTaiKhoan(token(), d.unitCode, dsMoi)
+        .then(kiemPhien)
+        .then(function (res) {
+          duLieu.taiKhoan = PHAN_QUYEN.thayTaiKhoan(duLieu.taiKhoan, d.unitCode, dsMoi);
+          var moi = veKhoiTaiKhoan(d);
+          khoi.replaceWith(moi);
+          moi.appendChild(thongBao(PHAN_QUYEN.tomTatLuu(res, tenDonVi), res.quyen && res.quyen.loi.length));
+        })
+        .catch(function (err) {
+          bao.appendChild(thongBao(err.message, true));
+          nut.disabled = false;
+          nut.textContent = 'Lưu';
+        });
     });
+    return khoi;
   }
 
   // ---------- Phân quyền ----------
