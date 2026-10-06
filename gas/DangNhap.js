@@ -2,7 +2,7 @@
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
 // Lớp      : gas backend — đọc Sheet quản lý, trả JSON
-// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 19:26
+// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 20:11
 // ============================================================
 
 /**
@@ -260,5 +260,14 @@ function xuLyDangNhap_(quanLyId, email, unitCode) {
 function xuLyDangNhapGoogle_(quanLyId, accessToken, unitCode) {
   var xm = xacMinhMaTruyCap_(accessToken);
   if (!xm.ok) return xm;
-  return xuLyDangNhap_(quanLyId, xm.email, unitCode);
+  var kq = xuLyDangNhap_(quanLyId, xm.email, unitCode);
+  if (kq.ok) kq.ve = taoVe_(xm.email, kyTenVe_); // trình duyệt nhớ, lần sau vào thẳng
+  return kq;
+}
+
+/** Mở lại bằng vé đã nhớ: kiểm chữ ký rồi kiểm Tài khoản như đăng nhập thường. */
+function xuLyDangNhapVe_(quanLyId, ve, unitCode) {
+  var email = docVe_(ve, kyTenVe_);
+  if (!email) return { ok: false, loi: 'Vé đăng nhập không hợp lệ, vui lòng đăng nhập lại.' };
+  return xuLyDangNhap_(quanLyId, email, unitCode);
 }

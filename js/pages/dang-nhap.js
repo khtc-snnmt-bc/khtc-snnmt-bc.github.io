@@ -4,7 +4,7 @@
 //            Hai cách, cùng giao diện: index.html — Google xác minh Gmail;
 //            index2.html — tin Gmail đã gõ (cách cũ, giữ tới khi chốt b06h)
 // Lớp      : pages — được gọi bởi: index.html, index2.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.9.0 · Cập nhật: 06/10/2026 19:26
+// Phiên bản: 0.10.0 · Cập nhật: 06/10/2026 20:11
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -263,6 +263,7 @@ var PAGE_DANG_NHAP = (function () {
           tables: res.tables || []
         };
         PHIEN.luu(thongTinPhien);
+        if (res.ve) PHIEN.luuNho(thongTinPhien, res.ve);
         PHIEN.ghiGanDay(thongTinPhien.unitCode);
         PHIEN.ghiEmailGanDay(email);
         napDatalistTaiKhoan([]);
@@ -275,6 +276,29 @@ var PAGE_DANG_NHAP = (function () {
       });
   }
 
+  /**
+   * Mở bằng vé nhớ: trang đã vào thẳng bằng dữ liệu nhớ, giờ hỏi GAS ngầm.
+   * @param {function(object)} khiDoi — danh sách bảng đã đổi → vẽ lại
+   * @param {function()} khiHong — GAS không nhận vé / Gmail đã bị gỡ → về đăng nhập
+   */
+  function lamMoiTuVe(nho, khiDoi, khiHong) {
+    API.dangNhapVe(nho.ve, nho.phien.unitCode)
+      .then(function (res) {
+        if (!res.ok) { PHIEN.xoa(); khiHong(); return; }
+        var moi = {
+          email: res.email || nho.phien.email,
+          unitCode: res.unitCode,
+          unitName: res.unitName || res.unitCode,
+          role: res.role || 'Nhập liệu',
+          tables: res.tables || []
+        };
+        PHIEN.luu(moi);
+        PHIEN.luuNho(moi, nho.ve);
+        if (JSON.stringify(moi) !== JSON.stringify(nho.phien)) khiDoi(moi);
+      })
+      .catch(function () { /* mất mạng: cứ dùng dữ liệu nhớ */ });
+  }
+
   function hien() {
     DOM.hien(elTrang);
     if (!dsDonViGoc.length) taiDanhSachDonVi();
@@ -284,5 +308,5 @@ var PAGE_DANG_NHAP = (function () {
     DOM.an(elTrang);
   }
 
-  return { khoiTao: khoiTao, hien: hien, an: an };
+  return { khoiTao: khoiTao, hien: hien, an: an, lamMoiTuVe: lamMoiTuVe };
 })();

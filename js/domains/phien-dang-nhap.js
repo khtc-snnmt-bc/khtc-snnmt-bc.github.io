@@ -1,12 +1,13 @@
 // ============================================================
 // bcsnn · js/domains/phien-dang-nhap.js
-// Vai trò  : Nghiệp vụ thuần: phiên đăng nhập + phiên quản trị (sessionStorage), đơn vị gần đây
+// Vai trò  : Nghiệp vụ thuần: phiên đăng nhập + phiên quản trị (sessionStorage), đơn vị gần đây,
+//            vé nhớ đăng nhập (localStorage)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 13:50
+// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 20:11
 // ============================================================
-// Phiên chỉ giữ tới khi đóng tab (sessionStorage — người dùng có thể đăng nhập
-// Gmail khác ở tab khác). localStorage chỉ giữ mã đơn vị gần đây và vài Gmail
-// đăng nhập gần đây (để gợi ý, theo từng trình duyệt) — không lưu mật khẩu.
+// Phiên giữ tới khi đóng tab (sessionStorage). localStorage giữ mã đơn vị gần
+// đây, vài Gmail đăng nhập gần đây (để gợi ý) và vé nhớ đăng nhập của cách
+// Google — không lưu mật khẩu.
 
 var PHIEN = (function () {
   'use strict';
@@ -28,9 +29,27 @@ var PHIEN = (function () {
     } catch (e) { return null; }
   }
 
-  /** Xoá phiên (đăng xuất) */
+  /** Xoá phiên (đăng xuất) — xoá luôn vé nhớ đăng nhập */
   function xoa() {
     try { sessionStorage.removeItem(KHOA); } catch (e) { /* ok */ }
+    try { localStorage.removeItem(KHOA_NHO); } catch (e) { /* ok */ }
+  }
+
+  // ---------- Nhớ đăng nhập (chỉ cách Google — index.html) ----------
+  // Vé do GAS ký, không hạn; mở lại trang là vào thẳng. Đăng xuất thì xoá.
+
+  var KHOA_NHO = 'bcsnn_nho';
+
+  function luuNho(phien, ve) {
+    try { localStorage.setItem(KHOA_NHO, JSON.stringify({ ve: ve, phien: phien })); } catch (e) { /* riêng tư: bỏ qua */ }
+  }
+
+  /** @returns {{ve: string, phien: object}|null} */
+  function docNho() {
+    try {
+      var nho = JSON.parse(localStorage.getItem(KHOA_NHO) || 'null');
+      return nho && nho.ve && nho.phien && nho.phien.email ? nho : null;
+    } catch (e) { return null; }
   }
 
   // ---------- Đơn vị truy cập gần đây (theo từng trình duyệt, chỉ lưu mã đơn vị) ----------
@@ -109,7 +128,7 @@ var PHIEN = (function () {
   }
 
   return {
-    luu: luu, doc: doc, xoa: xoa, themGanDay: themGanDay, docGanDay: docGanDay, ghiGanDay: ghiGanDay,
+    luu: luu, doc: doc, xoa: xoa, luuNho: luuNho, docNho: docNho, themGanDay: themGanDay, docGanDay: docGanDay, ghiGanDay: ghiGanDay,
     docEmailGanDay: docEmailGanDay, ghiEmailGanDay: ghiEmailGanDay,
     laQuanTri: laQuanTri, conHanQuanTri: conHanQuanTri, luuQuanTri: luuQuanTri, docQuanTri: docQuanTri, xoaQuanTri: xoaQuanTri
   };
