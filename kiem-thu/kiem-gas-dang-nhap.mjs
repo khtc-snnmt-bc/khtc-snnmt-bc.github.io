@@ -64,6 +64,8 @@ bai('Kiểm tra tài khoản sai bị từ chối', () => {
 
   const kqSaiDonVi = h.kiemTraTaiKhoan_(mauTaiKhoan, 'thu1@example.com', 'BQLDA.Khac');
   assert.equal(kqSaiDonVi.hopLe, false);
+  assert.match(kqSaiDonVi.loi, /không thuộc đơn vị đã chọn/);
+  assert.match(kqSaiEmail.loi, /chưa được cấp quyền/);
 
   const kqRong = h.kiemTraTaiKhoan_(mauTaiKhoan, '', '');
   assert.equal(kqRong.hopLe, false);

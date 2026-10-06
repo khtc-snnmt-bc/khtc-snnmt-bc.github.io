@@ -61,9 +61,15 @@ function kiemTraTaiKhoan_(dsTaiKhoan, email, unitCode) {
     }
   }
 
+  // Phân biệt: Gmail có trong hệ thống nhưng ở đơn vị khác ↔ Gmail chưa được cấp quyền ở đâu cả
+  var coODonViKhac = dsTaiKhoan.some(function (row, i) {
+    return i > 0 && String(row[0] || '').toLowerCase().trim() === em;
+  });
   return {
     hopLe: false,
-    loi: 'Tài khoản Gmail "' + em + '" chưa được phân quyền cho đơn vị đã chọn.'
+    loi: coODonViKhac
+      ? 'Gmail "' + em + '" không thuộc đơn vị đã chọn. Hãy xoá ô đơn vị rồi đăng nhập lại để hệ thống tự nhận đơn vị.'
+      : 'Gmail "' + em + '" chưa được cấp quyền nhập liệu. Vui lòng liên hệ Phòng KHTC để được cấp quyền.'
   };
 }
 
