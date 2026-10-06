@@ -13,7 +13,7 @@ const doc = (f) => readFileSync(new URL('../gas/' + f, import.meta.url), 'utf8')
 const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') +
-  '\n;this.ham = { byteSangHex_, bamMatKhau_, soSanhDeu_, laTaiKhoanQuanTri_, phienHopLe_ };', sandbox);
+  '\n;this.ham = { byteSangHex_, bamMatKhau_, chuanHoaMatKhau_, soSanhDeu_, laTaiKhoanQuanTri_, phienHopLe_ };', sandbox);
 const h = sandbox.ham;
 const sha = (s) => createHash('sha256').update(s, 'utf8').digest('hex');
 
@@ -33,6 +33,13 @@ bai('bamMatKhau_ đúng công thức lặp', () => {
   assert.equal(h.bamMatKhau_('muoi', 'matkhau123', 3, sha), mong);
   assert.notEqual(h.bamMatKhau_('muoi', 'matkhau123', 3, sha), h.bamMatKhau_('muoi2', 'matkhau123', 3, sha));
   assert.equal(h.bamMatKhau_('m', 'Mật khẩu có dấu', 1, sha), sha('mMật khẩu có dấu'));
+});
+
+bai('chuanHoaMatKhau_ bỏ khoảng trắng hai đầu, gộp dạng dấu', () => {
+  assert.equal(h.chuanHoaMatKhau_('  abc123 \n'), 'abc123');
+  assert.equal(h.chuanHoaMatKhau_('Đà'), 'Đà'); // dấu tổ hợp → dựng sẵn
+  assert.equal(h.chuanHoaMatKhau_('a b'), 'a b');
+  assert.equal(h.chuanHoaMatKhau_(null), '');
 });
 
 bai('soSanhDeu_', () => {

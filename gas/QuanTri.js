@@ -2,7 +2,7 @@
 // bcsnn · gas/QuanTri.js
 // Vai trò  : Mật khẩu quản trị (băm SHA-256 + muối) và phiên quản trị
 // Lớp      : gas — gọi bởi: Code.js · gọi: DangNhap.js (kiemTraTaiKhoan_)
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 11:00
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 12:55
 // ============================================================
 // Một mật khẩu chung cho mọi tài khoản vai trò "Quản trị" (KIEN-TRUC.md mục 4).
 // Script Properties: QT_MUOI, QT_BAM (băm), QT_DOT (đổi mật khẩu → phiên cũ hết).
@@ -40,6 +40,11 @@ function bamMatKhau_(muoi, matKhau, soVong, bam) {
   return h;
 }
 
+/** Bỏ khoảng trắng hai đầu, gộp dấu tiếng Việt về một dạng (NFC) — dán/gõ khác nhau vẫn khớp. */
+function chuanHoaMatKhau_(matKhau) {
+  return String(matKhau || '').normalize('NFC').trim();
+}
+
 /** So hai chuỗi không dừng sớm — tránh đoán dần qua thời gian trả lời. */
 function soSanhDeu_(a, b) {
   a = String(a); b = String(b);
@@ -73,7 +78,7 @@ function maNgauNhien_() {
 /** CHẠY TAY trong trình soạn Apps Script để đặt / đổi mật khẩu quản trị. */
 function datMatKhauQuanTri() {
   var p = PropertiesService.getScriptProperties();
-  var moi = p.getProperty('QT_MAT_KHAU_MOI');
+  var moi = chuanHoaMatKhau_(p.getProperty('QT_MAT_KHAU_MOI'));
   if (!moi) throw new Error('Chưa có thuộc tính QT_MAT_KHAU_MOI trong Cài đặt dự án → Thuộc tính tập lệnh');
   p.deleteProperty('QT_MAT_KHAU_MOI');
   if (moi.length < QT_DO_DAI_TOI_THIEU) {
@@ -88,7 +93,8 @@ function xuLyQuanTriDangNhap_(quanLyId, email, unitCode, matKhau) {
   if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
   var em = String(email || '').toLowerCase().trim();
   var cache = CacheService.getScriptCache();
-  var khoaSai = 'qt_sai_' + em;
+  var p = PropertiesService.getScriptProperties();
+  var khoaSai = 'qt_sai_' + p.getProperty('QT_DOT') + '_' + em; // đặt lại mật khẩu → bộ đếm mới
   var soSai = Number(cache.get(khoaSai) || 0);
   if (soSai >= QT_SAI_TOI_DA) return { ok: false, loi: 'Nhập sai quá nhiều lần. Thử lại sau 15 phút.' };
 
@@ -101,12 +107,11 @@ function xuLyQuanTriDangNhap_(quanLyId, email, unitCode, matKhau) {
     return { ok: false, loi: 'Lỗi đọc tài khoản: ' + String(err) };
   }
 
-  var p = PropertiesService.getScriptProperties();
   var muoi = p.getProperty('QT_MUOI');
   var bamLuu = p.getProperty('QT_BAM');
   if (!muoi || !bamLuu) return { ok: false, loi: 'Chưa đặt mật khẩu quản trị.' };
 
-  if (!soSanhDeu_(bamMatKhau_(muoi, matKhau || '', QT_SO_VONG, bamSha256_), bamLuu)) {
+  if (!soSanhDeu_(bamMatKhau_(muoi, chuanHoaMatKhau_(matKhau), QT_SO_VONG, bamSha256_), bamLuu)) {
     cache.put(khoaSai, String(soSai + 1), QT_KHOA_GIAY);
     return { ok: false, loi: 'Mật khẩu không đúng.' };
   }
