@@ -2,7 +2,7 @@
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:45
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 07:25
 // ============================================================
 
 var PAGE_NHAP_LIEU = (function () {
@@ -92,10 +92,7 @@ var PAGE_NHAP_LIEU = (function () {
         'data-table-code': b.tableCode
       });
 
-      var spanIcon = DOM.tao('span', {}, '📊');
-      var spanTen = DOM.tao('span', {}, b.tableName || b.tableCode);
-      li.appendChild(spanIcon);
-      li.appendChild(spanTen);
+      li.appendChild(DOM.tao('span', {}, b.tableName || b.tableCode));
 
       li.addEventListener('click', function () {
         chonBang(b, li);

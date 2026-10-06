@@ -6,7 +6,7 @@ Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 1: Điều hướng các lĩnh vực báo cáo
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
-Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 06:02
+Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 07:25
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -16,19 +16,6 @@ Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 06:02
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-
-  <!-- ==================== HEADER CHUNG ==================== -->
-  <header class="app-header">
-    <div class="brand">
-      <span class="agency-name">Sở Nông nghiệp và Môi trường TP.HCM</span>
-      <span class="app-title">Hệ thống Báo cáo Định kỳ &amp; Đột xuất</span>
-      <span class="sub-title">Phòng Kế hoạch – Tài chính</span>
-    </div>
-    <div class="user-info">
-      <div id="nhap-lieu-user-badge" class="user-badge an"></div>
-      <button id="btn-dang-xuat" class="btn-logout an">Đăng xuất</button>
-    </div>
-  </header>
 
   <!-- ==================== TRANG 1: ĐIỀU HƯỚNG CÁC LĨNH VỰC (pptx trang 1) ==================== -->
   <!-- Phủ kín màn hình, che header chung. Ô có link = <a>/<button>; ô chưa làm = chữ thường -->
@@ -53,104 +40,99 @@ Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 06:02
     </div>
   </main>
 
-  <!-- ==================== TRANG 2: ĐĂNG NHẬP BỒI THƯỜNG (pptx trang 2) ==================== -->
+  <!-- ==================== TRANG 2: ĐĂNG NHẬP BỒI THƯỜNG ==================== -->
+  <!-- Cùng nền xanh với trang 1; thẻ trắng 2 cột: trái = nhập, phải = chọn nhanh đơn vị -->
   <div id="trang-dang-nhap" class="login-page-wrapper an">
-    <div class="top-nav-bar">
-      <button id="btn-quay-lai-dieu-huong" class="btn-back">← Quay lại trang chọn lĩnh vực</button>
-    </div>
+    <button id="btn-quay-lai-dieu-huong" class="btn-back" type="button">← Chọn lĩnh vực khác</button>
 
-    <div class="login-sub-header">
-      <div class="org-hierarchy">Phòng Kế hoạch – Tài chính · Phòng Bồi thường, hỗ trợ, tái định cư</div>
-      <h2>Báo cáo công tác bồi thường giải phóng mặt bằng</h2>
-      <div class="portal-tag">Cổng nhập liệu nội bộ</div>
-    </div>
-
-    <div class="login-body-layout">
-      <!-- Cột trái: Form đăng nhập -->
+    <div class="login-card">
+      <!-- Cột trái: logo + form -->
       <div class="login-form-pane">
+        <div class="login-brand">
+          <img src="img/logo.svg" alt="" class="login-brand-logo">
+          <div>
+            <div class="login-brand-org">Sở Nông nghiệp và Môi trường</div>
+            <h2>Công tác bồi thường giải phóng mặt bằng</h2>
+          </div>
+        </div>
+
         <div id="thong-bao-dang-nhap" class="alert an"></div>
 
         <form id="form-dang-nhap" onsubmit="return false;">
           <div class="login-field">
-            <label for="input-don-vi">ĐƠN VỊ BÁO CÁO</label>
+            <label for="input-don-vi">Đơn vị báo cáo</label>
             <input type="text" id="input-don-vi" class="form-control" list="ds-don-vi" placeholder="Gõ tên đơn vị hoặc chọn nhanh ở bên phải" autocomplete="off">
             <datalist id="ds-don-vi"></datalist>
-            <div class="field-hint">Chọn đúng đơn vị báo cáo của mình</div>
           </div>
 
           <div class="login-field">
-            <label for="input-email">NGƯỜI NHẬP</label>
-            <input type="email" id="input-email" class="form-control" list="ds-tai-khoan" placeholder="Gmail được cấp quyền nhập liệu" autocomplete="off">
+            <label for="input-email">Người nhập</label>
+            <input type="email" id="input-email" class="form-control" list="ds-tai-khoan" placeholder="Bấm để chọn tài khoản hoặc gõ Gmail" autocomplete="off">
             <datalist id="ds-tai-khoan"></datalist>
-            <div class="field-hint">Bấm vào ô để chọn tài khoản của đơn vị, hoặc gõ Gmail</div>
           </div>
 
           <button id="btn-dang-nhap" type="submit" class="btn-login-main">Đăng nhập</button>
 
-          <div class="auth-notice-box" style="margin-top: 20px;">
-            💡 Đã đăng nhập Google trên trình duyệt thì bấm Đăng nhập, không cần nhập mật khẩu.
-          </div>
+          <p class="login-ghi-chu">Đã đăng nhập Google trên trình duyệt thì bấm Đăng nhập, không cần nhập mật khẩu.</p>
         </form>
       </div>
 
-      <!-- Cột phải: Chọn nhanh đơn vị -->
+      <!-- Cột phải: chọn nhanh đơn vị -->
       <div class="quick-select-pane">
         <div class="quick-filter-box">
-          <h4>⚡ Chọn nhanh đơn vị</h4>
-          <input type="text" id="loc-don-vi" class="form-control" placeholder="Lọc tên đơn vị …">
+          <h4>Chọn nhanh đơn vị</h4>
+          <input type="text" id="loc-don-vi" class="form-control" placeholder="Lọc theo tên đơn vị …">
         </div>
-
-        <ul id="danh-sach-chon-nhanh" class="quick-units-list">
-          <!-- Tự động nạp danh sách bằng JS -->
-        </ul>
+        <ul id="danh-sach-chon-nhanh" class="quick-units-list"></ul>
       </div>
     </div>
   </div>
 
-  <!-- ==================== TRANG 3: MÀN HÌNH NHẬP LIỆU (pptx trang 3) ==================== -->
+  <!-- ==================== TRANG 3: MÀN HÌNH NHẬP LIỆU ==================== -->
   <div id="trang-nhap-lieu" class="workspace-container an">
-    <!-- Sidebar danh sách biểu được giao -->
-    <aside class="workspace-sidebar">
-      <div class="sidebar-header-block">
-        <div class="sidebar-title">Báo cáo định kỳ Sở NNMT</div>
-        <div class="sidebar-sub">Công tác bồi thường giải phóng mặt bằng</div>
-      </div>
-
-      <div class="sidebar-section-title">BẢNG BÁO CÁO</div>
-      <ul id="danh-sach-bang-sidebar" class="sidebar-tables-list">
-        <!-- Danh sách bảng nạp bằng JS -->
-      </ul>
-
-      <div class="sidebar-footer">
-        <button id="btn-mo-tab-moi" class="sidebar-btn sidebar-btn-primary" title="Mở trực tiếp trên tab mới của Google Sheets">
-          Mở sheet trong tab mới ↗
-        </button>
-        <button id="btn-dang-nhap-google" class="sidebar-btn" style="margin-top: 6px;">
-          Đăng nhập Google
-        </button>
-        <button id="btn-tai-lai-iframe" class="sidebar-btn" style="margin-top: 6px;">
-          Tải lại khung nhúng ↻
-        </button>
-      </div>
-    </aside>
-
-    <!-- Khung chính: Iframe Google Sheet -->
-    <section class="workspace-main">
-      <div class="sheet-toolbar">
-        <span id="tieu-de-bang-hien-tai" class="sheet-title">—</span>
-        <div style="font-size: 11px; color: #777;">
-          Dữ liệu tự động lưu trực tiếp trên Google Drive của Sở
+    <header class="app-header">
+      <div class="brand">
+        <img src="img/logo.svg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="app-title">Báo cáo định kỳ · Sở Nông nghiệp và Môi trường</span>
+          <span class="sub-title">Công tác bồi thường giải phóng mặt bằng</span>
         </div>
       </div>
-
-      <div class="cookie-banner">
-        <span>⚠ Nếu trình duyệt chặn cookie khiến khung không hiện bảng, vui lòng bấm <strong>"Mở sheet trong tab mới"</strong> ở thanh bên trái.</span>
+      <div class="user-info">
+        <div id="nhap-lieu-user-badge" class="user-badge an"></div>
+        <button id="btn-dang-xuat" class="btn-logout an">Đăng xuất</button>
       </div>
+    </header>
 
-      <div class="iframe-wrapper">
-        <iframe id="khung-nhung-sheet" class="sheet-iframe" title="Google Sheet báo cáo"></iframe>
-      </div>
-    </section>
+    <div class="workspace-body">
+      <!-- Sidebar danh sách biểu được giao -->
+      <aside class="workspace-sidebar">
+        <div class="sidebar-section-title">Bảng báo cáo</div>
+        <ul id="danh-sach-bang-sidebar" class="sidebar-tables-list"></ul>
+
+        <div class="sidebar-footer">
+          <button id="btn-mo-tab-moi" class="sidebar-btn sidebar-btn-primary" title="Mở trực tiếp trên tab mới của Google Sheets">Mở sheet trong tab mới ↗</button>
+          <button id="btn-dang-nhap-google" class="sidebar-btn">Đăng nhập Google</button>
+          <button id="btn-tai-lai-iframe" class="sidebar-btn">Tải lại khung nhúng ↻</button>
+        </div>
+      </aside>
+
+      <!-- Khung chính: Iframe Google Sheet -->
+      <section class="workspace-main">
+        <div class="sheet-toolbar">
+          <span id="tieu-de-bang-hien-tai" class="sheet-title">—</span>
+          <span class="sheet-note">Số liệu tự lưu trực tiếp trên Google Drive của Sở</span>
+        </div>
+
+        <div class="cookie-banner">
+          Khung không hiện bảng (trình duyệt chặn cookie)? Bấm <strong>"Mở sheet trong tab mới"</strong> ở thanh bên trái.
+        </div>
+
+        <div class="iframe-wrapper">
+          <iframe id="khung-nhung-sheet" class="sheet-iframe" title="Google Sheet báo cáo"></iframe>
+        </div>
+      </section>
+    </div>
   </div>
 
   <!-- ==================== SCRIPTS ==================== -->
