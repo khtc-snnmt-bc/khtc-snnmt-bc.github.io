@@ -4,7 +4,7 @@
 //            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá), Tài khoản (Gmail theo đơn vị)
 //            và Phân quyền (giao bảng, đơn vị quản lý)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 21:41
+// Phiên bản: 0.5.1 · Cập nhật: 06/10/2026 22:06
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -422,9 +422,18 @@ var PAGE_QUAN_TRI = (function () {
     var giao = PHAN_QUYEN.giaoCuaBang(duLieu.giao, chon.bang);
     var tieuDe = khung.appendChild(DOM.tao('div', { class: 'qt-dong' }));
     tieuDe.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Đơn vị được giao'));
-    var loc = tieuDe.appendChild(DOM.tao('input', { type: 'search', class: 'form-control', placeholder: 'Lọc đơn vị…' }));
+    var hangLoc = tieuDe.appendChild(DOM.tao('div', { class: 'qt-hang-loc' }));
+    var loc = hangLoc.appendChild(DOM.tao('input', { type: 'search', class: 'form-control', placeholder: 'Lọc đơn vị…' }));
+    var nutChon = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Chọn tất cả'));
+    var nutBo = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Bỏ chọn tất cả'));
 
     var luoi = khung.appendChild(DOM.tao('div', { class: 'qt-luoi-don-vi' }));
+    // Chỉ đụng đơn vị đang hiện (theo ô lọc); ô "Đã có file" khoá, không đổi
+    function chonHet(chon) {
+      DOM.$$('.qt-o-don-vi:not(.an) input:not(:disabled)', luoi).forEach(function (o) { o.checked = chon; });
+    }
+    nutChon.addEventListener('click', function () { chonHet(true); });
+    nutBo.addEventListener('click', function () { chonHet(false); });
     duLieu.donVi.forEach(function (d) {
       var nhan = luoi.appendChild(DOM.tao('label', { class: 'qt-o-don-vi', 'data-ma': d.unitCode }));
       var o = nhan.appendChild(DOM.tao('input', { type: 'checkbox', value: d.unitCode }));
