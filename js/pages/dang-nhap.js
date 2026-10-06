@@ -2,7 +2,7 @@
 // bcsnn · js/pages/dang-nhap.js
 // Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 07:22
+// Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 13:33
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -214,31 +214,31 @@ var PAGE_DANG_NHAP = (function () {
   function xuLyDangNhap() {
     var email = elInputEmail.value.trim().toLowerCase();
 
-    if (!donViDangChon) {
-      baoLoi('Vui lòng chọn đơn vị báo cáo (gõ tên hoặc chọn ở danh sách bên phải).');
-      elInputDonVi.focus();
-      return;
-    }
     if (!email) {
       baoLoi('Vui lòng nhập Gmail được cấp quyền nhập liệu.');
       elInputEmail.focus();
       return;
     }
+    // Chưa chọn đơn vị vẫn đăng nhập được: máy chủ tự suy đơn vị từ Gmail
+    var maDonVi = donViDangChon ? donViDangChon.unitCode : '';
 
     baoLoi('');
+    clearTimeout(hen);
+    luotHoiEmail++; // bỏ kết quả tìm đơn vị theo Gmail còn đang chờ
     datTrangThaiNut(true);
 
-    API.dangNhap(email, donViDangChon.unitCode)
+    API.dangNhap(email, maDonVi)
       .then(function (res) {
         datTrangThaiNut(false);
         if (!res.ok) {
+          if (res.donVi && res.donVi.length) elInputDonVi.focus();
           baoLoi(res.loi || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
           return;
         }
         var thongTinPhien = {
           email: email,
-          unitCode: donViDangChon.unitCode,
-          unitName: res.unitName || donViDangChon.unitName,
+          unitCode: res.unitCode || maDonVi,
+          unitName: res.unitName || (donViDangChon && donViDangChon.unitName) || res.unitCode,
           role: res.role || 'Nhập liệu',
           tables: res.tables || []
         };

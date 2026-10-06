@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-dang-nhap.mjs
 // Vai trò  : Kiểm thử các hàm thuần xử lý đăng nhập phía GAS bằng Node.js
 // Chạy     : node app/kiem-thu/kiem-gas-dang-nhap.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 05/10/2026 12:50
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 13:33
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 const ma = readFileSync(new URL('../gas/DangNhap.js', import.meta.url), 'utf8');
 const sandbox = {};
 vm.createContext(sandbox);
-vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_ };', sandbox);
+vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_, chonDonViTheoEmail_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -129,6 +129,21 @@ bai('Tìm đơn vị theo Gmail gõ đủ, không khớp một phần', () => {
   assert.equal(kq[0].unitName, 'Ban QLDA ĐTXD phường Bình Thới');
   assert.deepEqual(sach(h.timDonViTheoEmail_(tk, mauDonVi, 'a@gmail')), []);
   assert.deepEqual(sach(h.timDonViTheoEmail_(tk, mauDonVi, '')), []);
+});
+
+bai('Đăng nhập chưa chọn đơn vị: suy đơn vị từ Gmail', () => {
+  assert.equal(h.chonDonViTheoEmail_(mauTaiKhoan, mauDonVi, ' THU1@example.com').unitCode, 'BQLDA.BinhThoi');
+  const khongCo = sach(h.chonDonViTheoEmail_(mauTaiKhoan, mauDonVi, 'nguoila@gmail.com'));
+  assert.equal(khongCo.unitCode, undefined);
+  assert.ok(khongCo.loi);
+  const tk = [
+    ['email', 'unitCode', 'role'],
+    ['a@gmail.com', 'BQLDA.BinhThoi', 'Nhập liệu'],
+    ['a@gmail.com', 'KHTC.SNNMT', 'Quản trị']
+  ];
+  const nhieu = sach(h.chonDonViTheoEmail_(tk, mauDonVi, 'a@gmail.com'));
+  assert.equal(nhieu.unitCode, undefined);
+  assert.equal(nhieu.donVi.length, 2);
 });
 
 console.log('kiem-gas-dang-nhap: ' + soBai + ' bài ĐẠT!');

@@ -2,7 +2,7 @@
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
 // Lớp      : gas backend — đọc Sheet quản lý, trả JSON
-// Phiên bản: 0.2.0 · Cập nhật: 05/10/2026 22:32
+// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 13:33
 // ============================================================
 
 /**
@@ -98,6 +98,17 @@ function timDonViTheoEmail_(dsTaiKhoan, dsDonVi, email) {
     }
   }
   return kq;
+}
+
+/**
+ * Đăng nhập chưa chọn đơn vị: Gmail thuộc đúng một đơn vị thì lấy đơn vị đó (hàm thuần).
+ * @returns {{unitCode?: string, loi?: string, donVi?: Array}}
+ */
+function chonDonViTheoEmail_(dsTaiKhoan, dsDonVi, email) {
+  var ds = timDonViTheoEmail_(dsTaiKhoan, dsDonVi, email);
+  if (ds.length === 1) return { unitCode: ds[0].unitCode };
+  if (!ds.length) return { loi: 'Gmail "' + String(email || '').toLowerCase().trim() + '" chưa được cấp quyền nhập liệu.' };
+  return { loi: 'Gmail này dùng cho nhiều đơn vị — vui lòng chọn đơn vị.', donVi: ds };
 }
 
 /** Đọc một tab của Sheet quản lý thành mảng dòng (kèm tiêu đề), tab thiếu → []. */
@@ -199,12 +210,20 @@ function xuLyDangNhap_(quanLyId, email, unitCode) {
     var tabTaiKhoan = ss.getSheetByName('Tài khoản');
     if (!tabTaiKhoan) return { ok: false, loi: 'Không tìm thấy tab "Tài khoản"' };
     var duLieuTK = tabTaiKhoan.getDataRange().getValues();
+    var tabDonVi = ss.getSheetByName('Đơn vị');
+    var duLieuDV = tabDonVi ? tabDonVi.getDataRange().getValues() : [];
+
+    // Chưa chọn đơn vị → suy từ Gmail (đăng nhập ngay, không chờ danh sách đơn vị)
+    if (!String(unitCode || '').trim()) {
+      var chon = chonDonViTheoEmail_(duLieuTK, duLieuDV, email);
+      if (!chon.unitCode) return { ok: false, loi: chon.loi, donVi: chon.donVi };
+      unitCode = chon.unitCode;
+    }
+
     var kqKiemTra = kiemTraTaiKhoan_(duLieuTK, email, unitCode);
     if (!kqKiemTra.hopLe) return { ok: false, loi: kqKiemTra.loi };
 
     // 2. Lấy tên đơn vị
-    var tabDonVi = ss.getSheetByName('Đơn vị');
-    var duLieuDV = tabDonVi ? tabDonVi.getDataRange().getValues() : [];
     var unitName = layTenDonVi_(duLieuDV, unitCode);
 
     // 3. Ghép danh sách bảng và fileId

@@ -2,14 +2,14 @@
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 11:25
+// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 13:33
 // ============================================================
 
 var PAGE_NHAP_LIEU = (function () {
   'use strict';
 
   var elTrang, elUserBadge, elBtnLogout, elListTables, elIframe, elSheetTitle;
-  var elBtnMoTabMoi, elBtnTaiLaiIframe;
+  var elBtnMoTabMoi, elBtnTaiLaiIframe, elLienKetMoSheet;
   var phienHienTai = null;
   var bangDangChon = null;
   var onDangXuatCallback = null;
@@ -24,6 +24,7 @@ var PAGE_NHAP_LIEU = (function () {
     elSheetTitle = DOM.$('#tieu-de-bang-hien-tai');
     elBtnMoTabMoi = DOM.$('#btn-mo-tab-moi');
     elBtnTaiLaiIframe = DOM.$('#btn-tai-lai-iframe');
+    elLienKetMoSheet = DOM.$('#lien-ket-mo-sheet');
 
     ganSuKien();
   }
@@ -111,10 +112,11 @@ var PAGE_NHAP_LIEU = (function () {
       elSheetTitle.textContent = bang.tableName || bang.tableCode;
     }
 
-    // Nạp iframe Google Sheet
-    if (elIframe && bang.fileId) {
+    // Nạp iframe Google Sheet + lối dự phòng mở tab mới
+    if (bang.fileId) {
       var src = KY_BAO_CAO.taoUrlSheet(bang.fileId, phienHienTai ? phienHienTai.email : '');
-      elIframe.src = src;
+      if (elIframe) elIframe.src = src;
+      if (elLienKetMoSheet) elLienKetMoSheet.href = src;
     }
   }
 
@@ -135,6 +137,7 @@ var PAGE_NHAP_LIEU = (function () {
   function datIframeRong() {
     if (elIframe) elIframe.src = 'about:blank';
     if (elSheetTitle) elSheetTitle.textContent = '—';
+    if (elLienKetMoSheet) elLienKetMoSheet.removeAttribute('href');
   }
 
   function xuLyDangXuat() {

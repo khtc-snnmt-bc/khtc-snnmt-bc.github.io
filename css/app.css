@@ -666,18 +666,22 @@ a.sidebar-btn {
   color: var(--xd);
 }
 
-.sheet-note {
-  font-size: 11.5px;
-  color: var(--text-muted);
-}
-
-.cookie-banner {
-  padding: 6px 18px;
+/* Lối dự phòng khi khung nhúng bị chặn cookie */
+.sheet-fallback {
+  padding: 4px 10px;
   font-size: 12px;
   color: #6d4c00;
   background: var(--warn-bg);
-  border-bottom: 1px solid #ffe9a8;
+  border: 1px solid #ffe9a8;
+  border-radius: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
+
+.sheet-fallback:hover { text-decoration: underline; }
 
 .iframe-wrapper {
   flex: 1;
@@ -704,7 +708,7 @@ a.sidebar-btn {
   .user-badge { align-items: flex-start; min-width: 0; }
   .user-badge .don-vi, .user-badge .email { overflow-wrap: anywhere; }
   .app-header .app-title { font-size: 13px; }
-  .sheet-note { display: none; }
+  .sheet-fallback { white-space: normal; }
 }
 
 /* ============================================================
