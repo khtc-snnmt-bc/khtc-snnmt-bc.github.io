@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.9.0 · Cập nhật: 06/10/2026 07:22
+   Phiên bản: 0.10.0 · Cập nhật: 06/10/2026 08:31
    ============================================================ */
 
 :root {
@@ -132,8 +132,8 @@ body {
 /* ============================================================
    TRANG 1: ĐIỀU HƯỚNG CÁC LĨNH VỰC
    ============================================================ */
-/* Ý slide 1: tiêu đề → logo → 5 ô xếp 2–2–1. Ô có link nổi (nền trắng, mũi
-   tên); ô chưa làm chìm (kính mờ, chữ nhạt), không phản hồi chuột. */
+/* Trang chủ: tiêu đề sát đầu trang → logo → 5 khung lĩnh vực (kiểu thẻ biểu tượng,
+   tên, mô tả). Khung có link nổi lên khi rê chuột; khung chưa làm chỉ là chữ. */
 .portal {
   position: fixed;
   inset: 0;
@@ -146,12 +146,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 16px 48px;
+  padding: 28px 20px 48px;
 }
-
-/* Căn giữa dọc bằng margin auto — màn thấp thì cuộn được, không bị cắt đầu */
-.portal > :first-child { margin-top: auto; }
-.portal > :last-child { margin-bottom: auto; }
 
 .portal-tieu-de {
   text-align: center;
@@ -159,7 +155,7 @@ body {
 }
 
 .portal-tieu-de h1 {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1.3;
@@ -172,95 +168,102 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.28);
   font-size: 16px;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .portal-logo {
-  width: 132px;
-  height: 132px;
-  margin: 26px 0 34px;
-  padding: 12px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.1), 0 14px 34px rgba(0, 0, 0, 0.3);
+  width: 120px;
+  height: 120px;
+  margin: 18px 0 28px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
   animation: portal-hien 0.5s 0.08s ease both;
 }
 
-.portal-logo img {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
 .portal-luoi {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 380px));
-  gap: 18px 22px;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 22px;
   width: 100%;
+  max-width: 1160px;
   animation: portal-hien 0.5s 0.16s ease both;
 }
 
-.o-linh-vuc {
-  min-height: 92px;
-  padding: 18px 22px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+.khung-linh-vuc {
+  flex: 0 0 360px;
+  max-width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 14px;
+  padding: 22px 24px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 0;
+  border-top: 4px solid #b0bec5;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
   text-align: left;
   font: inherit;
-  font-size: 17px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--text-main);
   text-decoration: none;
 }
 
-.o-linh-vuc.co-link {
+.khung-linh-vuc.co-link {
   background: #ffffff;
-  border-color: #ffffff;
-  color: #1b4332;
-  font-weight: 600;
+  border-top-color: var(--xc);
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.mui-ten {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #d8f3dc;
-  color: #1b4332;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.o-linh-vuc.co-link:hover,
-.o-linh-vuc.co-link:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+.khung-linh-vuc.co-link:hover,
+.khung-linh-vuc.co-link:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
   outline: none;
 }
 
-.o-linh-vuc.co-link:hover .mui-ten,
-.o-linh-vuc.co-link:focus-visible .mui-ten {
-  background: #2d6a4f;
-  color: #ffffff;
+.khung-dau {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
 }
 
-/* Ô thứ 5 nằm giữa hàng cuối */
-.o-linh-vuc.o-giua {
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: min(100%, 380px);
+.khung-bieu-tuong {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #eceff1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.co-link .khung-bieu-tuong {
+  background: var(--xp);
+}
+
+.khung-ten {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #111;
+}
+
+.khung-mo-ta {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.khung-vao {
+  padding-top: 12px;
+  border-top: 1px solid #eef1ef;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--xc);
 }
 
 @keyframes portal-hien {
@@ -273,14 +276,14 @@ body {
 }
 
 @media (max-width: 820px) {
-  .portal { padding-top: 28px; }
+  .portal { padding-top: 22px; }
   .portal-tieu-de h1 { font-size: 19px; }
   .portal-tieu-de p { font-size: 14px; }
-  .portal-logo { width: 104px; height: 104px; margin: 20px 0 24px; }
-  .portal-luoi { grid-template-columns: minmax(0, 440px); gap: 12px; }
-  .o-linh-vuc { min-height: 72px; font-size: 15px; padding: 14px 18px; }
-  .o-linh-vuc.o-giua { width: 100%; }
+  .portal-logo { width: 92px; height: 92px; margin: 14px 0 20px; }
+  .portal-luoi { gap: 14px; }
+  .khung-linh-vuc { flex: 1 1 100%; max-width: 460px; padding: 18px 18px 16px; }
 }
+
 
 /* ============================================================
    TRANG 2: ĐĂNG NHẬP — nền như trang 1, thẻ trắng hai cột

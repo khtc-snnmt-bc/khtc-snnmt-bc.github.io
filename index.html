@@ -6,7 +6,7 @@ Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 1: Điều hướng các lĩnh vực báo cáo
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
-Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 07:18
+Phiên bản: 0.8.0 · Cập nhật: 06/10/2026 08:31
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -25,18 +25,36 @@ Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 07:18
       <p>Phòng Kế hoạch – Tài chính</p>
     </div>
 
-    <div class="portal-logo"><img src="img/logo.svg" alt="Logo Sở Nông nghiệp và Môi trường"></div>
+    <img class="portal-logo" src="img/logo.svg" alt="Logo Sở Nông nghiệp và Môi trường">
 
+    <!-- Khung có link = <button>/<a>; khung chưa làm = <div> chữ thường, không link -->
     <div class="portal-luoi">
-      <a class="o-linh-vuc co-link" href="https://khtc-snnmt.github.io/">
-        <span>Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</span><span class="mui-ten" aria-hidden="true">→</span>
-      </a>
-      <div class="o-linh-vuc"><span>Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</span></div>
-      <div class="o-linh-vuc"><span>Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản của các xã, phường, đặc khu</span></div>
-      <button id="o-linh-vuc-bttdc" type="button" class="o-linh-vuc co-link">
-        <span>Công tác bồi thường giải phóng mặt bằng</span><span class="mui-ten" aria-hidden="true">→</span>
+      <button id="o-linh-vuc-bttdc" type="button" class="khung-linh-vuc co-link">
+        <span class="khung-dau"><span class="khung-bieu-tuong">🏗️</span><span class="khung-ten">Công tác bồi thường giải phóng mặt bằng</span></span>
+        <span class="khung-mo-ta">Phòng Bồi thường, hỗ trợ, tái định cư · Tiến độ bồi thường các dự án, tổng hợp khó khăn vướng mắc và kiến nghị.</span>
+        <span class="khung-vao">Vào báo cáo →</span>
       </button>
-      <div class="o-linh-vuc o-giua"><span>Bản đồ thực trạng và định hướng sản xuất nông nghiệp</span></div>
+
+      <a class="khung-linh-vuc co-link" href="https://khtc-snnmt.github.io/">
+        <span class="khung-dau"><span class="khung-bieu-tuong">🏛️</span><span class="khung-ten">Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</span></span>
+        <span class="khung-mo-ta">Báo cáo tháng, quý, năm của các phòng ban chuyên môn và các chi cục trực thuộc Sở.</span>
+        <span class="khung-vao">Vào báo cáo →</span>
+      </a>
+
+      <div class="khung-linh-vuc">
+        <div class="khung-dau"><span class="khung-bieu-tuong">📋</span><span class="khung-ten">Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</span></div>
+        <div class="khung-mo-ta">Theo dõi phân công, đôn đốc tiến độ thực hiện các kết luận chỉ đạo của UBND TP và Ban Giám đốc Sở.</div>
+      </div>
+
+      <div class="khung-linh-vuc">
+        <div class="khung-dau"><span class="khung-bieu-tuong">🌾</span><span class="khung-ten">Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản</span></div>
+        <div class="khung-mo-ta">Số liệu chỉ tiêu trồng trọt, chăn nuôi, nuôi trồng thủy sản của các xã, phường, đặc khu.</div>
+      </div>
+
+      <div class="khung-linh-vuc">
+        <div class="khung-dau"><span class="khung-bieu-tuong">🗺️</span><span class="khung-ten">Bản đồ Thực trạng và định hướng sản xuất nông nghiệp</span></div>
+        <div class="khung-mo-ta">Hệ thống bản đồ số hoá vùng sản xuất chuyên canh, vùng bảo tồn nông nghiệp và định hướng quy hoạch.</div>
+      </div>
     </div>
   </main>
 
