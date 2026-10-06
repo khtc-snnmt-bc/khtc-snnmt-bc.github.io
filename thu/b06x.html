@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- ============================================================
+bcsnn · thu/b06x.html
+Vai trò  : Phép thử b06x — Đăng nhập bằng Google (GIS) + GAS xác minh mã
+Lớp      : trang thử, ngoài app thật. Nạp thư viện từ accounts.google.com
+           là NGOẠI LỆ chỉ cho trang thử này (chờ chủ dự án chốt nếu đạt)
+Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 15:35
+============================================================ -->
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phép thử đăng nhập Google</title>
+<style>
+  body { font: 15px/1.6 system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+  #kq { white-space: pre-wrap; background: #f2f5f3; padding: 12px; border-radius: 8px; min-height: 60px; }
+  .tot { color: #1b4332; } .loi { color: #c0392b; }
+</style>
+</head>
+<body>
+<h1>Phép thử đăng nhập Google</h1>
+<p>Bấm nút bên dưới, chọn tài khoản Google. Kết quả hiện ở khung dưới.</p>
+<div id="nut-google"></div>
+<p><strong>Kết quả:</strong></p>
+<div id="kq">Chưa đăng nhập.</div>
+
+<script src="../js/config/cau-hinh.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="khoiTao()"></script>
+<script>
+var CLIENT_ID = '237899473140-bqtoitjtpstbv9hu0j0jsdljfnn4hpv2.apps.googleusercontent.com';
+var kq = document.getElementById('kq');
+
+function ghi(lop, chu) { kq.className = lop; kq.textContent = chu; }
+
+function khoiTao() {
+  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: khiCoMa });
+  google.accounts.id.renderButton(document.getElementById('nut-google'), { theme: 'outline', size: 'large', text: 'signin_with' });
+}
+
+function khiCoMa(phanHoi) {
+  ghi('', 'Đã có mã từ Google, đang nhờ máy chủ xác minh…');
+  var t0 = Date.now();
+  fetch(CAU_HINH.layGasUrl(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'xacMinhGoogle', idToken: phanHoi.credential })
+  })
+    .then(function (r) { return r.text(); })
+    .then(function (text) {
+      var ms = Date.now() - t0;
+      var res;
+      try { res = JSON.parse(text); } catch (e) { ghi('loi', 'Máy chủ không trả JSON:\n' + text.slice(0, 300)); return; }
+      if (res.ok) ghi('tot', 'ĐẠT — máy chủ xác nhận Gmail: ' + res.email + '\n(' + ms + ' ms)');
+      else ghi('loi', 'Máy chủ từ chối: ' + res.loi);
+    })
+    .catch(function (e) { ghi('loi', 'Lỗi mạng: ' + e); });
+}
+</script>
+</body>
+</html>

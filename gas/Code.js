@@ -32,6 +32,7 @@ function doPost(e) {
     case 'timDonViTheoEmail': return traJson_(xuLyTimDonViTheoEmail_(id, yc.email));
     case 'dangNhap': return traJson_(xuLyDangNhap_(id, yc.email, yc.unitCode));
     case 'quanTriDangNhap': return traJson_(xuLyQuanTriDangNhap_(id, yc.email, yc.unitCode, yc.matKhau));
+    case 'xacMinhGoogle': return traJson_(xuLyXacMinhGoogle_(yc.idToken));
     case 'quanTriKiemPhien': return traJson_(xuLyQuanTriKiemPhien_(yc.token));
     case 'quanTriDangXuat': return traJson_(xuLyQuanTriDangXuat_(yc.token));
   }
