@@ -2,7 +2,7 @@
 // bcsnn · js/pages/dang-nhap.js
 // Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 05/10/2026 22:32
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 07:18
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -133,9 +133,12 @@ var PAGE_DANG_NHAP = (function () {
       return;
     }
     var maDangChon = donViDangChon ? donViDangChon.unitCode : '';
-    DON_VI.nhomTheoVaiTro(ds).forEach(function (nhom) {
-      elListChonNhanh.appendChild(DOM.tao('li', { class: 'quick-group-label' }, nhom.ten));
-      nhom.ds.forEach(function (dv) {
+    var tach = DON_VI.tachGanDay(ds, PHIEN.docGanDay());
+
+    function veNhom(nhan, dsNhom) {
+      if (!dsNhom.length) return;
+      elListChonNhanh.appendChild(DOM.tao('li', { class: 'quick-group-label' }, nhan));
+      dsNhom.forEach(function (dv) {
         var li = DOM.tao('li', {
           class: 'quick-unit-item' + (dv.unitCode === maDangChon ? ' selected' : ''),
           'data-code': dv.unitCode
@@ -143,7 +146,10 @@ var PAGE_DANG_NHAP = (function () {
         li.addEventListener('click', function () { chonDonVi(dv, true); });
         elListChonNhanh.appendChild(li);
       });
-    });
+    }
+
+    veNhom('Truy cập gần đây', tach.ganDay);
+    veNhom(tach.ganDay.length ? 'Tất cả đơn vị (A–Z)' : 'Tất cả đơn vị', tach.conLai);
   }
 
   function danhDauChonNhanh(unitCode) {
@@ -242,6 +248,7 @@ var PAGE_DANG_NHAP = (function () {
           tables: res.tables || []
         };
         PHIEN.luu(thongTinPhien);
+        PHIEN.ghiGanDay(thongTinPhien.unitCode);
         an();
         if (typeof onDangNhapThanhCong === 'function') onDangNhapThanhCong(thongTinPhien);
       })

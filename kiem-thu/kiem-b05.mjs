@@ -76,16 +76,13 @@ bai('Lọc và sắp xếp đơn vị', () => {
   assert.equal(ketQuaSapXep[2].unitName, 'Ban QLDA phường Vườn Lài');
 });
 
-// 3. Kiểm sinh URL Sheet & Đăng nhập Google
-bai('Sinh URL Google Sheet và AccountChooser', () => {
+// 3. Kiểm sinh URL Sheet
+bai('Sinh URL Google Sheet', () => {
   const url1 = sandbox.KY_BAO_CAO.taoUrlSheet('file123', 'user@gmail.com');
   assert.equal(url1, 'https://docs.google.com/spreadsheets/d/file123/edit?authuser=user%40gmail.com');
 
   const urlKhongEmail = sandbox.KY_BAO_CAO.taoUrlSheet('file123');
   assert.equal(urlKhongEmail, 'https://docs.google.com/spreadsheets/d/file123/edit');
-
-  const urlDN = sandbox.KY_BAO_CAO.taoUrlDangNhapGoogle('user@gmail.com');
-  assert.equal(urlDN, 'https://accounts.google.com/AccountChooser?Email=user%40gmail.com');
 });
 
 // 4. Kiểm quản lý phiên đăng nhập
@@ -115,18 +112,23 @@ bai('Tìm đơn vị khớp chính xác tên/mã, không khớp một phần', (
   assert.equal(D.timChinhXac(ds, ''), null);
 });
 
-bai('Chia nhóm cột chọn nhanh: Quản trị / Quản lý báo cáo lên trước', () => {
-  const ds = [
-    { unitCode: 'A', unitName: 'A', role: 'Đơn vị báo cáo' },
-    { unitCode: 'B', unitName: 'B', role: 'Quản lý báo cáo' },
-    { unitCode: 'C', unitName: 'C', role: 'Quản trị' }
-  ];
-  const nhom = sandbox.DON_VI.nhomTheoVaiTro(ds);
-  assert.equal(nhom.length, 2);
-  assert.equal(nhom[0].ten, 'Quản trị');
-  assert.equal(nhom[0].ds.length, 2);
-  assert.equal(nhom[1].ds[0].unitCode, 'A');
-  assert.equal(sandbox.DON_VI.nhomTheoVaiTro([ds[0]]).length, 1);
+bai('Cột chọn nhanh: đơn vị gần đây lên hàng đầu, còn lại giữ thứ tự abc', () => {
+  const sach = (x) => JSON.parse(JSON.stringify(x));
+  const ds = ['A', 'B', 'C', 'D'].map((m) => ({ unitCode: m, unitName: 'Đơn vị ' + m }));
+  const { ganDay, conLai } = sandbox.DON_VI.tachGanDay(ds, ['C', 'KHONG_CO', 'A']);
+  assert.deepEqual(sach(ganDay.map((d) => d.unitCode)), ['C', 'A']);   // đúng thứ tự gần nhất, bỏ mã không còn
+  assert.deepEqual(sach(conLai.map((d) => d.unitCode)), ['B', 'D']);
+  const khong = sandbox.DON_VI.tachGanDay(ds, []);
+  assert.equal(khong.ganDay.length, 0);
+  assert.equal(khong.conLai.length, 4);
+});
+
+bai('Ghi đơn vị gần đây: mới nhất lên đầu, bỏ trùng, tối đa 2', () => {
+  const P = { themGanDay: (d, m) => JSON.parse(JSON.stringify(sandbox.PHIEN.themGanDay(d, m))) };
+  assert.deepEqual(P.themGanDay([], 'A'), ['A']);
+  assert.deepEqual(P.themGanDay(['A'], 'B'), ['B', 'A']);
+  assert.deepEqual(P.themGanDay(['B', 'A'], 'A'), ['A', 'B']);
+  assert.deepEqual(P.themGanDay(['B', 'A'], 'C'), ['C', 'B']);
 });
 
 console.log('kiem-b05: ' + soBai + ' bài ĐẠT!');

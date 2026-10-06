@@ -2,14 +2,14 @@
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 07:25
+// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 07:18
 // ============================================================
 
 var PAGE_NHAP_LIEU = (function () {
   'use strict';
 
   var elTrang, elUserBadge, elBtnLogout, elListTables, elIframe, elSheetTitle;
-  var elBtnMoTabMoi, elBtnDangNhapGoogle, elBtnTaiLaiIframe;
+  var elBtnMoTabMoi, elBtnTaiLaiIframe;
   var phienHienTai = null;
   var bangDangChon = null;
   var onDangXuatCallback = null;
@@ -23,7 +23,6 @@ var PAGE_NHAP_LIEU = (function () {
     elIframe = DOM.$('#khung-nhung-sheet');
     elSheetTitle = DOM.$('#tieu-de-bang-hien-tai');
     elBtnMoTabMoi = DOM.$('#btn-mo-tab-moi');
-    elBtnDangNhapGoogle = DOM.$('#btn-dang-nhap-google');
     elBtnTaiLaiIframe = DOM.$('#btn-tai-lai-iframe');
 
     ganSuKien();
@@ -41,14 +40,6 @@ var PAGE_NHAP_LIEU = (function () {
       elBtnMoTabMoi.addEventListener('click', function (e) {
         e.preventDefault();
         moSheetTabMoi();
-      });
-    }
-
-    if (elBtnDangNhapGoogle) {
-      elBtnDangNhapGoogle.addEventListener('click', function (e) {
-        e.preventDefault();
-        var email = phienHienTai ? phienHienTai.email : '';
-        window.open(KY_BAO_CAO.taoUrlDangNhapGoogle(email), '_blank');
       });
     }
 

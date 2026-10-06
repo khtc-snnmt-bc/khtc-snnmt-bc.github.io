@@ -2,7 +2,7 @@
 // bcsnn · js/domains/don-vi.js
 // Vai trò  : Nghiệp vụ thuần về đơn vị: lọc theo từ khoá, sắp xếp
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.2.0 · Cập nhật: 05/10/2026 22:32
+// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 07:18
 // ============================================================
 
 var DON_VI = (function () {
@@ -51,23 +51,26 @@ var DON_VI = (function () {
   }
 
   /**
-   * Chia nhóm hiển thị cột chọn nhanh: Quản trị trước, rồi Đơn vị báo cáo.
-   * @returns {Array<{ten: string, ds: Array}>} — bỏ nhóm rỗng
+   * Tách cột chọn nhanh: các đơn vị truy cập gần đây (theo thứ tự gần nhất
+   * trước) và phần còn lại (giữ nguyên thứ tự đã sắp abc của danh sách vào).
+   * @param {Array} danhSach — đã lọc + sắp abc
+   * @param {Array<string>} maGanDay
+   * @returns {{ganDay: Array, conLai: Array}}
    */
-  function nhomTheoVaiTro(danhSach) {
-    var laQuanTri = function (dv) { return dv.role === 'Quản trị' || dv.role === 'Quản lý báo cáo'; };
-    var quanTri = danhSach.filter(laQuanTri);
-    var baoCao = danhSach.filter(function (dv) { return !laQuanTri(dv); });
-    return [
-      { ten: 'Quản trị', ds: quanTri },
-      { ten: 'Đơn vị báo cáo', ds: baoCao }
-    ].filter(function (n) { return n.ds.length; });
+  function tachGanDay(danhSach, maGanDay) {
+    var ganDay = [];
+    (maGanDay || []).forEach(function (ma) {
+      var dv = danhSach.filter(function (d) { return d.unitCode === ma; })[0];
+      if (dv) ganDay.push(dv);
+    });
+    var conLai = danhSach.filter(function (d) { return ganDay.indexOf(d) < 0; });
+    return { ganDay: ganDay, conLai: conLai };
   }
 
   return {
     locDonVi: locDonVi,
     sapXepDonVi: sapXepDonVi,
     timChinhXac: timChinhXac,
-    nhomTheoVaiTro: nhomTheoVaiTro
+    tachGanDay: tachGanDay
   };
 })();

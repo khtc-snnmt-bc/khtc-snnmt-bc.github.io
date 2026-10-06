@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 07:20
+   Phiên bản: 0.7.0 · Cập nhật: 06/10/2026 07:18
    ============================================================ */
 
 :root {
@@ -467,10 +467,14 @@ body {
   overflow-y: auto;
   list-style: none;
   padding-bottom: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
 }
 
 .quick-group-label {
-  padding: 8px 16px 4px;
+  grid-column: 1 / -1;
+  padding: 10px 16px 4px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -499,6 +503,7 @@ body {
 }
 
 .quick-unit-item.muted {
+  grid-column: 1 / -1;
   color: #999;
   cursor: default;
 }
@@ -525,6 +530,7 @@ body {
   .login-card { grid-template-columns: 1fr; height: auto; min-height: 0; }
   .login-form-pane { padding: 22px 18px 18px; }
   .quick-select-pane { border-left: none; border-top: 1px solid var(--border); max-height: 320px; }
+  .quick-units-list { grid-template-columns: 1fr; }
 }
 
 /* ============================================================
@@ -683,6 +689,12 @@ body {
   .workspace-sidebar { width: 100%; }
   .sidebar-tables-list { flex: none; max-height: 190px; }
   .iframe-wrapper { min-height: 70vh; }
+  /* Thanh đầu xuống 2 hàng: tên ở trên, người dùng + Đăng xuất ở dưới */
+  .app-header { flex-wrap: wrap; padding: 10px 14px; row-gap: 8px; }
+  .app-header .brand { flex: 1 1 100%; }
+  .app-header .user-info { flex: 1 1 100%; justify-content: space-between; }
+  .user-badge { align-items: flex-start; min-width: 0; }
+  .user-badge .don-vi, .user-badge .email { overflow-wrap: anywhere; }
   .app-header .app-title { font-size: 13px; }
   .sheet-note { display: none; }
 }
