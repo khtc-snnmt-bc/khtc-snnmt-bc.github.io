@@ -78,9 +78,12 @@ function maNgauNhien_() {
 /** CHẠY TAY trong trình soạn Apps Script để đặt / đổi mật khẩu quản trị. */
 function datMatKhauQuanTri() {
   var p = PropertiesService.getScriptProperties();
-  var moi = chuanHoaMatKhau_(p.getProperty('QT_MAT_KHAU_MOI'));
-  if (!moi) throw new Error('Chưa có thuộc tính QT_MAT_KHAU_MOI trong Cài đặt dự án → Thuộc tính tập lệnh');
-  p.deleteProperty('QT_MAT_KHAU_MOI');
+  // Tên gõ tay có thể dính khoảng trắng / chữ thường → so sau khi chuẩn hoá
+  var khoa = p.getKeys().filter(function (k) { return k.trim().toUpperCase() === 'QT_MAT_KHAU_MOI'; })[0];
+  if (!khoa) throw new Error('Chưa có thuộc tính QT_MAT_KHAU_MOI (đã bấm Lưu chưa?). Đang có: ' + p.getKeys().join(', '));
+  var moi = chuanHoaMatKhau_(p.getProperty(khoa));
+  p.deleteProperty(khoa);
+  if (!moi) throw new Error('Giá trị QT_MAT_KHAU_MOI đang trống — đã xoá, hãy ghi lại');
   if (moi.length < QT_DO_DAI_TOI_THIEU) {
     throw new Error('Mật khẩu phải dài ít nhất ' + QT_DO_DAI_TOI_THIEU + ' ký tự — đã xoá, hãy ghi lại');
   }
