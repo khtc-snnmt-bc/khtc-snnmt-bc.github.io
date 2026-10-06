@@ -3,7 +3,7 @@
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, DangNhap.js · gọi: QuanTri.js (docPhienQuanTri_)
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 21:12
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị + Gmail của đơn vị quản lý bảng → SỬA.
@@ -15,7 +15,7 @@
 var VAI_TRO_HOP_LE = ['Nhập liệu', 'Quản lý báo cáo', 'Quản trị'];
 var QUYEN_SUA = 'writer';
 var QUYEN_XEM = 'reader';
-var COT_DON_VI_QUAN_LY = 'managerUnit';
+var COT_DON_VI_QUAN_LY = 'managerUnits';   // một bảng có thể nhiều đơn vị quản lý: "A, B"
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-phan-quyen.mjs) ----------
 
@@ -27,7 +27,17 @@ function chiSoCot_(tieuDe, ten) {
   return (tieuDe || []).map(function (o) { return String(o).trim(); }).indexOf(ten);
 }
 
-/** Tab Bảng → [{tableCode, tableName, group, templateFileId, managerUnit}] (đọc cột theo tên). */
+/** 'A, B,,A' → ['A', 'B'] — ô nhiều mã đơn vị, cách nhau dấu phẩy. */
+function tachDsMa_(o) {
+  var kq = [];
+  String(o || '').split(',').forEach(function (m) {
+    m = m.trim();
+    if (m && kq.indexOf(m) < 0) kq.push(m);
+  });
+  return kq;
+}
+
+/** Tab Bảng → [{tableCode, tableName, group, templateFileId, managerUnits: []}] (đọc cột theo tên). */
 function docBangQuanLy_(dsBang) {
   if (!dsBang || !dsBang.length) return [];
   var td = dsBang[0];
@@ -44,7 +54,7 @@ function docBangQuanLy_(dsBang) {
       tableName: String(r[cTen] || ma).trim(),
       group: String(r[cNhom] || '').trim(),
       templateFileId: cMau < 0 ? '' : String(r[cMau] || '').trim(),
-      managerUnit: cQl < 0 ? '' : String(r[cQl] || '').trim()
+      managerUnits: cQl < 0 ? [] : tachDsMa_(r[cQl])
     });
   }
   return kq;
@@ -81,7 +91,8 @@ function emailTheoDonVi_(dsTaiKhoan) {
 function fileTrongPhamVi_(bang, file, phamVi) {
   var dsDv = phamVi.unitCodes || [], dsBangChon = (phamVi.tableCodes || []).slice();
   bang.forEach(function (b) {
-    if (b.managerUnit && dsDv.indexOf(b.managerUnit) >= 0 && dsBangChon.indexOf(b.tableCode) < 0) dsBangChon.push(b.tableCode);
+    var laQuanLy = b.managerUnits.some(function (uc) { return dsDv.indexOf(uc) >= 0; });
+    if (laQuanLy && dsBangChon.indexOf(b.tableCode) < 0) dsBangChon.push(b.tableCode);
   });
   var kq = [];
   function them(id) { if (id && kq.indexOf(id) < 0) kq.push(id); }
@@ -102,12 +113,12 @@ function quyenMongMuon_(bang, file, emailDv) {
   }
   var quanLyCua = {};
   bang.forEach(function (b) {
-    quanLyCua[b.tableCode] = b.managerUnit;
-    dat(b.templateFileId, emailDv[b.managerUnit], QUYEN_XEM);
+    quanLyCua[b.tableCode] = b.managerUnits;
+    b.managerUnits.forEach(function (uc) { dat(b.templateFileId, emailDv[uc], QUYEN_XEM); });
   });
   file.forEach(function (f) {
     dat(f.fileId, emailDv[f.unitCode], QUYEN_SUA);
-    dat(f.fileId, emailDv[quanLyCua[f.tableCode]], QUYEN_SUA);
+    (quanLyCua[f.tableCode] || []).forEach(function (uc) { dat(f.fileId, emailDv[uc], QUYEN_SUA); });
   });
   return kq;
 }
@@ -253,7 +264,7 @@ function xuLyQtLayDuLieu_(token) {
         return { email: chuanHoaEmail_(r[0]), unitCode: String(r[1]).trim(), role: String(r[2] || 'Nhập liệu').trim() };
       }),
       bang: docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) {
-        return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, managerUnit: b.managerUnit };
+        return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, managerUnits: b.managerUnits };
       }),
       giao: docFileQuanLy_(docTabQuanLy_(ss, 'File')).map(function (f) {
         return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId };
@@ -279,9 +290,10 @@ function xuLyQtLuuTaiKhoan_(token, unitCode, ds) {
   });
 }
 
-function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnit, dsDonVi) {
+function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnits, dsDonVi) {
   return quanTriChay_(token, function (ss) {
-    var tc = String(tableCode || '').trim(), ql = String(managerUnit || '').trim();
+    if (!Array.isArray(managerUnits)) return { ok: false, loi: 'Danh sách đơn vị quản lý không hợp lệ' };
+    var tc = String(tableCode || '').trim(), ql = tachDsMa_(managerUnits.join(',')).join(', ');
     var tabBang = ss.getSheetByName('Bảng');
     var gtBang = tabBang.getDataRange().getValues();
     var dongBang = gtBang.map(function (r) { return String(r[chiSoCot_(gtBang[0], 'tableCode')]).trim(); }).indexOf(tc);
@@ -293,7 +305,6 @@ function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnit, dsDonVi) {
       cotQl = gtBang[0].length;
       tabBang.getRange(1, cotQl + 1).setValue(COT_DON_VI_QUAN_LY).setFontWeight('bold');
     }
-    var cuQl = String(gtBang[dongBang][cotQl] || '').trim();
     tabBang.getRange(dongBang + 1, cotQl + 1).setNumberFormat('@').setValue(ql);
 
     var tabFile = ss.getSheetByName('File');
@@ -302,6 +313,6 @@ function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnit, dsDonVi) {
     ghiDeDuLieuTab_(tabFile, 4, giao.dong);
     SpreadsheetApp.flush();
     var quyen = dongBoQuyen_(ss, { tableCodes: [tc] });
-    return { ok: true, giuLai: giao.giuLai, quyen: quyen, doiQuanLy: cuQl !== ql };
+    return { ok: true, giuLai: giao.giuLai, quyen: quyen };
   });
 }

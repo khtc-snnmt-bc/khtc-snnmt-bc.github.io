@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-phan-quyen.mjs
 // Vai trò  : Kiểm hàm thuần Tài khoản / Phân quyền / quyền Drive mong muốn phía GAS
 // Chạy     : node app/kiem-thu/kiem-gas-phan-quyen.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 21:12
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -21,9 +21,9 @@ const sach = (x) => JSON.parse(JSON.stringify(x));
 let soBai = 0;
 function bai(ten, fn) { fn(); soBai++; }
 
-// Dữ liệu giả lập Sheet quản lý (tab Bảng có cột managerUnit ở CUỐI, như khi GAS tự thêm)
+// Dữ liệu giả lập Sheet quản lý (tab Bảng có cột managerUnits ở CUỐI, như khi GAS tự thêm)
 const tabBang = [
-  ['tableCode', 'tableName', 'group', 'periodType', 'templateFileId', 'noteTabs', 'managerUnit'],
+  ['tableCode', 'tableName', 'group', 'periodType', 'templateFileId', 'noteTabs', 'managerUnits'],
   ['duan', 'Tiến độ dự án', 'BTTDC', 'thang', 'TONG_DUAN', '', 'QL'],
   ['khokhan', 'Khó khăn', 'BTTDC', 'thang', 'TONG_KK', '', ''],
   ['', '', '', '', '', '', '']
@@ -51,11 +51,24 @@ const emailDv = h.emailTheoDonVi_(tabTK);
 
 bai('docBangQuanLy_ đọc cột theo tên, bỏ dòng trống', () => {
   assert.equal(bang.length, 2);
-  assert.deepEqual(sach(bang[0]), { tableCode: 'duan', tableName: 'Tiến độ dự án', group: 'BTTDC', templateFileId: 'TONG_DUAN', managerUnit: 'QL' });
-  // Tab Bảng cũ chưa có cột managerUnit → để trống
+  assert.deepEqual(sach(bang[0]), { tableCode: 'duan', tableName: 'Tiến độ dự án', group: 'BTTDC', templateFileId: 'TONG_DUAN', managerUnits: ['QL'] });
+  // Tab Bảng cũ chưa có cột managerUnits → danh sách rỗng
   const cu = h.docBangQuanLy_([['tableCode', 'tableName', 'group'], ['x', 'X', 'G']]);
-  assert.equal(cu[0].managerUnit, '');
+  assert.deepEqual(sach(cu[0].managerUnits), []);
   assert.equal(cu[0].templateFileId, '');
+  // Nhiều đơn vị quản lý trong một ô, bỏ trùng / khoảng trắng
+  const nhieu = h.docBangQuanLy_([['tableCode', 'managerUnits'], ['x', ' QL, KHTC ,,QL']]);
+  assert.deepEqual(sach(nhieu[0].managerUnits), ['QL', 'KHTC']);
+});
+
+bai('nhiều đơn vị quản lý: cả hai cùng được quyền, cùng thấy bảng', () => {
+  const tb = [tabBang[0], ['duan', 'Tiến độ dự án', 'BTTDC', 'thang', 'TONG_DUAN', '', 'QL, KHTC']];
+  const b2 = h.docBangQuanLy_(tb);
+  const m = sach(h.quyenMongMuon_(b2, file, emailDv));
+  assert.deepEqual(m.TONG_DUAN, { 'ql@x.com': 'reader', 'qt@x.com': 'reader' });
+  assert.equal(m.F_B_DUAN['qt@x.com'], 'writer');
+  assert.deepEqual(sach(h.fileTrongPhamVi_(b2, file, { unitCodes: ['KHTC'] })), ['TONG_DUAN', 'F_A_DUAN', 'F_B_DUAN']);
+  assert.equal(h.bangQuanLyCuaDonVi_(tb, tabFile, tabDV, 'KHTC').length, 1);
 });
 
 bai('emailTheoDonVi_ chuẩn hoá Gmail', () => {
@@ -68,12 +81,12 @@ bai('quyenMongMuon_: đơn vị + quản lý SỬA file đơn vị, quản lý c
   assert.deepEqual(m.F_B_DUAN, { 'b1@x.com': 'writer', 'ql@x.com': 'writer' });
   assert.deepEqual(m.F_A_KK, { 'a1@x.com': 'writer', 'a2@x.com': 'writer' }); // bảng chưa có quản lý
   assert.deepEqual(m.TONG_DUAN, { 'ql@x.com': 'reader' });
-  assert.deepEqual(m.TONG_KK, {}); // không có quản lý → không ai được chia sẻ file tổng
+  assert.equal(m.TONG_KK, undefined); // không có quản lý → không ai được chia sẻ (dongBoQuyen_ coi như {})
 });
 
 bai('quyenMongMuon_: Gmail vừa là quản lý vừa thuộc đơn vị → SỬA thắng XEM', () => {
   const ed = { A: ['ql@x.com'], QL: ['ql@x.com'] };
-  const b2 = [{ tableCode: 't', templateFileId: 'T', managerUnit: 'QL' }];
+  const b2 = [{ tableCode: 't', templateFileId: 'T', managerUnits: ['QL'] }];
   const m = sach(h.quyenMongMuon_(b2, [{ unitCode: 'A', tableCode: 't', fileId: 'T' }], ed));
   assert.equal(m.T['ql@x.com'], 'writer');
 });

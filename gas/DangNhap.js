@@ -2,7 +2,7 @@
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
 // Lớp      : gas backend — đọc Sheet quản lý, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_)
-// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.6.1 · Cập nhật: 06/10/2026 21:12
 // ============================================================
 
 /**
@@ -211,7 +211,7 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
 function bangQuanLyCuaDonVi_(dsBang, dsFile, dsDonVi, unitCode) {
   var uc = String(unitCode || '').trim();
   var file = docFileQuanLy_(dsFile);
-  return docBangQuanLy_(dsBang).filter(function (b) { return uc && b.managerUnit === uc; }).map(function (b) {
+  return docBangQuanLy_(dsBang).filter(function (b) { return uc && b.managerUnits.indexOf(uc) >= 0; }).map(function (b) {
     var donVi = file.filter(function (f) { return f.tableCode === b.tableCode && f.fileId; }).map(function (f) {
       return { unitCode: f.unitCode, unitName: layTenDonVi_(dsDonVi, f.unitCode), fileId: f.fileId };
     }).sort(function (a, c) { return a.unitName.localeCompare(c.unitName, 'vi', { numeric: true }); });

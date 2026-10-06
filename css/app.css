@@ -906,13 +906,48 @@ a.sidebar-btn {
 .qt-o-don-vi {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 0;
-  font-size: 13px;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 13.5px;
   cursor: pointer;
 }
 
-.qt-o-don-vi input { accent-color: var(--xc); }
+.qt-o-don-vi input {
+  flex-shrink: 0;
+  width: 20px;     /* to hơn ô mặc định (~13px) 50% */
+  height: 20px;
+  accent-color: var(--xc);
+  cursor: pointer;
+}
+
+/* Phân quyền rộng hơn 50% so với khung thường (760px) */
+.qt-khung:has(.qt-luoi-don-vi) { max-width: 1140px; }
+.qt-khung:has(.qt-luoi-don-vi) .qt-luoi-don-vi { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+
+.qt-dong-tren { align-items: start; }
+.qt-dong-tren .qt-nhan { padding-top: 10px; }
+
+.qt-cot-quan-ly {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.qt-ds-quan-ly {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qt-ds-quan-ly:empty { display: none; }
+
+.qt-quan-ly {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  gap: 8px;
+}
 .qt-o-don-vi input:disabled + span { color: var(--text-muted); }
 
 .qt-hang-nut {

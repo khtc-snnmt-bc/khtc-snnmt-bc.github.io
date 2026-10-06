@@ -2,7 +2,7 @@
 // bcsnn · js/domains/phan-quyen.js
 // Vai trò  : Nghiệp vụ thuần trang quản trị: tài khoản theo đơn vị, giao bảng, lọc đơn vị
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 21:12
 // ============================================================
 // Dữ liệu dạng GAS qtLayDuLieu trả: taiKhoan [{email, unitCode, role}],
 // giao [{unitCode, tableCode, coFile}], donVi [{unitCode, unitName}].
@@ -49,6 +49,23 @@ var PHAN_QUYEN = (function () {
     return giu.concat(dsDonVi.map(function (uc) { return { unitCode: uc, tableCode: tableCode, coFile: !!cu[uc] }; }));
   }
 
+  /**
+   * Đơn vị quản lý hiện sẵn khi mở một bảng (quản trị vẫn đổi được):
+   * đã lưu → giữ; chưa → lấy theo bảng khác cùng lĩnh vực; chưa có nữa →
+   * đơn vị có mã mở đầu bằng tên lĩnh vực (VD lĩnh vực BTTDC → BTTDC.SNNMT).
+   * @returns {Array<string>} mã đơn vị
+   */
+  function quanLyMacDinh(bang, dsBang, donVi) {
+    if (bang.managerUnits && bang.managerUnits.length) return bang.managerUnits.slice();
+    var cungNhom = dsBang.filter(function (b) {
+      return b !== bang && b.group && b.group === bang.group && b.managerUnits && b.managerUnits.length;
+    })[0];
+    if (cungNhom) return cungNhom.managerUnits.slice();
+    var nhom = String(bang.group || '').toUpperCase();
+    var dv = nhom && donVi.filter(function (d) { return String(d.unitCode).toUpperCase().indexOf(nhom + '.') === 0; })[0];
+    return dv ? [dv.unitCode] : [];
+  }
+
   /** Câu báo sau khi lưu: số file đã cập nhật quyền + lỗi (nếu có). */
   function tomTatLuu(res, tenDonVi) {
     var q = res.quyen || { soFile: 0, loi: [] };
@@ -63,6 +80,7 @@ var PHAN_QUYEN = (function () {
 
   return {
     VAI_TRO: VAI_TRO, xepDonVi: xepDonVi, locDonVi: locDonVi, taiKhoanCuaDonVi: taiKhoanCuaDonVi,
-    thayTaiKhoan: thayTaiKhoan, giaoCuaBang: giaoCuaBang, thayGiao: thayGiao, tomTatLuu: tomTatLuu
+    thayTaiKhoan: thayTaiKhoan, giaoCuaBang: giaoCuaBang, thayGiao: thayGiao, quanLyMacDinh: quanLyMacDinh,
+    tomTatLuu: tomTatLuu
   };
 })();

@@ -3,7 +3,7 @@
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Tài khoản (Gmail theo đơn vị) và Phân quyền (giao bảng, đơn vị quản lý)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 21:03
+// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 21:12
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -295,8 +295,21 @@ var PAGE_QUAN_TRI = (function () {
     selBang.addEventListener('change', function () { chon.bang = selBang.value; veNoiDung(); });
     khung.appendChild(dong('Bảng', selBang));
 
-    var selQl = oChon([{ giaTri: '', nhan: '—' }].concat(luaChonDonVi()), bangChon.managerUnit);
-    khung.appendChild(dong('Đơn vị quản lý', selQl));
+    // Đơn vị quản lý: nhiều dòng chọn, mỗi dòng có nút gỡ; mặc định theo lĩnh vực (không khoá)
+    var hangQl = khung.appendChild(DOM.tao('div', { class: 'qt-dong qt-dong-tren' }));
+    hangQl.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Đơn vị quản lý'));
+    var cotQl = hangQl.appendChild(DOM.tao('div', { class: 'qt-cot-quan-ly' }));
+    var dsQl = cotQl.appendChild(DOM.tao('div', { class: 'qt-ds-quan-ly' }));
+    function themQuanLy(ma) {
+      var hang = dsQl.appendChild(DOM.tao('div', { class: 'qt-quan-ly' }));
+      hang.appendChild(oChon([{ giaTri: '', nhan: '—' }].concat(luaChonDonVi()), ma || ''));
+      var xoa = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-xoa', title: 'Gỡ đơn vị quản lý này' }, '×'));
+      xoa.addEventListener('click', function () { hang.remove(); });
+      return hang;
+    }
+    PHAN_QUYEN.quanLyMacDinh(bangChon, duLieu.bang, duLieu.donVi).forEach(themQuanLy);
+    var themQl = cotQl.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm đơn vị quản lý'));
+    themQl.addEventListener('click', function () { DOM.$('select', themQuanLy('')).focus(); });
 
     var giao = PHAN_QUYEN.giaoCuaBang(duLieu.giao, chon.bang);
     var tieuDe = khung.appendChild(DOM.tao('div', { class: 'qt-dong' }));
@@ -320,12 +333,14 @@ var PAGE_QUAN_TRI = (function () {
 
     nutLuu(khung, function () {
       var dsDv = DOM.$$('input:checked', luoi).map(function (o) { return o.value; });
-      return API.qtLuuPhanQuyen(token(), chon.bang, selQl.value, dsDv).then(function (res) {
-        if (res && res.ok) { res.dsDv = dsDv; res.ql = selQl.value; }
+      var ql = DOM.$$('select', dsQl).map(function (s) { return s.value; })
+        .filter(function (m, i, ds) { return m && ds.indexOf(m) === i; });
+      return API.qtLuuPhanQuyen(token(), chon.bang, ql, dsDv).then(function (res) {
+        if (res && res.ok) { res.dsDv = dsDv; res.ql = ql; }
         return res;
       });
     }, function (res) {
-      bangChon.managerUnit = res.ql;
+      bangChon.managerUnits = res.ql;
       duLieu.giao = PHAN_QUYEN.thayGiao(duLieu.giao, chon.bang, res.dsDv);
     });
   }
