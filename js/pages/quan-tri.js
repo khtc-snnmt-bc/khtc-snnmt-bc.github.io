@@ -2,7 +2,7 @@
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá), Tài khoản (Gmail theo đơn vị),
-//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Các bảng: chỉnh
+//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
 // Phiên bản: 0.10.0 · Cập nhật: 07/10/2026 12:55
@@ -623,8 +623,8 @@ var PAGE_QUAN_TRI = (function () {
       });
   }
 
-  // Hai tab: Các bảng (danh sách → Chỉnh sửa / Tạo bảng cho đơn vị / Xoá) · Tạo bảng mới
-  var TAB_BANG = [{ ma: 'ds', ten: 'Các bảng' }, { ma: 'moi', ten: 'Tạo bảng mới' }];
+  // Hai tab: Danh sách bảng (danh sách → Chỉnh sửa / Tạo bảng cho đơn vị / Xoá) · Tạo bảng mới
+  var TAB_BANG = [{ ma: 'ds', ten: 'Danh sách bảng' }, { ma: 'moi', ten: 'Tạo bảng mới' }];
 
   function veQuanLyBang(khung) {
     var thanh = khung.appendChild(DOM.tao('div', { class: 'qt-tab-bar', role: 'tablist' }));
@@ -643,7 +643,7 @@ var PAGE_QUAN_TRI = (function () {
     if (!bang) { veDsBang(khung); return; }
 
     var dau = khung.appendChild(DOM.tao('div', { class: 'qt-chi-tiet-dau' }));
-    var lui = dau.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '← Các bảng'));
+    var lui = dau.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '← Danh sách bảng'));
     dau.appendChild(DOM.tao('span', { class: 'qt-chi-tiet-ten' }, bang.tableName));
     lui.addEventListener('click', function () { chon.bangQl = ''; ketQuaBang = null; veNoiDung(); });
     if (chon.viecBang === 'tao') veTaoBangNhap(khung, bang);
@@ -872,7 +872,7 @@ var PAGE_QUAN_TRI = (function () {
     veTaiExcel(vungExcel, chung);
   }
 
-  /** Tạo xong → về tab Các bảng, mở phần chỉnh sửa bảng mới kèm kết quả kiểm mẫu. */
+  /** Tạo xong → về tab Danh sách bảng, mở phần chỉnh sửa bảng mới kèm kết quả kiểm mẫu. */
   function moBangVuaTao(bang, chu, kiem) {
     duLieu.bang.push(bang);
     chon.tabBang = 'ds';
