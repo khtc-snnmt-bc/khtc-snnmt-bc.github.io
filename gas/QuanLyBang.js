@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 17:25
+// Phiên bản: 0.4.1 · Cập nhật: 07/10/2026 20:50
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -354,6 +354,31 @@ function thuMucBang_(ss, tableCode) {
   return co.hasNext() ? co.next() : goc.createFolder(tableCode);
 }
 
+/**
+ * Dời file tổng + mọi file đơn vị của bảng về thư mục con tên mã bảng (file đã ở đó thì bỏ qua).
+ * Dừng sớm khi gần hết 6 phút của GAS; còn sót thì lần Lưu / Kiểm mẫu sau dời tiếp.
+ * Trả số file đã dời.
+ */
+function doiFileVaoThuMucBang_(ss, tableCode) {
+  var batDau = Date.now(), soDoi = 0;
+  var cd = caiDatBang_(ss, tableCode);
+  if (!cd) return 0;
+  var ids = [];
+  if (cd.templateFileId) ids.push(cd.templateFileId);
+  giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode).forEach(function (g) { if (g.fileId) ids.push(g.fileId); });
+  if (!ids.length) return 0;
+  var thuMuc = thuMucBang_(ss, tableCode), idThuMuc = thuMuc.getId();
+  for (var i = 0; i < ids.length; i++) {
+    if (Date.now() - batDau > 270000) break;
+    try {
+      var f = DriveApp.getFileById(ids[i]), p = f.getParents(), dung = false;
+      while (p.hasNext()) if (p.next().getId() === idThuMuc) dung = true;
+      if (!dung) { f.moveTo(thuMuc); soDoi++; }
+    } catch (err) { /* file mất hoặc không đủ quyền: bỏ qua */ }
+  }
+  return soDoi;
+}
+
 /** Danh sách chọn ở cột A: 'all' + mã đơn vị; ô trống vẫn được (quản trị tự chọn sau). */
 function datChonMaDonVi_(vung, dsMaDonVi) {
   vung.setDataValidation(SpreadsheetApp.newDataValidation()
@@ -450,7 +475,8 @@ function kiemMauBang_(ss, tableCode) {
   var caiDat = caiDatBang_(ss, tableCode);
   if (!caiDat) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
   if (!caiDat.templateFileId) return { ok: true, kiem: [loiMau_('File tổng', 'Bảng chưa có file tổng', 'Tạo bảng mới trên app hoặc tải mẫu lên')] };
-  return { ok: true, kiem: kiemMau_(docMau_(SpreadsheetApp.openById(caiDat.templateFileId)), caiDat, maDonViCo_(ss)) };
+  var soDoi = doiFileVaoThuMucBang_(ss, tableCode);
+  return { ok: true, soFileDaDoi: soDoi, kiem: kiemMau_(docMau_(SpreadsheetApp.openById(caiDat.templateFileId)), caiDat, maDonViCo_(ss)) };
 }
 
 /** Ghi (thêm hoặc sửa) dòng của tableCode ở tab Bảng; thiếu cột thì thêm tiêu đề. */
