@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
-// Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all)
+// Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 05:13
+// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 12:28
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +13,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(['DangNhap.js', 'QuanTri.js', 'PhanQuyen.js', 'KyBaoCao.js', 'QuanLyBang.js'].map(doc).join('\n') +
   '\n;this.ham = { cotNhapTuKhai_, kiemKhaiBangMoi_, kiemCaiDatSua_, kiemMau_, dongBangMoi_, caiDatChoTrang_, docCaiDat_,' +
-  ' docLinhVuc_, kiemLinhVucMoi_, dongGiuLai_, maTrongMau_ };', sandbox);
+  ' docLinhVuc_, kiemLinhVucMoi_, dongGiuLai_, maTrongMau_, kiemKhaiTaiMau_, loiChoExcel_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -186,6 +186,35 @@ bai('cài đặt cho trang: chữ hoá, noteTabs nối lại', () => {
   assert.deepEqual(Object.keys(kq), ['a']);
   assert.deepEqual(kq.a, { templateFileId: 'ID', sourceType: 'docLap', inputCols: 'C:J', inputRows: '5', lockedRows: '',
     allowAddRows: true, noteTabs: 'X, Y', dataRows: '20', aggregateType: 'ghep' });
+});
+
+bai('tải Excel: mã bảng, file .xlsx, cỡ file, cài đặt như Sửa', () => {
+  const kb = { tableCode: 'bttdc_duan', tableName: 'Tiến độ dự án', group: 'BTTDC', sourceType: 'gopTach',
+    inputCols: 'o:s, v', noteTabs: 'Chú thích', tenFile: 'mau.XLSX', duLieu: 'QUJD', dataRows: '99' };
+  const kq = sach(h.kiemKhaiTaiMau_(kb, ['khac'], LV));
+  assert.equal(kq.tableCode, 'bttdc_duan');
+  assert.equal(kq.caiDat.inputCols, 'O:S, V');
+  assert.equal(kq.caiDat.noteTabs, 'Chú thích');
+  assert.equal(kq.caiDat.dataRows, '');
+  assert.equal(kq.caiDat.allowAddRows, false);
+  const sai = (doi, dsMa) => h.kiemKhaiTaiMau_(Object.assign({}, kb, doi), dsMa || [], LV).loi;
+  assert.match(sai({}, ['BTTDC_duan']), /đã có/);
+  assert.match(sai({ tableCode: 'Bảng' }), /chữ thường/);
+  assert.match(sai({ duLieu: '' }), /Chưa chọn file/);
+  assert.match(sai({ tenFile: 'mau.xls' }), /\.xlsx/);
+  assert.match(sai({ duLieu: 'A'.repeat(15 * 1048576) }), /quá lớn/);
+  assert.match(sai({ inputCols: '' }), /Cột được nhập/);
+  assert.match(sai({ group: 'XX' }), /chưa có trong danh mục/);
+});
+
+bai('tải Excel: cách sửa chỉ về file Excel', () => {
+  const kq = sach(h.loiChoExcel_([
+    { cho: 'Cột A dòng 5', loi: 'Mã "X" không có trong danh mục đơn vị', cach: 'Chọn mã trong danh sách của ô' },
+    { cho: 'Cột G dòng 5', loi: 'Công thức báo #NAME?', cach: 'Sửa công thức trong file tổng (…)' }
+  ]));
+  assert.equal(kq[0].cach, 'Sửa mã trong file Excel, hoặc thêm đơn vị ở mục Tài khoản');
+  assert.equal(kq[1].cach, 'Sửa công thức trong file Excel (…)');
+  assert.equal(kq[1].cho, 'Cột G dòng 5');
 });
 
 console.log('kiem-gas-bang: ' + soBai + ' bài đạt');

@@ -2,10 +2,10 @@
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá), Tài khoản (Gmail theo đơn vị),
-//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (dựng mẫu, cài đặt,
+//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (dựng mẫu / tải Excel, cài đặt,
 //            lĩnh vực, kiểm mẫu, tạo bảng nhập liệu cho đơn vị)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.8.0 · Cập nhật: 07/10/2026 12:12
+// Phiên bản: 0.9.0 · Cập nhật: 07/10/2026 12:28
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -25,7 +25,7 @@ var PAGE_QUAN_TRI = (function () {
   var phien, elMenu, elTieuDe, elKhoa, elNoiDung, elThongBao, elMatKhau, elNut;
   var duLieu = null;          // { donVi, taiKhoan, bang, giao } từ GAS
   var mucDangChon = MUC[0];
-  var chon = { bang: '', bangQl: '' };
+  var chon = { bang: '', bangQl: '', cachMau: 'dung' };
   var ketQuaBang = null;      // { tableCode, chu, kiem } — báo ngay sau khi tạo / lưu bảng
 
   function khoiTao() {
@@ -757,15 +757,15 @@ var PAGE_QUAN_TRI = (function () {
     });
   }
 
-  // Bảng mới: khai cột → GAS dựng file tổng (dòng 1 tên bảng, dòng 2 tiêu đề, dữ liệu từ dòng 3)
+  // Bảng mới: dựng mẫu trên app, hoặc tải Excel lên làm mẫu (thiết kế 5.1)
   function veBangMoi(khung) {
     var oTen = oNhap('');
     var oMa = oNhap('');
-    var oSoDong = oNhap('20', { type: 'number', min: '1', max: '500' });
+    var selMau = oChon([{ giaTri: 'dung', nhan: 'Dựng trên app' }, { giaTri: 'excel', nhan: 'Tải Excel lên' }], chon.cachMau || 'dung');
     khung.appendChild(dong('Tên bảng', oTen));
     khung.appendChild(dong('Mã bảng', oMa));
+    khung.appendChild(dong('Mẫu', selMau));
     var phanLoai = vePhanLoai(khung, { sourceType: 'docLap', aggregateType: 'ghep', allowAddRows: false }, function () {});
-    khung.appendChild(dong('Số dòng sẵn', oSoDong));
     khung.appendChild(phanLoai.hangThem);
     phanLoai.apLuat();
 
@@ -773,6 +773,67 @@ var PAGE_QUAN_TRI = (function () {
     var maTuSua = false;
     oTen.addEventListener('input', function () { if (!maTuSua) oMa.value = QUAN_LY_BANG.maTuTen(oTen.value); });
     oMa.addEventListener('input', function () { maTuSua = !!oMa.value; });
+
+    var vungDung = khung.appendChild(DOM.tao('div'));
+    var vungExcel = khung.appendChild(DOM.tao('div'));
+    function doiMau() {
+      chon.cachMau = selMau.value;
+      DOM.batTat(vungDung, 'an', selMau.value !== 'dung');
+      DOM.batTat(vungExcel, 'an', selMau.value !== 'excel');
+    }
+    selMau.addEventListener('change', doiMau);
+    doiMau();
+    var chung = { oTen: oTen, oMa: oMa, phanLoai: phanLoai };
+    veDungMau(vungDung, chung);
+    veTaiExcel(vungExcel, chung);
+  }
+
+  // Bảng mới từ Excel: tab đầu là bảng nhập; GAS chuyển thành Sheet rồi Kiểm mẫu — sai thì không giữ
+  function veTaiExcel(khung, chung) {
+    var oFile = DOM.tao('input', { type: 'file', class: 'form-control', accept: '.xlsx' });
+    var oCot = oNhap('', { placeholder: 'C:J, L' });
+    var oDongNhap = oNhap('', { placeholder: 'Mọi dòng' });
+    var oDongKhoa = oNhap('');
+    var oChuThich = oNhap('');
+    khung.appendChild(dong('File Excel', oFile));
+    khung.appendChild(dong('Cột được nhập', oCot));
+    khung.appendChild(dong('Dòng được nhập', oDongNhap));
+    khung.appendChild(dong('Dòng khoá', oDongKhoa));
+    khung.appendChild(dong('Tab chú thích', oChuThich));
+    var hangNut = khung.appendChild(DOM.tao('div', { class: 'qt-hang-nut' }));
+    var nut = hangNut.appendChild(DOM.tao('button', { type: 'button', class: 'btn-login-main qt-nut-luu' }, 'Tải lên'));
+    var bao = khung.appendChild(DOM.tao('div'));
+    var noiKiem = khung.appendChild(DOM.tao('div'));
+
+    nut.addEventListener('click', function () {
+      var file = oFile.files[0];
+      if (!file) { oFile.focus(); return; }
+      noiKiem.innerHTML = '';
+      var maYeuCau = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      chayNut(nut, 'Đang tải lên…', function () {
+        return API.docFileBase64(file).then(function (duLieu) {
+          var khai = Object.assign(chung.phanLoai.giaTri(), {
+            tableCode: chung.oMa.value.trim(), tableName: chung.oTen.value.trim(), inputCols: oCot.value.trim(),
+            inputRows: oDongNhap.value.trim(), lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim(),
+            tenFile: file.name, duLieu: duLieu
+          });
+          return API.qtTaiMau(token(), khai, maYeuCau);
+        });
+      }, function (res) {
+        if (!res.bang) { veKiem(noiKiem, res.kiem); return; }
+        duLieu.bang.push(res.bang);
+        chon.bangQl = res.bang.tableCode;
+        ketQuaBang = { tableCode: res.bang.tableCode, chu: 'Đã tạo file tổng từ Excel.', kiem: res.kiem };
+        veNoiDung();
+      }, bao);
+    });
+  }
+
+  // Dựng mẫu trên app: khai cột → GAS dựng file tổng (dòng 1 tên bảng, dòng 2 tiêu đề, dữ liệu từ dòng 3)
+  function veDungMau(khung, chung) {
+    var oTen = chung.oTen, oMa = chung.oMa, phanLoai = chung.phanLoai;
+    var oSoDong = oNhap('20', { type: 'number', min: '1', max: '500' });
+    khung.appendChild(dong('Số dòng sẵn', oSoDong));
 
     var hangCot = khung.appendChild(DOM.tao('div', { class: 'qt-dong qt-dong-tren' }));
     hangCot.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Cột'));

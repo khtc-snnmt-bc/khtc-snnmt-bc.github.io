@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.9.0 · Cập nhật: 07/10/2026 05:13
+// Phiên bản: 0.10.0 · Cập nhật: 07/10/2026 12:28
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -195,6 +195,24 @@ var API = (function () {
     return goi('qtTaoBang', { token: token, khai: khai, maYeuCau: maYeuCau }, CHO_LUU);
   }
 
+  /**
+   * Bảng mới từ Excel: khai (cài đặt + tenFile + duLieu base64) → GAS chuyển thành Sheet, kiểm mẫu.
+   * Mẫu sai thì GAS không giữ file, trả { kiem }; đúng thì trả { bang, kiem: [] }.
+   */
+  function qtTaiMau(token, khai, maYeuCau) {
+    return goi('qtTaiMau', { token: token, khai: khai, maYeuCau: maYeuCau }, CHO_LUU);
+  }
+
+  /** File người dùng chọn → Promise<chuỗi base64> (không kèm tiền tố data:). */
+  function docFileBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var doc = new FileReader();
+      doc.onload = function () { resolve(String(doc.result).split(',')[1] || ''); };
+      doc.onerror = function () { reject(new Error('Không đọc được file trên máy.')); };
+      doc.readAsDataURL(file);
+    });
+  }
+
   /** Lưu cài đặt bảng đã có; GAS trả kèm kết quả kiểm mẫu. */
   function qtLuuBang(token, tableCode, caiDat) {
     return goi('qtLuuBang', { token: token, tableCode: tableCode, caiDat: caiDat }, CHO_LUU);
@@ -226,6 +244,8 @@ var API = (function () {
     qtThemLinhVuc: qtThemLinhVuc,
     qtThemDonVi: qtThemDonVi,
     qtTaoBang: qtTaoBang,
+    qtTaiMau: qtTaiMau,
+    docFileBase64: docFileBase64,
     qtLuuBang: qtLuuBang,
     qtKiemMau: qtKiemMau,
     qtLayDuLieu: qtLayDuLieu,

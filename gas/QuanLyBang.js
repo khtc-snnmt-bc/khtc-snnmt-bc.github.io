@@ -2,9 +2,9 @@
 // bcsnn · gas/QuanLyBang.js
 // Vai trò  : Quản lý bảng — dựng file tổng (bảng mẫu) từ khai báo cột trên app,
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
-//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên)
+//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 05:13
+// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 12:28
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -26,6 +26,8 @@ var KIEU_COT_HOP_LE = KIEU_COT_NHAP.concat(['congThuc']);
 var CACH_NHAP_DONG = ['docLap', 'gopTach'];
 var CACH_TONG_HOP = ['ghep', 'tong'];
 var TAB_LINH_VUC = 'Lĩnh vực';
+var MAU_EXCEL_TOI_DA = 10 * 1048576;
+var MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 var LOI_CONG_THUC = ['#ERROR!', '#NAME?', '#REF!', '#N/A'];
 // Cột chữ trong tab Bảng — đặt định dạng chữ kẻo Sheet đổi '5:7' thành giờ
 var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'managerUnits'];
@@ -99,6 +101,31 @@ function kiemLinhVucMoi_(ma, ten, gtLinhVuc) {
   return { linhVuc: { groupCode: ma, groupName: ten } };
 }
 
+/** Mã bảng mới → '' nếu dùng được, không thì câu báo lỗi. */
+function kiemMaBangMoi_(ma, dsMaCo) {
+  if (!/^[a-z0-9_]{2,40}$/.test(ma)) return 'Mã bảng chỉ gồm chữ thường không dấu, số, dấu _ (2–40 ký tự)';
+  if ((dsMaCo || []).some(function (m) { return String(m).toLowerCase() === ma; })) return 'Mã bảng "' + ma + '" đã có';
+  return '';
+}
+
+/**
+ * Kiểm khai báo bảng mới tải Excel lên → {tableCode, caiDat} hoặc {loi}.
+ * @param {Object} kb — {tableCode, tableName, group, sourceType, aggregateType, allowAddRows,
+ *                      inputCols, inputRows, lockedRows, noteTabs, tenFile, duLieu (base64)}
+ */
+function kiemKhaiTaiMau_(kb, dsMaCo, dsMaLinhVuc) {
+  kb = kb || {};
+  var ma = String(kb.tableCode || '').trim();
+  var loiMa = kiemMaBangMoi_(ma, dsMaCo);
+  if (loiMa) return { loi: loiMa };
+  if (!kb.duLieu) return { loi: 'Chưa chọn file Excel' };
+  if (!/\.xlsx$/i.test(String(kb.tenFile || ''))) return { loi: 'Chỉ nhận file Excel .xlsx — file .xls thì mở bằng Excel, Lưu thành .xlsx' };
+  if (String(kb.duLieu).length * 3 / 4 > MAU_EXCEL_TOI_DA) return { loi: 'File quá lớn (tối đa ' + (MAU_EXCEL_TOI_DA / 1048576) + ' MB)' };
+  var kiem = kiemCaiDatSua_(Object.assign({}, kb, { dataRows: '' }), dsMaLinhVuc);
+  if (kiem.loi) return kiem;
+  return { tableCode: ma, caiDat: kiem.caiDat };
+}
+
 /**
  * Kiểm khai báo bảng mới gửi từ app → {bang} đã chuẩn hoá hoặc {loi}.
  * @param {Object} kb — {tableCode, tableName, group, sourceType, aggregateType, allowAddRows, dataRows, cot: [{ten, kieu, congThuc, luaChon}]}
@@ -108,8 +135,8 @@ function kiemLinhVucMoi_(ma, ten, gtLinhVuc) {
 function kiemKhaiBangMoi_(kb, dsMaCo, dsMaLinhVuc) {
   kb = kb || {};
   var ma = String(kb.tableCode || '').trim();
-  if (!/^[a-z0-9_]{2,40}$/.test(ma)) return { loi: 'Mã bảng chỉ gồm chữ thường không dấu, số, dấu _ (2–40 ký tự)' };
-  if ((dsMaCo || []).some(function (m) { return String(m).toLowerCase() === ma; })) return { loi: 'Mã bảng "' + ma + '" đã có' };
+  var loiMa = kiemMaBangMoi_(ma, dsMaCo);
+  if (loiMa) return { loi: loiMa };
   var ten = String(kb.tableName || '').trim();
   if (!ten) return { loi: 'Chưa ghi tên bảng' };
   var phanLoai = kiemPhanLoai_(kb, dsMaLinhVuc);
@@ -171,6 +198,16 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
 
 function loiMau_(cho, loi, cach) {
   return { cho: cho, loi: loi, cach: cach };
+}
+
+/** Lỗi kiemMau_ cho Excel tải lên: file tổng chưa được giữ → cách sửa chỉ về file Excel. */
+function loiChoExcel_(dsLoi) {
+  return dsLoi.map(function (l) {
+    var cach = /^Mã ".*" không có trong danh mục/.test(l.loi)
+      ? 'Sửa mã trong file Excel, hoặc thêm đơn vị ở mục Tài khoản'
+      : l.cach.replace('trong file tổng', 'trong file Excel');
+    return loiMau_(l.cho, l.loi, cach);
+  });
 }
 
 /** [5,6,7,9] → '5–7, 9' (để báo) */
@@ -479,6 +516,60 @@ function taoBang_(ss, khai, maYeuCau) {
   return kq;
 }
 
+/**
+ * Bảng mới từ Excel tải lên: chuyển xlsx thành Google Sheet `{mãBảng}_TONG` (giữ công thức,
+ * ô gộp, danh sách chọn, mọi tab) rồi chạy kiemMau_. Mẫu sai → bỏ file vừa chuyển, không ghi
+ * bảng, trả {kiem} để quản trị sửa Excel rồi tải lại. Mẫu đúng → ghi tab Bảng như taoBang_.
+ * Tạo kỳ chỉ chép tab đầu + tab chú thích; các tab khác (VD Tổng hợp) ở lại file tổng.
+ */
+function taiMauExcel_(ss, khai, maYeuCau) {
+  var cache = CacheService.getScriptCache(), khoaCache = maYeuCau ? 'qt_tai_mau_' + String(maYeuCau).slice(0, 64) : '';
+  if (khoaCache && cache.get(khoaCache)) return JSON.parse(cache.get(khoaCache));
+  var kiem = kiemKhaiTaiMau_(khai, docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) { return b.tableCode; }),
+    dsMaLinhVuc_(ss));
+  if (kiem.loi) return { ok: false, loi: kiem.loi };
+  var ma = kiem.tableCode, cd = kiem.caiDat, dsMaDonVi = maDonViCo_(ss);
+
+  var thuMuc = thuMucBang_(ss, ma), id;
+  try {
+    var blob = Utilities.newBlob(Utilities.base64Decode(String(khai.duLieu)), MIME_XLSX, String(khai.tenFile));
+    id = Drive.Files.create({ name: ma + '_TONG', mimeType: MimeType.GOOGLE_SHEETS, parents: [thuMuc.getId()] }, blob).id;
+  } catch (err) {
+    boThuMucRong_(thuMuc);
+    return { ok: false, loi: 'Google không mở được file này như bảng Excel — mở bằng Excel, Lưu thành .xlsx rồi tải lại' };
+  }
+  var file = SpreadsheetApp.openById(id);
+  var loi = kiemMau_(docMau_(file), Object.assign({}, cd, { noteTabs: tachDsMa_(cd.noteTabs) }), dsMaDonVi);
+  var kq;
+  if (loi.length) {
+    DriveApp.getFileById(id).setTrashed(true);
+    boThuMucRong_(thuMuc);
+    kq = { ok: true, kiem: loiChoExcel_(loi) };
+  } else {
+    var giaTri = Object.assign({
+      tableCode: ma, periodType: '', shareType: 'moi', templateFileId: id,
+      rowType: cd.sourceType === 'gopTach' ? 'donCoDinh' : 'tuDo'
+    }, cd);
+    ghiCaiDatBang_(ss, ma, giaTri);
+    if (cd.sourceType === 'gopTach') capNhatChonMaMau_(id, dsMaDonVi);
+    SpreadsheetApp.flush();
+    kq = {
+      ok: true,
+      bang: { tableCode: ma, tableName: cd.tableName, group: cd.group, managerUnits: [],
+        caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[ma] },
+      kiem: []
+    };
+  }
+  if (khoaCache) cache.put(khoaCache, JSON.stringify(kq), 600);
+  return kq;
+}
+
+/** Thư mục bảng không còn gì (vừa tạo cho lần tải lỗi) → bỏ vào thùng rác. */
+function boThuMucRong_(thuMuc) {
+  // getFiles() còn đếm file trong thùng rác → lọc trashed = false
+  if (!thuMuc.searchFiles('trashed = false').hasNext() && !thuMuc.searchFolders('trashed = false').hasNext()) thuMuc.setTrashed(true);
+}
+
 /** Lưu cài đặt bảng đã có rồi kiểm lại mẫu. */
 function luuBang_(ss, tableCode, caiDat) {
   if (!caiDatBang_(ss, tableCode)) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
@@ -550,6 +641,10 @@ function xuLyQtThemLinhVuc_(token, ma, ten) {
 
 function xuLyQtTaoBang_(token, khai, maYeuCau) {
   return quanTriChay_(token, function (ss) { return taoBang_(ss, khai, maYeuCau); });
+}
+
+function xuLyQtTaiMau_(token, khai, maYeuCau) {
+  return quanTriChay_(token, function (ss) { return taiMauExcel_(ss, khai, maYeuCau); });
 }
 
 function xuLyQtLuuBang_(token, tableCode, caiDat) {
