@@ -704,7 +704,9 @@ var PAGE_QUAN_TRI = (function () {
     var khoiFile = DOM.tao('div', {});
     khoiFile.appendChild(hangFile);
     khoiFile.appendChild(DOM.tao('div', { class: 'qt-mo-ta' },
-      'Soát mã đơn vị, cột, dòng, tab chú thích, công thức của file tổng; đưa file tổng và file các đơn vị về thư mục của bảng.'));
+      'Kiểm tra file tổng: mã đơn vị ở cột A có trong danh mục; "Cột được nhập" ghi đúng dạng, không gồm cột A, không vượt quá cột cuối của bảng; ' +
+      '"Dòng được nhập" và "Dòng khoá" nằm trong vùng dữ liệu; tab chú thích có thật; không ô công thức nào báo lỗi. ' +
+      'Đồng thời đưa file tổng và file các đơn vị về thư mục của bảng.'));
     khung.appendChild(hang('File tổng', khoiFile));
 
     var oCot = oNhap(cd.inputCols, { placeholder: 'C:J, L' });
