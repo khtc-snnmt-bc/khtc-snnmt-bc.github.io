@@ -203,6 +203,11 @@ var API = (function () {
     return goi('qtTaiMau', { token: token, khai: khai, maYeuCau: maYeuCau }, CHO_LUU);
   }
 
+  /** File Excel mẫu để tải về kẻ bảng: { tenFile, duLieu (base64) }. */
+  function qtMauExcel(token) {
+    return goi('qtMauExcel', { token: token }, CHO_LUU);
+  }
+
   /** File người dùng chọn → Promise<chuỗi base64> (không kèm tiền tố data:). */
   function docFileBase64(file) {
     return new Promise(function (resolve, reject) {
@@ -250,6 +255,7 @@ var API = (function () {
     qtThemDonVi: qtThemDonVi,
     qtTaoBang: qtTaoBang,
     qtTaiMau: qtTaiMau,
+    qtMauExcel: qtMauExcel,
     qtXoaBang: qtXoaBang,
     docFileBase64: docFileBase64,
     qtLuuBang: qtLuuBang,

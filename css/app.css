@@ -1183,10 +1183,13 @@ a.sidebar-btn {
 
 .qt-tai-excel {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px 28px;
   margin-bottom: 18px;
 }
+
+.qt-khoi-excel { flex: 1 1 320px; max-width: 460px; }
 
 .qt-ten-file { font-size: 14px; color: var(--text-main); }
 .qt-tai-excel .qt-nut-xoa { padding: 4px 10px; }

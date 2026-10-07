@@ -44,6 +44,7 @@ function doPost(e) {
     case 'qtKhoaKy': return traJson_(xuLyQtKhoaKy_(yc.token, yc.tableCode, yc.tenKy, yc.khoa, yc.batDau));
     case 'qtTaoBang': return traJson_(xuLyQtTaoBang_(yc.token, yc.khai, yc.maYeuCau));
     case 'qtTaiMau': return traJson_(xuLyQtTaiMau_(yc.token, yc.khai, yc.maYeuCau));
+    case 'qtMauExcel': return traJson_(xuLyQtMauExcel_(yc.token));
     case 'qtXoaBang': return traJson_(xuLyQtXoaBang_(yc.token, yc.tableCode));
     case 'qtLuuBang': return traJson_(xuLyQtLuuBang_(yc.token, yc.tableCode, yc.caiDat));
     case 'qtKiemMau': return traJson_(xuLyQtKiemMau_(yc.token, yc.tableCode));

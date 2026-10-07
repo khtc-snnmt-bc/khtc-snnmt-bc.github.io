@@ -717,6 +717,40 @@ function xuLyQtTaiMau_(token, khai, maYeuCau) {
   return quanTriChay_(token, function (ss) { return taiMauExcel_(ss, khai, maYeuCau); });
 }
 
+/**
+ * File Excel mẫu để quản trị tải về tự kẻ bảng / nhập công thức / trình bày rồi tải lên:
+ * tab "Mẫu" có sẵn ô A2 "Mã đơn vị" + danh sách chọn mã ở cột A; tab "Mã đơn vị" liệt kê
+ * `all` + mã, tên các đơn vị hiện có. Dựng Sheet tạm → xuất .xlsx → bỏ vào thùng rác.
+ */
+function mauExcelTrong_(ss) {
+  var dv = xuLyLayDonVi_(ss.getId());
+  if (!dv.ok) return { ok: false, loi: dv.loi };
+  var tam = SpreadsheetApp.create('mau_excel_tam'), id = tam.getId();
+  try {
+    var tabMa = tam.getSheets()[0].setName('Mã đơn vị');
+    var dong = [['Mã', 'Tên đơn vị'], [MA_MOI_DON_VI, 'Mọi đơn vị']].concat(dv.donVi.map(function (d) { return [d.unitCode, d.unitName]; }));
+    tabMa.getRange(1, 1, dong.length, 2).setValues(dong);
+    tabMa.getRange(1, 1, 1, 2).setFontWeight('bold');
+    tabMa.setColumnWidth(2, 320);
+    var mau = tam.insertSheet('Mẫu', 0);
+    mau.getRange(1, 1).setValue('Tên bảng (sửa lại)').setFontWeight('bold').setFontSize(13);
+    mau.getRange(MAU_DONG_DAU - 1, 1, 1, 2).setValues([[NHAN_COT_A, 'Tên cột (sửa lại)']]).setFontWeight('bold');
+    mau.getRange(MAU_DONG_DAU, 1, 500, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInRange(tabMa.getRange(2, 1, dong.length - 1, 1), true).setAllowInvalid(false).build());
+    SpreadsheetApp.flush();
+    var res = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id + '/export?mimeType=' +
+      encodeURIComponent(MIME_XLSX), { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return { ok: false, loi: 'Google không xuất được file Excel mẫu (mã ' + res.getResponseCode() + ')' };
+    return { ok: true, tenFile: 'mau_bang.xlsx', duLieu: Utilities.base64Encode(res.getContent()) };
+  } finally {
+    DriveApp.getFileById(id).setTrashed(true);
+  }
+}
+
+function xuLyQtMauExcel_(token) {
+  return quanTriChay_(token, function (ss) { return mauExcelTrong_(ss); });
+}
+
 function xuLyQtXoaBang_(token, tableCode) {
   return quanTriChay_(token, function (ss) { return xoaBang_(ss, String(tableCode || '').trim()); });
 }

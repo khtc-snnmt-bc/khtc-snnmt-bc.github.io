@@ -813,10 +813,34 @@ var PAGE_QUAN_TRI = (function () {
   // Bảng mới: nút Tải Excel ngay dưới tab — chưa chọn file thì dựng mẫu trên app (thiết kế 5.1)
   function veBangMoi(khung) {
     var hangExcel = khung.appendChild(DOM.tao('div', { class: 'qt-tai-excel' }));
-    var oFile = hangExcel.appendChild(DOM.tao('input', { type: 'file', accept: '.xlsx', class: 'an' }));
-    var nutExcel = hangExcel.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tải Excel'));
-    var tenFile = hangExcel.appendChild(DOM.tao('span', { class: 'qt-ten-file an' }));
-    var boFile = hangExcel.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-xoa an', title: 'Bỏ file, dựng mẫu trên app' }, '×'));
+    var khoiCoSan = hangExcel.appendChild(DOM.tao('div', { class: 'qt-khoi-excel' }));
+    var hangCoSan = khoiCoSan.appendChild(DOM.tao('div', { class: 'qt-file-tong' }));
+    var oFile = hangCoSan.appendChild(DOM.tao('input', { type: 'file', accept: '.xlsx', class: 'an' }));
+    var nutExcel = hangCoSan.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tạo bảng từ file Excel có sẵn'));
+    var tenFile = hangCoSan.appendChild(DOM.tao('span', { class: 'qt-ten-file an' }));
+    var boFile = hangCoSan.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-xoa an', title: 'Bỏ file, dựng mẫu trên app' }, '×'));
+    khoiCoSan.appendChild(DOM.tao('div', { class: 'qt-mo-ta' },
+      'File .xlsx có tab đầu là bảng nhập: một ô cột A ghi đúng "Mã đơn vị" làm dòng tiêu đề cột, dữ liệu ở dưới. ' +
+      'Bảng Sở giao dòng: cột A ghi mã đơn vị (hoặc all). Bảng đơn vị tự nhập dòng: cột A để trống. Công thức không báo lỗi. ' +
+      'Sai chỗ nào, app chỉ rõ để sửa.'));
+
+    var khoiMau = hangExcel.appendChild(DOM.tao('div', { class: 'qt-khoi-excel' }));
+    var nutMau = khoiMau.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tải file Excel mẫu'));
+    khoiMau.appendChild(DOM.tao('div', { class: 'qt-mo-ta' },
+      'File có sẵn ô A2 "Mã đơn vị" và danh sách chọn mã đơn vị ở cột A (tab "Mã đơn vị" liệt kê all và mã các đơn vị). ' +
+      'Tải về, kẻ bảng, nhập công thức, trình bày rồi tải lên bằng nút bên cạnh.'));
+    var baoMau = khung.appendChild(DOM.tao('div'));
+    nutMau.addEventListener('click', function () {
+      chayNut(nutMau, 'Đang chuẩn bị…', function () { return API.qtMauExcel(token()); }, function (res) {
+        var byte = atob(res.duLieu), mang = new Uint8Array(byte.length);
+        for (var i = 0; i < byte.length; i++) mang[i] = byte.charCodeAt(i);
+        var a = DOM.tao('a', { href: URL.createObjectURL(new Blob([mang], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })),
+          download: res.tenFile });
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, baoMau);
+    });
 
     var oTen = oNhap('');
     var oMa = oNhap('');
