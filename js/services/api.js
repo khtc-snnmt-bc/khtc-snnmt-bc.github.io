@@ -210,6 +210,11 @@ var API = (function () {
     return goi('qtThemLinhVuc', { token: token, groupCode: groupCode, groupName: groupName }, CHO_LUU);
   }
 
+  /** Thêm đơn vị vào tab Đơn vị; GAS kiểm mã trùng / không hợp lệ. */
+  function qtThemDonVi(token, unitCode, unitName, region, role) {
+    return goi('qtThemDonVi', { token: token, unitCode: unitCode, unitName: unitName, region: region, role: role }, CHO_LUU);
+  }
+
   /** Giao bảng cho các đơn vị có mã ở cột A file tổng (thêm, không bỏ ai) + chia quyền file. */
   function qtGiaoTheoMau(token, tableCode) {
     return goi('qtGiaoTheoMau', { token: token, tableCode: tableCode }, CHO_LUU);
@@ -219,6 +224,7 @@ var API = (function () {
     goi: goi,
     qtGiaoTheoMau: qtGiaoTheoMau,
     qtThemLinhVuc: qtThemLinhVuc,
+    qtThemDonVi: qtThemDonVi,
     qtTaoBang: qtTaoBang,
     qtLuuBang: qtLuuBang,
     qtKiemMau: qtKiemMau,

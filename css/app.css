@@ -827,6 +827,22 @@ a.sidebar-btn {
 
 .qt-loc { max-width: 360px; margin-bottom: 16px; }
 
+/* Tài khoản: ô lọc + nút Thêm đơn vị cùng hàng; form thêm mở ngay dưới */
+.qt-hang-loc-dv { margin-bottom: 16px; }
+.qt-hang-loc-dv .qt-loc { margin-bottom: 0; flex: 0 1 360px; }
+
+.qt-them-don-vi {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr auto;
+  gap: 8px;
+  margin: -6px 0 16px;
+}
+
+.qt-them-don-vi .qt-nut-them { white-space: nowrap; }
+.qt-them-don-vi-bao { grid-column: 1 / -1; }
+.qt-them-don-vi-bao:empty { display: none; }
+.qt-them-don-vi-bao .alert { margin: 0; }
+
 .qt-luoi-khoi {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
@@ -1123,6 +1139,7 @@ a.sidebar-btn {
   .qt-khung { padding: 16px 14px 24px; }
   .qt-dong { grid-template-columns: 1fr; gap: 6px; }
   .qt-luoi-khoi { grid-template-columns: 1fr; }
+  .qt-them-don-vi { grid-template-columns: 1fr; }
   .qt-gmail, .qt-khoi .qt-gmail { grid-template-columns: 1fr 36px; }
   .qt-gmail select { grid-row: 2; }
 }

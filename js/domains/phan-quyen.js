@@ -2,7 +2,7 @@
 // bcsnn · js/domains/phan-quyen.js
 // Vai trò  : Nghiệp vụ thuần trang quản trị: tài khoản theo đơn vị, giao bảng, lọc đơn vị
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 21:12
+// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 12:12
 // ============================================================
 // Dữ liệu dạng GAS qtLayDuLieu trả: taiKhoan [{email, unitCode, role}],
 // giao [{unitCode, tableCode, coFile}], donVi [{unitCode, unitName}].
@@ -11,6 +11,14 @@ var PHAN_QUYEN = (function () {
   'use strict';
 
   var VAI_TRO = ['Nhập liệu', 'Quản lý báo cáo', 'Quản trị'];
+
+  var VAI_TRO_DON_VI = ['Đơn vị báo cáo', 'Quản lý báo cáo', 'Quản trị'];
+
+  /** 'Ban QLDA Bình Thới' → 'BanQldaBinhThoi' — gợi ý mã đơn vị (không dấu, không cách) */
+  function maDonViTuTen(ten) {
+    return BO_DAU.boDau(ten || '').split(/[^a-z0-9]+/).filter(Boolean)
+      .map(function (t) { return t.charAt(0).toUpperCase() + t.slice(1); }).join('').slice(0, 40);
+  }
 
   function xepDonVi(donVi) {
     return (donVi || []).slice().sort(function (a, b) {
@@ -79,7 +87,7 @@ var PHAN_QUYEN = (function () {
   }
 
   return {
-    VAI_TRO: VAI_TRO, xepDonVi: xepDonVi, locDonVi: locDonVi, taiKhoanCuaDonVi: taiKhoanCuaDonVi,
+    VAI_TRO: VAI_TRO, VAI_TRO_DON_VI: VAI_TRO_DON_VI, maDonViTuTen: maDonViTuTen, xepDonVi: xepDonVi, locDonVi: locDonVi, taiKhoanCuaDonVi: taiKhoanCuaDonVi,
     thayTaiKhoan: thayTaiKhoan, giaoCuaBang: giaoCuaBang, thayGiao: thayGiao, quanLyMacDinh: quanLyMacDinh,
     tomTatLuu: tomTatLuu
   };

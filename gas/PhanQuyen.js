@@ -261,7 +261,7 @@ function xuLyQtLayDuLieu_(token) {
     var gtBang = docTabQuanLy_(ss, 'Bảng'), caiDat = caiDatChoTrang_(gtBang);
     return {
       ok: true,
-      donVi: dv.donVi.map(function (d) { return { unitCode: d.unitCode, unitName: d.unitName }; }),
+      donVi: dv.donVi.map(function (d) { return { unitCode: d.unitCode, unitName: d.unitName, region: d.region, role: d.role }; }),
       taiKhoan: docTabQuanLy_(ss, 'Tài khoản').slice(1).filter(function (r) { return r[0]; }).map(function (r) {
         return { email: chuanHoaEmail_(r[0]), unitCode: String(r[1]).trim(), role: String(r[2] || 'Nhập liệu').trim() };
       }),

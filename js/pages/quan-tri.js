@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (dựng mẫu, cài đặt,
 //            lĩnh vực, kiểm mẫu, tạo bảng nhập liệu cho đơn vị)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.7.0 · Cập nhật: 07/10/2026 05:13
+// Phiên bản: 0.8.0 · Cập nhật: 07/10/2026 12:12
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -225,7 +225,15 @@ var PAGE_QUAN_TRI = (function () {
   // Mỗi đơn vị một khối: dòng đầu tên đơn vị, dưới là Gmail. Khối nào sửa thì
   // hiện nút Lưu của khối đó; lưu xong chỉ vẽ lại khối đó (khối khác giữ phần đang sửa).
   function veTaiKhoan(khung) {
-    var loc = khung.appendChild(DOM.tao('input', { type: 'search', class: 'form-control qt-loc', placeholder: 'Lọc đơn vị…' }));
+    var hangLoc = khung.appendChild(DOM.tao('div', { class: 'qt-hang-loc qt-hang-loc-dv' }));
+    var loc = hangLoc.appendChild(DOM.tao('input', { type: 'search', class: 'form-control qt-loc', placeholder: 'Lọc đơn vị…' }));
+    var nutMo = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm đơn vị'));
+    var formMoi = khung.appendChild(veThemDonVi(function () { DOM.an(formMoi); }));
+    DOM.an(formMoi);
+    nutMo.addEventListener('click', function () {
+      DOM.batTat(formMoi, 'an', !formMoi.classList.contains('an'));
+      if (!formMoi.classList.contains('an')) DOM.$('input', formMoi).focus();
+    });
     var luoi = khung.appendChild(DOM.tao('div', { class: 'qt-luoi-khoi' }));
     duLieu.donVi.forEach(function (d) { luoi.appendChild(veKhoiTaiKhoan(d)); });
     loc.addEventListener('input', function () {
@@ -234,6 +242,37 @@ var PAGE_QUAN_TRI = (function () {
         DOM.batTat(el, 'an', hien.indexOf(el.getAttribute('data-ma')) < 0);
       });
     });
+  }
+
+  /** Form thêm đơn vị: tên, mã, khu vực (gợi ý khu vực đã có), vai trò. Thành công → thêm vào danh sách, vẽ lại. */
+  function veThemDonVi(dong_) {
+    var form = DOM.tao('div', { class: 'qt-them-don-vi' });
+    var oTen = form.appendChild(DOM.tao('input', { type: 'text', class: 'form-control', placeholder: 'Tên đơn vị' }));
+    var oMa = form.appendChild(DOM.tao('input', { type: 'text', class: 'form-control', placeholder: 'Mã (không dấu)', maxlength: '40' }));
+    var oKv = form.appendChild(DOM.tao('input', { type: 'text', class: 'form-control', placeholder: 'Khu vực', list: 'qt-ds-khu-vuc' }));
+    var dsKv = form.appendChild(DOM.tao('datalist', { id: 'qt-ds-khu-vuc' }));
+    duLieu.donVi.map(function (d) { return d.region; }).filter(function (k, i, ds) { return k && ds.indexOf(k) === i; })
+      .forEach(function (k) { dsKv.appendChild(DOM.tao('option', { value: k })); });
+    var selVt = form.appendChild(oChon(PHAN_QUYEN.VAI_TRO_DON_VI.map(function (v) { return { giaTri: v, nhan: v }; }), PHAN_QUYEN.VAI_TRO_DON_VI[0]));
+    var nut = form.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Thêm'));
+    var bao = form.appendChild(DOM.tao('div', { class: 'qt-them-don-vi-bao' }));
+
+    var maTuSua = false;
+    oTen.addEventListener('input', function () { if (!maTuSua) oMa.value = PHAN_QUYEN.maDonViTuTen(oTen.value); });
+    oMa.addEventListener('input', function () { maTuSua = !!oMa.value; });
+    nut.addEventListener('click', function () {
+      chayNut(nut, 'Đang thêm…', function () {
+        return API.qtThemDonVi(token(), oMa.value.trim(), oTen.value.trim(), oKv.value.trim(), selVt.value);
+      }, function (res) {
+        duLieu.donVi = PHAN_QUYEN.xepDonVi(duLieu.donVi.concat([res.moi]));
+        dong_();
+        veNoiDung();
+        var baoMoi = DOM.$('.qt-khung', elNoiDung).insertBefore(thongBao('Đã thêm đơn vị ' + res.moi.unitName + ' (' + res.moi.unitCode + ').' +
+          (res.loiCapNhatMau && res.loiCapNhatMau.length ? ' Chưa cập nhật danh sách chọn mã ở file mẫu: ' + res.loiCapNhatMau[0] : ''),
+          !!(res.loiCapNhatMau && res.loiCapNhatMau.length)), DOM.$('.qt-hang-loc', elNoiDung).nextSibling);
+      }, bao);
+    });
+    return form;
   }
 
   function veKhoiTaiKhoan(d) {
