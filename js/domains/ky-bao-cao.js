@@ -3,7 +3,7 @@
 // Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
 //            câu báo tạo/khoá kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.5.0 · Cập nhật: 07/10/2026 23:40
+// Phiên bản: 0.5.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 
 var KY_BAO_CAO = (function () {

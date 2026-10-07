@@ -3,7 +3,7 @@
 // Vai trò  : Đọc chữ vài dòng đầu tab đầu của file .xlsx ngay trên trình duyệt
 //            (không thư viện: tự đọc mục lục zip + DecompressionStream, DOMParser)
 // Lớp      : utils — được gọi bởi: pages · được phép gọi: (không ai)
-// Phiên bản: 0.1.0 · Cập nhật: 07/10/2026 23:55
+// Phiên bản: 0.1.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 // Chỉ đọc giá trị đã lưu trong file (chữ, số, kết quả công thức Excel đã tính) —
 // đủ để lấy tên bảng / dòng "Mã đơn vị" trước khi gửi file lên GAS.

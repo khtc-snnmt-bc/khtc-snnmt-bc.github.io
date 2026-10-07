@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.4.2 · Cập nhật: 07/10/2026 23:40
+// Phiên bản: 0.4.2 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.

@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-phan-quyen.mjs
 // Vai trò  : Kiểm domains trang quản trị (phan-quyen.js, ky-bao-cao.js, quan-ly-bang.js: tên bảng từ Excel)
 // Chạy     : node app/kiem-thu/kiem-phan-quyen.mjs
-// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:55
+// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';

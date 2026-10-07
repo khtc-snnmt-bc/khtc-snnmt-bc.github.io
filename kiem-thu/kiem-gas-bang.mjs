@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
 // Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.3.1 · Cập nhật: 07/10/2026 23:40
+// Phiên bản: 0.3.1 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';

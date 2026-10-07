@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.12.0 · Cập nhật: 07/10/2026 23:55
+// Phiên bản: 0.12.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc

@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-ky.mjs
 // Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá)
 // Chạy     : node app/kiem-thu/kiem-gas-ky.mjs
-// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 23:40
+// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';

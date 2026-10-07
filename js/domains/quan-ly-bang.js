@@ -3,7 +3,7 @@
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
 //            cách nhập dòng / tổng hợp, nhãn lĩnh vực, số đơn vị có file, câu báo kiểm mẫu / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:55
+// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.

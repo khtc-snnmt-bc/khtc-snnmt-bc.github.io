@@ -4,7 +4,7 @@
 //            thì tạo file), khoá / mở khoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 23:40
+// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 23:28
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
