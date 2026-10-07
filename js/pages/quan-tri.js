@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.11.0 · Cập nhật: 07/10/2026 23:40
+// Phiên bản: 0.12.0 · Cập nhật: 07/10/2026 23:55
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -912,6 +912,37 @@ var PAGE_QUAN_TRI = (function () {
       [tenFile, boFile].forEach(function (el) { DOM.batTat(el, 'an', !file); });
       DOM.batTat(vungDung, 'an', !!file);
       DOM.batTat(vungExcel, 'an', !file);
+      baoFile.innerHTML = '';
+      if (file) docTenBang(file);
+    }
+
+    // Chọn file xong: đọc tên bảng ở dòng trên ô "Mã đơn vị" của tab đầu, điền ô Tên bảng, báo việc tiếp
+    var baoFile = khoiCoSan.appendChild(DOM.tao('div'));
+    function docTenBang(file) {
+      DOC_XLSX.docDongDau(file, 30).then(function (dong) {
+        if (oFile.files[0] !== file) return;
+        var kq = QUAN_LY_BANG.tenBangTuExcel(dong);
+        if (!kq.coMaDonVi) {
+          baoFile.appendChild(thongBao('Đã nạp file "' + file.name + '", nhưng 30 dòng đầu của tab đầu không có ô cột A ghi đúng "Mã đơn vị". ' +
+            'Sửa file Excel rồi chọn lại (xem điều kiện file ở trên).', true));
+          return;
+        }
+        if (kq.tenBang) {
+          oTen.value = kq.tenBang;
+          if (!maTuSua) oMa.value = QUAN_LY_BANG.maTuTen(kq.tenBang);
+          baoFile.appendChild(thongBao('Đã nạp file "' + file.name + '". Tên bảng lấy từ file: "' + kq.tenBang + '" (sửa ở ô Tên bảng nếu cần). ' +
+            'Việc tiếp: chọn lĩnh vực, ghi Cột được nhập, rồi bấm Tải lên.'));
+        } else {
+          oTen.value = '';
+          if (!maTuSua) oMa.value = '';
+          baoFile.appendChild(thongBao('Đã nạp file "' + file.name + '". File không ghi tên bảng (dòng phía trên ô "Mã đơn vị") — ' +
+            'nhập tên bảng ở ô Tên bảng bên dưới, chọn lĩnh vực, ghi Cột được nhập, rồi bấm Tải lên.', true));
+          oTen.focus();
+        }
+      }).catch(function () {
+        if (oFile.files[0] !== file) return;
+        baoFile.appendChild(thongBao('Không đọc được file "' + file.name + '" — mở bằng Excel, Lưu thành .xlsx rồi chọn lại.', true));
+      });
     }
     nutExcel.addEventListener('click', function () { oFile.click(); });
     oFile.addEventListener('change', doiMau);
@@ -950,6 +981,12 @@ var PAGE_QUAN_TRI = (function () {
       var file = chung.layFile();
       if (!file) return;
       noiKiem.innerHTML = '';
+      bao.innerHTML = '';
+      if (!chung.oTen.value.trim()) {
+        bao.appendChild(thongBao('Chưa có tên bảng — nhập ở ô Tên bảng phía trên.', true));
+        chung.oTen.focus();
+        return;
+      }
       var maYeuCau = Date.now().toString(36) + Math.random().toString(36).slice(2);
       chayNut(nut, 'Đang tải lên…', function () {
         return API.docFileBase64(file).then(function (duLieu) {
@@ -962,7 +999,7 @@ var PAGE_QUAN_TRI = (function () {
         });
       }, function (res) {
         if (!res.bang) { veKiem(noiKiem, res.kiem); return; }
-        moBangVuaTao(res.bang, 'Đã tạo file tổng từ Excel.', res.kiem);
+        moBangVuaTao(res.bang, QUAN_LY_BANG.baoTaoTuExcel(res.bang, (res.bang.caiDat || {}).sourceType === 'gopTach'), res.kiem);
       }, bao);
     });
   }

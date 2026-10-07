@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-phan-quyen.mjs
-// Vai trò  : Kiểm domains trang quản trị (phan-quyen.js) + file của bảng ở sidebar (ky-bao-cao.js)
+// Vai trò  : Kiểm domains trang quản trị (phan-quyen.js, ky-bao-cao.js, quan-ly-bang.js: tên bảng từ Excel)
 // Chạy     : node app/kiem-thu/kiem-phan-quyen.mjs
-// Phiên bản: 0.3.0 · Cập nhật: 06/10/2026 21:41
+// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:55
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -10,11 +10,11 @@ import assert from 'node:assert/strict';
 
 const sandbox = {};
 vm.createContext(sandbox);
-['js/utils/bo-dau.js', 'js/domains/phan-quyen.js', 'js/domains/ky-bao-cao.js'].forEach((f) => {
+['js/utils/bo-dau.js', 'js/domains/phan-quyen.js', 'js/domains/ky-bao-cao.js', 'js/domains/quan-ly-bang.js'].forEach((f) => {
   vm.runInContext(readFileSync(new URL('../' + f, import.meta.url), 'utf8'), sandbox);
 });
-vm.runInContext('this.PQ = PHAN_QUYEN; this.KY = KY_BAO_CAO;', sandbox);
-const { PQ, KY } = sandbox;
+vm.runInContext('this.PQ = PHAN_QUYEN; this.KY = KY_BAO_CAO; this.QLB = QUAN_LY_BANG;', sandbox);
+const { PQ, KY, QLB } = sandbox;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
 let soBai = 0;
@@ -97,6 +97,35 @@ bai('gộp lô + câu báo tạo / khoá kỳ', () => {
   assert.equal(KY.tomTatTaoKy({ tenKy: '10.11.2026', tong: 0, loi: [] }), 'Đã ghi kỳ 10.11.2026. Bảng chưa giao cho đơn vị nào.');
   assert.equal(KY.tomTatKhoaKy({ tenKy: '10.11.2026', khoa: true, tong: 2, daLam: 1, khongCoTab: 1, loi: [] }),
     'Đã khoá kỳ 10.11.2026 ở 1/2 file. 1 file chưa có tab kỳ này.');
+});
+
+bai('ngày tự khoá gợi ý (giống GAS hanKhoaMacDinh_)', () => {
+  assert.equal(KY.hanKhoaGoiY('2026-09-30', '5'), '2026-10-05');
+  assert.equal(KY.hanKhoaGoiY('2026-10-05', 5), '2026-11-05');
+  assert.equal(KY.hanKhoaGoiY('2026-01-31', 31), '2026-02-28');
+  assert.equal(KY.hanKhoaGoiY('2026-12-10', 5), '2027-01-05');
+  assert.equal(KY.hanKhoaGoiY('2026-10-10', ''), '');
+  assert.equal(KY.hanKhoaGoiY('', 5), '');
+  assert.equal(KY.ngayChoO('05.11.2026'), '2026-11-05');
+  assert.equal(KY.ngayChoO(''), '');
+});
+
+bai('datKy giữ / thay ngày tự khoá', () => {
+  const ds = [{ tableCode: 'a', periodName: '10.10.2026', locked: false, lockDate: '05.11.2026' }];
+  assert.equal(KY.datKy(ds, 'a', '10.10.2026', true)[0].lockDate, '05.11.2026');
+  assert.equal(KY.datKy(ds, 'a', '10.10.2026', false, '')[0].lockDate, '');
+  assert.deepEqual(sach(KY.datKy(ds, 'a', '01.12.2026', false, '05.12.2026')[1]),
+    { tableCode: 'a', periodName: '01.12.2026', locked: false, lockDate: '05.12.2026' });
+});
+
+bai('tên bảng từ Excel: dòng một ô có chữ phía trên "Mã đơn vị"', () => {
+  assert.deepEqual(sach(QLB.tenBangTuExcel([['Tiến độ  giải ngân'], ['', 'Nhóm A', '', 'Nhóm B'], ['Mã đơn vị', 'X']])),
+    { coMaDonVi: true, tenBang: 'Tiến độ giải ngân' });
+  assert.deepEqual(sach(QLB.tenBangTuExcel([['', 'DỰ ÁN', '', 'TIẾN ĐỘ'], ['', 'Mã', 'Tên'], ['Mã đơn vị']])),
+    { coMaDonVi: true, tenBang: '' });
+  assert.deepEqual(sach(QLB.tenBangTuExcel([['Mã đơn vị', 'Tên']])), { coMaDonVi: true, tenBang: '' });
+  assert.deepEqual(sach(QLB.tenBangTuExcel([['Bảng X'], ['Ma don vi']])), { coMaDonVi: false, tenBang: '' });
+  assert.match(QLB.baoTaoTuExcel({ tableName: 'T' }, true), /Giao theo mã trong bảng/);
 });
 
 console.log('ĐẠT ' + soBai + ' bài — kiem-phan-quyen');

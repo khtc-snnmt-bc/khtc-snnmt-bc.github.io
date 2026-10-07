@@ -3,7 +3,7 @@
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
 //            cách nhập dòng / tổng hợp, nhãn lĩnh vực, số đơn vị có file, câu báo kiểm mẫu / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 12:50
+// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:55
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -98,7 +98,36 @@ var QUAN_LY_BANG = (function () {
     return { chu: chu, laLoi: !!((kq.sai && kq.sai.length) || loi.length) };
   }
 
+  /**
+   * Vài dòng đầu tab đầu của Excel (mảng dòng × ô chữ) → { coMaDonVi, tenBang }:
+   * dòng tiêu đề cột = dòng đầu có ô A đúng 'Mã đơn vị'; tên bảng = dòng đầu tiên phía
+   * trên đó chỉ có ĐÚNG MỘT ô có chữ (dòng nhiều ô là tiêu đề nhóm cột, không phải tên
+   * bảng); '' = file không ghi tên bảng.
+   */
+  function tenBangTuExcel(dong) {
+    var dongTieuDe = -1;
+    (dong || []).some(function (o, i) {
+      if (String(o[0] || '').trim() === 'Mã đơn vị') { dongTieuDe = i; return true; }
+      return false;
+    });
+    var tenBang = '';
+    for (var i = 0; i < dongTieuDe && !tenBang; i++) {
+      var coChu = (dong[i] || []).map(function (x) { return String(x || '').trim(); }).filter(Boolean);
+      if (coChu.length === 1) tenBang = coChu[0];
+    }
+    return { coMaDonVi: dongTieuDe >= 0, tenBang: tenBang.replace(/\s+/g, ' ') };
+  }
+
+  /** Câu báo sau khi tạo bảng từ Excel: thành công + việc làm tiếp. */
+  function baoTaoTuExcel(bang, laGopTach) {
+    return 'Đã tải lên thành công — đã tạo bảng "' + bang.tableName + '". Việc tiếp theo: ' +
+      (laGopTach ? 'bấm "Tạo bảng cho đơn vị" → "Giao theo mã trong bảng"'
+        : 'giao bảng cho các đơn vị ở mục Phân quyền, rồi bấm "Tạo bảng cho đơn vị"') +
+      ', chọn ngày kỳ đầu và bấm "Tạo cho các đơn vị".';
+  }
+
   return {
+    tenBangTuExcel: tenBangTuExcel, baoTaoTuExcel: baoTaoTuExcel,
     KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, DONG_DAU: DONG_DAU,
     chuCot: chuCot, maTuTen: maTuTen, luaChonLinhVuc: luaChonLinhVuc, maLinhVucTuTen: maLinhVucTuTen,
     oPhu: oPhu, tomTatKiem: tomTatKiem, tenLinhVuc: tenLinhVuc, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
