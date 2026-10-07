@@ -700,8 +700,12 @@ var PAGE_QUAN_TRI = (function () {
       hangFile.appendChild(DOM.tao('a', { class: 'qt-nut-them', href: KY_BAO_CAO.taoUrlSheet(cd.templateFileId),
         target: '_blank', rel: 'noopener' }, 'Mở file tổng ↗'));
     }
-    var nutKiem = hangFile.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Kiểm mẫu'));
-    khung.appendChild(hang('File tổng', hangFile));
+    var nutKiem = hangFile.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Kiểm tra bảng'));
+    var khoiFile = DOM.tao('div', {});
+    khoiFile.appendChild(hangFile);
+    khoiFile.appendChild(DOM.tao('div', { class: 'qt-mo-ta' },
+      'Soát mã đơn vị, cột, dòng, tab chú thích, công thức của file tổng; đưa file tổng và file các đơn vị về thư mục của bảng.'));
+    khung.appendChild(hang('File tổng', khoiFile));
 
     var oCot = oNhap(cd.inputCols, { placeholder: 'C:J, L' });
     var oDongNhap = oNhap(cd.inputRows, { placeholder: 'Mọi dòng' });
@@ -730,7 +734,7 @@ var PAGE_QUAN_TRI = (function () {
     ketQuaBang = null;
 
     nutKiem.addEventListener('click', function () {
-      chayNut(nutKiem, 'Đang kiểm…', function () { return API.qtKiemMau(token(), bang.tableCode); },
+      chayNut(nutKiem, 'Đang kiểm tra…', function () { return API.qtKiemMau(token(), bang.tableCode); },
         function (res) { veKiem(noiKiem, res.kiem); }, bao);
     });
 

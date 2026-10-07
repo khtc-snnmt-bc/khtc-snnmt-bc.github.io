@@ -359,7 +359,7 @@ function taoKy_(ss, tableCode, tenKy, batDau) {
   if (!caiDat.templateFileId) return { ok: false, loi: 'Bảng chưa có file tổng (mẫu)' };
   if (!Number(batDau)) {   // lô đầu: mẫu sai thì không tạo (sinh 168 file sai rất khó dọn)
     var kiem = kiemMauBang_(ss, tableCode).kiem || [];
-    if (kiem.length) return { ok: false, loi: 'Mẫu chưa đúng ' + kiem.length + ' chỗ — vào Quản lý bảng, bấm Kiểm mẫu để xem và sửa', kiem: kiem };
+    if (kiem.length) return { ok: false, loi: 'Mẫu chưa đúng ' + kiem.length + ' chỗ — vào Quản lý bảng, bấm Kiểm tra bảng để xem và sửa', kiem: kiem };
   }
 
   var tabKy = tabKyQuanLy_(ss);

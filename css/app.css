@@ -1057,6 +1057,7 @@ a.sidebar-btn {
 }
 
 .qt-file-tong a.qt-nut-them { text-decoration: none; }
+.qt-mo-ta { margin-top: 6px; font-size: 13px; color: var(--text-muted); }
 .qt-so-giao { font-size: 14px; margin-right: 6px; font-variant-numeric: tabular-nums; }
 
 .qt-tich input {
