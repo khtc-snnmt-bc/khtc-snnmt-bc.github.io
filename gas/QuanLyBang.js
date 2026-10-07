@@ -356,27 +356,28 @@ function thuMucBang_(ss, tableCode) {
 
 /**
  * Dời file tổng + mọi file đơn vị của bảng về thư mục con tên mã bảng (file đã ở đó thì bỏ qua).
- * Dừng sớm khi gần hết 6 phút của GAS; còn sót thì lần Lưu / Kiểm mẫu sau dời tiếp.
- * Trả số file đã dời.
+ * Dừng sớm khi gần hết 6 phút của GAS; còn sót thì lần Lưu / Kiểm tra bảng sau dời tiếp.
+ * Trả { tong, daDoi, loi: [câu báo] } — lỗi từng file được báo, không nuốt.
  */
 function doiFileVaoThuMucBang_(ss, tableCode) {
-  var batDau = Date.now(), soDoi = 0;
+  var batDau = Date.now(), kq = { tong: 0, daDoi: 0, loi: [] };
   var cd = caiDatBang_(ss, tableCode);
-  if (!cd) return 0;
+  if (!cd) return kq;
   var ids = [];
   if (cd.templateFileId) ids.push(cd.templateFileId);
   giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode).forEach(function (g) { if (g.fileId) ids.push(g.fileId); });
-  if (!ids.length) return 0;
+  kq.tong = ids.length;
+  if (!ids.length) return kq;
   var thuMuc = thuMucBang_(ss, tableCode), idThuMuc = thuMuc.getId();
   for (var i = 0; i < ids.length; i++) {
-    if (Date.now() - batDau > 270000) break;
+    if (Date.now() - batDau > 270000) { kq.loi.push('Hết thời gian, còn ' + (ids.length - i) + ' file chưa xét — bấm lại để dời tiếp'); break; }
     try {
       var f = DriveApp.getFileById(ids[i]), p = f.getParents(), dung = false;
       while (p.hasNext()) if (p.next().getId() === idThuMuc) dung = true;
-      if (!dung) { f.moveTo(thuMuc); soDoi++; }
-    } catch (err) { /* file mất hoặc không đủ quyền: bỏ qua */ }
+      if (!dung) { f.moveTo(thuMuc); kq.daDoi++; }
+    } catch (err) { kq.loi.push('File ' + ids[i].slice(0, 8) + '…: ' + String(err.message || err)); }
   }
-  return soDoi;
+  return kq;
 }
 
 /** Danh sách chọn ở cột A: 'all' + mã đơn vị; ô trống vẫn được (quản trị tự chọn sau). */
@@ -474,9 +475,9 @@ function maDonViCo_(ss) {
 function kiemMauBang_(ss, tableCode) {
   var caiDat = caiDatBang_(ss, tableCode);
   if (!caiDat) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
-  if (!caiDat.templateFileId) return { ok: true, kiem: [loiMau_('File tổng', 'Bảng chưa có file tổng', 'Tạo bảng mới trên app hoặc tải mẫu lên')] };
-  var soDoi = doiFileVaoThuMucBang_(ss, tableCode);
-  return { ok: true, soFileDaDoi: soDoi, kiem: kiemMau_(docMau_(SpreadsheetApp.openById(caiDat.templateFileId)), caiDat, maDonViCo_(ss)) };
+  var doi = doiFileVaoThuMucBang_(ss, tableCode);
+  if (!caiDat.templateFileId) return { ok: true, doi: doi, kiem: [loiMau_('File tổng', 'Bảng chưa có file tổng', 'Tạo bảng mới trên app hoặc tải mẫu lên')] };
+  return { ok: true, doi: doi, kiem: kiemMau_(docMau_(SpreadsheetApp.openById(caiDat.templateFileId)), caiDat, maDonViCo_(ss)) };
 }
 
 /** Ghi (thêm hoặc sửa) dòng của tableCode ở tab Bảng; thiếu cột thì thêm tiêu đề. */
@@ -649,7 +650,8 @@ function luuBang_(ss, tableCode, caiDat) {
   SpreadsheetApp.flush();
   var cd = caiDatBang_(ss, tableCode);
   if (cd.templateFileId && cd.sourceType === 'gopTach') capNhatChonMaMau_(cd.templateFileId, maDonViCo_(ss));
-  return { ok: true, caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[tableCode], kiem: kiemMauBang_(ss, tableCode).kiem };
+  var kt = kiemMauBang_(ss, tableCode);
+  return { ok: true, caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[tableCode], kiem: kt.kiem, doi: kt.doi };
 }
 
 /**

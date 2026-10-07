@@ -599,6 +599,14 @@ var PAGE_QUAN_TRI = (function () {
     };
   }
 
+  /** Kết quả dời file về thư mục bảng → { chu, laLoi } (rỗng nếu không có file nào). */
+  function tomTatDoi(doi) {
+    if (!doi || !doi.tong) return { chu: '', laLoi: false };
+    var chu = doi.daDoi ? 'Đã đưa ' + doi.daDoi + '/' + doi.tong + ' file về thư mục của bảng.' : 'Mọi file đã nằm trong thư mục của bảng.';
+    if (doi.loi.length) chu = chu + ' Không dời được: ' + doi.loi.slice(0, 3).join('; ');
+    return { chu: chu, laLoi: doi.loi.length > 0 };
+  }
+
   function veKiem(noi, kiem) {
     noi.innerHTML = '';
     var tt = QUAN_LY_BANG.tomTatKiem(kiem);
@@ -737,7 +745,11 @@ var PAGE_QUAN_TRI = (function () {
 
     nutKiem.addEventListener('click', function () {
       chayNut(nutKiem, 'Đang kiểm tra…', function () { return API.qtKiemMau(token(), bang.tableCode); },
-        function (res) { veKiem(noiKiem, res.kiem); }, bao);
+        function (res) {
+          var tt = tomTatDoi(res.doi);
+          if (tt.chu) bao.appendChild(thongBao(tt.chu, tt.laLoi));
+          veKiem(noiKiem, res.kiem);
+        }, bao);
     });
 
     nut.addEventListener('click', function () {
@@ -750,7 +762,8 @@ var PAGE_QUAN_TRI = (function () {
         bang.tableName = caiDat.tableName;
         bang.group = caiDat.group;
         bang.caiDat = res.caiDat;
-        ketQuaBang = { tableCode: bang.tableCode, chu: 'Đã lưu.', kiem: res.kiem };
+        var tt = tomTatDoi(res.doi);
+        ketQuaBang = { tableCode: bang.tableCode, chu: 'Đã lưu.' + (tt.chu ? ' ' + tt.chu : ''), kiem: res.kiem };
         veNoiDung();
       }, bao);
     });
