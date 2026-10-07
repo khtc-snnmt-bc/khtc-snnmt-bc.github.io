@@ -1,9 +1,9 @@
 // ============================================================
 // bcsnn · js/domains/quan-ly-bang.js
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
-//            cách nhập dòng / tổng hợp, nhãn lĩnh vực, câu báo kiểm mẫu / giao theo mã
+//            cách nhập dòng / tổng hợp, nhãn lĩnh vực, số đơn vị có file, câu báo kiểm mẫu / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 05:13
+// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 12:50
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -53,6 +53,17 @@ var QUAN_LY_BANG = (function () {
       });
   }
 
+  /** Tên lĩnh vực theo mã (chưa có trong danh mục thì trả mã) */
+  function tenLinhVuc(linhVuc, ma) {
+    var l = (linhVuc || []).filter(function (x) { return x.groupCode === ma; })[0];
+    return l ? l.groupName : (ma || '');
+  }
+
+  /** Số đơn vị đã có file nhập liệu của bảng (giao: [{unitCode, tableCode, coFile}]) */
+  function soDonViCoFile(giao, tableCode) {
+    return (giao || []).filter(function (g) { return g.tableCode === tableCode && g.coFile; }).length;
+  }
+
   /** 'Tài chính' → 'TC' (chữ đầu mỗi từ, in hoa không dấu) — gợi ý mã lĩnh vực */
   function maLinhVucTuTen(ten) {
     return BO_DAU.boDau(ten || '').split(/[^a-z0-9]+/).filter(Boolean)
@@ -90,6 +101,6 @@ var QUAN_LY_BANG = (function () {
   return {
     KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, DONG_DAU: DONG_DAU,
     chuCot: chuCot, maTuTen: maTuTen, luaChonLinhVuc: luaChonLinhVuc, maLinhVucTuTen: maLinhVucTuTen,
-    oPhu: oPhu, tomTatKiem: tomTatKiem, tomTatGiaoTheoMau: tomTatGiaoTheoMau
+    oPhu: oPhu, tomTatKiem: tomTatKiem, tenLinhVuc: tenLinhVuc, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
   };
 })();

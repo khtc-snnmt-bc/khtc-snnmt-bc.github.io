@@ -2,10 +2,10 @@
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá), Tài khoản (Gmail theo đơn vị),
-//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (dựng mẫu / tải Excel, cài đặt,
-//            lĩnh vực, kiểm mẫu, tạo bảng nhập liệu cho đơn vị)
+//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Các bảng: chỉnh
+//            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.9.0 · Cập nhật: 07/10/2026 12:28
+// Phiên bản: 0.10.0 · Cập nhật: 07/10/2026 12:55
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -25,7 +25,7 @@ var PAGE_QUAN_TRI = (function () {
   var phien, elMenu, elTieuDe, elKhoa, elNoiDung, elThongBao, elMatKhau, elNut;
   var duLieu = null;          // { donVi, taiKhoan, bang, giao } từ GAS
   var mucDangChon = MUC[0];
-  var chon = { bang: '', bangQl: '', cachMau: 'dung' };
+  var chon = { bang: '', bangQl: '', tabBang: 'ds', viecBang: 'sua' };
   var ketQuaBang = null;      // { tableCode, chu, kiem } — báo ngay sau khi tạo / lưu bảng
 
   function khoiTao() {
@@ -506,8 +506,6 @@ var PAGE_QUAN_TRI = (function () {
 
   // ---------- Quản lý bảng ----------
 
-  var BANG_MOI = '__moi';
-
   function oNhap(giaTri, thuocTinh) {
     var o = DOM.tao('input', Object.assign({ type: 'text', class: 'form-control' }, thuocTinh || {}));
     o.value = giaTri === undefined || giaTri === null ? '' : String(giaTri);
@@ -625,16 +623,66 @@ var PAGE_QUAN_TRI = (function () {
       });
   }
 
+  // Hai tab: Các bảng (danh sách → Chỉnh sửa / Tạo bảng cho đơn vị / Xoá) · Tạo bảng mới
+  var TAB_BANG = [{ ma: 'ds', ten: 'Các bảng' }, { ma: 'moi', ten: 'Tạo bảng mới' }];
+
   function veQuanLyBang(khung) {
-    if (chon.bangQl !== BANG_MOI && !duLieu.bang.some(function (b) { return b.tableCode === chon.bangQl; })) {
-      chon.bangQl = duLieu.bang.length ? duLieu.bang[0].tableCode : BANG_MOI;
+    var thanh = khung.appendChild(DOM.tao('div', { class: 'qt-tab-bar', role: 'tablist' }));
+    TAB_BANG.forEach(function (t) {
+      var nut = thanh.appendChild(DOM.tao('button', { type: 'button', role: 'tab',
+        class: 'qt-tab' + (chon.tabBang === t.ma ? ' active' : '') }, t.ten));
+      nut.addEventListener('click', function () {
+        chon.tabBang = t.ma;
+        chon.bangQl = '';
+        ketQuaBang = null;
+        veNoiDung();
+      });
+    });
+    if (chon.tabBang === 'moi') { veBangMoi(khung); return; }
+    var bang = duLieu.bang.filter(function (b) { return b.tableCode === chon.bangQl; })[0];
+    if (!bang) { veDsBang(khung); return; }
+
+    var dau = khung.appendChild(DOM.tao('div', { class: 'qt-chi-tiet-dau' }));
+    var lui = dau.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '← Các bảng'));
+    dau.appendChild(DOM.tao('span', { class: 'qt-chi-tiet-ten' }, bang.tableName));
+    lui.addEventListener('click', function () { chon.bangQl = ''; ketQuaBang = null; veNoiDung(); });
+    if (chon.viecBang === 'tao') veTaoBangNhap(khung, bang);
+    else veCaiDatBang(khung, bang);
+  }
+
+  function veDsBang(khung) {
+    if (!duLieu.bang.length) {
+      khung.appendChild(DOM.tao('p', { class: 'qt-dang-tai' }, 'Chưa có bảng nào.'));
+      return;
     }
-    var sel = oChon(duLieu.bang.map(function (b) { return { giaTri: b.tableCode, nhan: b.tableName }; })
-      .concat([{ giaTri: BANG_MOI, nhan: '＋ Bảng mới' }]), chon.bangQl);
-    sel.addEventListener('change', function () { chon.bangQl = sel.value; ketQuaBang = null; veNoiDung(); });
-    khung.appendChild(dong('Bảng', sel));
-    if (chon.bangQl === BANG_MOI) veBangMoi(khung);
-    else veCaiDatBang(khung, duLieu.bang.filter(function (b) { return b.tableCode === chon.bangQl; })[0]);
+    var ds = khung.appendChild(DOM.tao('div', { class: 'qt-ds-bang' }));
+    var bao = khung.appendChild(DOM.tao('div'));
+    duLieu.bang.forEach(function (b) {
+      var h = ds.appendChild(DOM.tao('div', { class: 'qt-bang' }));
+      var ten = h.appendChild(DOM.tao('div', { class: 'qt-bang-ten' }));
+      ten.appendChild(DOM.tao('span', {}, b.tableName));
+      ten.appendChild(DOM.tao('small', {}, QUAN_LY_BANG.tenLinhVuc(duLieu.linhVuc, b.group) + ' · ' + b.tableCode));
+      h.appendChild(DOM.tao('span', { class: 'qt-bang-so' }, QUAN_LY_BANG.soDonViCoFile(duLieu.giao, b.tableCode) + ' đơn vị'));
+      var nutSua = h.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Chỉnh sửa'));
+      var nutTao = h.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tạo bảng cho đơn vị'));
+      var nutXoa = h.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them qt-nut-do' }, 'Xoá'));
+      function mo(viec) { chon.bangQl = b.tableCode; chon.viecBang = viec; ketQuaBang = null; veNoiDung(); }
+      nutSua.addEventListener('click', function () { mo('sua'); });
+      nutTao.addEventListener('click', function () { mo('tao'); });
+      nutXoa.addEventListener('click', function () { xoaBang(b, nutXoa, bao); });
+    });
+  }
+
+  function xoaBang(b, nut, bao) {
+    var soFile = QUAN_LY_BANG.soDonViCoFile(duLieu.giao, b.tableCode);
+    if (!window.confirm('Xoá bảng "' + b.tableName + '"?\n\nFile tổng' + (soFile ? ' và ' + soFile + ' file của các đơn vị' : '') +
+      ' sẽ vào thùng rác Google Drive (khôi phục được trong 30 ngày). Đơn vị không còn thấy bảng này.')) return;
+    chayNut(nut, 'Đang xoá…', function () { return API.qtXoaBang(token(), b.tableCode); }, function () {
+      duLieu.bang = duLieu.bang.filter(function (x) { return x.tableCode !== b.tableCode; });
+      duLieu.giao = duLieu.giao.filter(function (g) { return g.tableCode !== b.tableCode; });
+      duLieu.ky = (duLieu.ky || []).filter(function (k) { return k.tableCode !== b.tableCode; });
+      veNoiDung();
+    }, bao);
   }
 
   function oCachNhapDong(giaTri) {
@@ -680,7 +728,6 @@ var PAGE_QUAN_TRI = (function () {
       veKiem(noiKiem, ketQuaBang.kiem);
     }
     ketQuaBang = null;
-    veTaoBangNhap(khung, bang);
 
     nutKiem.addEventListener('click', function () {
       chayNut(nutKiem, 'Đang kiểm…', function () { return API.qtKiemMau(token(), bang.tableCode); },
@@ -707,7 +754,7 @@ var PAGE_QUAN_TRI = (function () {
   // được giao = tạo kỳ đầu (file + tab kỳ + chia quyền), dùng lại đúng việc Tạo kỳ.
   // Máy chủ kiểm mẫu trước — mẫu sai thì không tạo.
   function veTaoBangNhap(khung, bang) {
-    var vung = khung.appendChild(DOM.tao('div', { class: 'qt-tao-bang-nhap' }));
+    var vung = khung.appendChild(DOM.tao('div'));
     var hangGiao = DOM.tao('div', { class: 'qt-file-tong' });
     var soGiao = hangGiao.appendChild(DOM.tao('span', { class: 'qt-so-giao' }));
     function demGiao() {
@@ -757,14 +804,18 @@ var PAGE_QUAN_TRI = (function () {
     });
   }
 
-  // Bảng mới: dựng mẫu trên app, hoặc tải Excel lên làm mẫu (thiết kế 5.1)
+  // Bảng mới: nút Tải Excel ngay dưới tab — chưa chọn file thì dựng mẫu trên app (thiết kế 5.1)
   function veBangMoi(khung) {
+    var hangExcel = khung.appendChild(DOM.tao('div', { class: 'qt-tai-excel' }));
+    var oFile = hangExcel.appendChild(DOM.tao('input', { type: 'file', accept: '.xlsx', class: 'an' }));
+    var nutExcel = hangExcel.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tải Excel'));
+    var tenFile = hangExcel.appendChild(DOM.tao('span', { class: 'qt-ten-file an' }));
+    var boFile = hangExcel.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-xoa an', title: 'Bỏ file, dựng mẫu trên app' }, '×'));
+
     var oTen = oNhap('');
     var oMa = oNhap('');
-    var selMau = oChon([{ giaTri: 'dung', nhan: 'Dựng trên app' }, { giaTri: 'excel', nhan: 'Tải Excel lên' }], chon.cachMau || 'dung');
     khung.appendChild(dong('Tên bảng', oTen));
     khung.appendChild(dong('Mã bảng', oMa));
-    khung.appendChild(dong('Mẫu', selMau));
     var phanLoai = vePhanLoai(khung, { sourceType: 'docLap', aggregateType: 'ghep', allowAddRows: false }, function () {});
     khung.appendChild(phanLoai.hangThem);
     phanLoai.apLuat();
@@ -775,27 +826,38 @@ var PAGE_QUAN_TRI = (function () {
     oMa.addEventListener('input', function () { maTuSua = !!oMa.value; });
 
     var vungDung = khung.appendChild(DOM.tao('div'));
-    var vungExcel = khung.appendChild(DOM.tao('div'));
+    var vungExcel = khung.appendChild(DOM.tao('div', { class: 'an' }));
     function doiMau() {
-      chon.cachMau = selMau.value;
-      DOM.batTat(vungDung, 'an', selMau.value !== 'dung');
-      DOM.batTat(vungExcel, 'an', selMau.value !== 'excel');
+      var file = oFile.files[0];
+      tenFile.textContent = file ? file.name : '';
+      [tenFile, boFile].forEach(function (el) { DOM.batTat(el, 'an', !file); });
+      DOM.batTat(vungDung, 'an', !!file);
+      DOM.batTat(vungExcel, 'an', !file);
     }
-    selMau.addEventListener('change', doiMau);
-    doiMau();
-    var chung = { oTen: oTen, oMa: oMa, phanLoai: phanLoai };
+    nutExcel.addEventListener('click', function () { oFile.click(); });
+    oFile.addEventListener('change', doiMau);
+    boFile.addEventListener('click', function () { oFile.value = ''; doiMau(); });
+    var chung = { oTen: oTen, oMa: oMa, phanLoai: phanLoai, layFile: function () { return oFile.files[0]; } };
     veDungMau(vungDung, chung);
     veTaiExcel(vungExcel, chung);
   }
 
+  /** Tạo xong → về tab Các bảng, mở phần chỉnh sửa bảng mới kèm kết quả kiểm mẫu. */
+  function moBangVuaTao(bang, chu, kiem) {
+    duLieu.bang.push(bang);
+    chon.tabBang = 'ds';
+    chon.bangQl = bang.tableCode;
+    chon.viecBang = 'sua';
+    ketQuaBang = { tableCode: bang.tableCode, chu: chu, kiem: kiem };
+    veNoiDung();
+  }
+
   // Bảng mới từ Excel: tab đầu là bảng nhập; GAS chuyển thành Sheet rồi Kiểm mẫu — sai thì không giữ
   function veTaiExcel(khung, chung) {
-    var oFile = DOM.tao('input', { type: 'file', class: 'form-control', accept: '.xlsx' });
     var oCot = oNhap('', { placeholder: 'C:J, L' });
     var oDongNhap = oNhap('', { placeholder: 'Mọi dòng' });
     var oDongKhoa = oNhap('');
     var oChuThich = oNhap('');
-    khung.appendChild(dong('File Excel', oFile));
     khung.appendChild(dong('Cột được nhập', oCot));
     khung.appendChild(dong('Dòng được nhập', oDongNhap));
     khung.appendChild(dong('Dòng khoá', oDongKhoa));
@@ -806,8 +868,8 @@ var PAGE_QUAN_TRI = (function () {
     var noiKiem = khung.appendChild(DOM.tao('div'));
 
     nut.addEventListener('click', function () {
-      var file = oFile.files[0];
-      if (!file) { oFile.focus(); return; }
+      var file = chung.layFile();
+      if (!file) return;
       noiKiem.innerHTML = '';
       var maYeuCau = Date.now().toString(36) + Math.random().toString(36).slice(2);
       chayNut(nut, 'Đang tải lên…', function () {
@@ -821,10 +883,7 @@ var PAGE_QUAN_TRI = (function () {
         });
       }, function (res) {
         if (!res.bang) { veKiem(noiKiem, res.kiem); return; }
-        duLieu.bang.push(res.bang);
-        chon.bangQl = res.bang.tableCode;
-        ketQuaBang = { tableCode: res.bang.tableCode, chu: 'Đã tạo file tổng từ Excel.', kiem: res.kiem };
-        veNoiDung();
+        moBangVuaTao(res.bang, 'Đã tạo file tổng từ Excel.', res.kiem);
       }, bao);
     });
   }
@@ -887,10 +946,7 @@ var PAGE_QUAN_TRI = (function () {
       });
       var maYeuCau = Date.now().toString(36) + Math.random().toString(36).slice(2);
       chayNut(nut, 'Đang tạo…', function () { return API.qtTaoBang(token(), khai, maYeuCau); }, function (res) {
-        duLieu.bang.push(res.bang);
-        chon.bangQl = res.bang.tableCode;
-        ketQuaBang = { tableCode: res.bang.tableCode, chu: 'Đã tạo file tổng.', kiem: res.kiem };
-        veNoiDung();
+        moBangVuaTao(res.bang, 'Đã tạo file tổng.', res.kiem);
       }, bao);
     });
   }

@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.14.0 · Cập nhật: 07/10/2026 05:13
+   Phiên bản: 0.15.0 · Cập nhật: 07/10/2026 12:55
    ============================================================ */
 
 :root {
@@ -1113,12 +1113,82 @@ a.sidebar-btn {
 .qt-linh-vuc .alert { margin: 8px 0 0; }
 .qt-cot-quan-ly select:disabled, .qt-dong select:disabled { opacity: 0.65; }
 
-/* Tạo bảng nhập liệu: tách khỏi phần cài đặt bằng một đường kẻ */
-.qt-tao-bang-nhap {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
+/* Quản lý bảng: hai tab · danh sách bảng · đầu trang chi tiết · nút Tải Excel */
+.qt-tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
 }
+
+.qt-tab {
+  padding: 9px 16px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.qt-tab:hover { color: var(--xc); }
+.qt-tab.active { color: var(--xd); border-bottom-color: var(--xc); }
+
+.qt-khung:has(.qt-tab-bar) { max-width: 1000px; }
+
+.qt-ds-bang {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.qt-bang {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+}
+
+.qt-bang + .qt-bang { border-top: 1px solid var(--border); }
+.qt-bang .qt-nut-them { white-space: nowrap; }
+
+.qt-bang-ten { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qt-bang-ten span { font-weight: 600; color: var(--text-main); }
+.qt-bang-ten small { font-size: 12.5px; color: var(--text-muted); }
+
+.qt-bang-so {
+  font-size: 13.5px;
+  color: var(--xd);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.qt-nut-do:hover { color: var(--error); border-color: #f5c6c0; }
+
+.qt-chi-tiet-dau {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.qt-chi-tiet-ten { font-weight: 600; font-size: 15px; color: var(--xd); }
+
+.qt-tai-excel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.qt-ten-file { font-size: 14px; color: var(--text-main); }
+.qt-tai-excel .qt-nut-xoa { padding: 4px 10px; }
 
 .qt-ds-loi {
   margin: 6px 0 0;
@@ -1140,6 +1210,8 @@ a.sidebar-btn {
   .qt-dong { grid-template-columns: 1fr; gap: 6px; }
   .qt-luoi-khoi { grid-template-columns: 1fr; }
   .qt-them-don-vi { grid-template-columns: 1fr; }
+  .qt-bang { grid-template-columns: 1fr auto; }
+  .qt-bang-ten { grid-column: 1 / -1; }
   .qt-gmail, .qt-khoi .qt-gmail { grid-template-columns: 1fr 36px; }
   .qt-gmail select { grid-row: 2; }
 }

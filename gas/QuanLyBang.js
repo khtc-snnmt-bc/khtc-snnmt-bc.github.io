@@ -2,9 +2,9 @@
 // bcsnn · gas/QuanLyBang.js
 // Vai trò  : Quản lý bảng — dựng file tổng (bảng mẫu) từ khai báo cột trên app,
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
-//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên
+//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 12:28
+// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 17:25
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -564,6 +564,50 @@ function taiMauExcel_(ss, khai, maYeuCau) {
   return kq;
 }
 
+/**
+ * Xoá bảng: gỡ quyền + bỏ vào thùng rác file đơn vị, file tổng, thư mục bảng (Drive giữ
+ * thùng rác ~30 ngày — chủ file khôi phục được); xoá dòng của bảng ở tab Bảng, File, Kỳ.
+ */
+function xoaBang_(ss, tableCode) {
+  var cd = caiDatBang_(ss, tableCode);
+  if (!cd) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
+  var soFile = 0;
+  giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode).forEach(function (g) {
+    if (!g.fileId) return;
+    boFile_(g.fileId);
+    soFile++;
+  });
+  if (cd.templateFileId) {
+    var thuMuc = DriveApp.getFileById(cd.templateFileId).getParents();
+    boFile_(cd.templateFileId);
+    if (thuMuc.hasNext()) {
+      var tm = thuMuc.next();
+      if (tm.getName() === tableCode) tm.setTrashed(true);
+    }
+  }
+  // Cột mã bảng: tab Bảng tìm theo tiêu đề · File cột B · Kỳ cột A (docFileQuanLy_, docKyQuanLy_)
+  [['Bảng', -1], ['File', 1], [TAB_KY, 0]].forEach(function (tc) {
+    var tab = ss.getSheetByName(tc[0]);
+    if (!tab) return;
+    var gt = tab.getDataRange().getValues();
+    var cot = tc[1] >= 0 ? tc[1] : gt[0].map(function (o) { return String(o).trim(); }).indexOf('tableCode');
+    if (cot < 0) return;
+    for (var i = gt.length - 1; i >= 1; i--) if (String(gt[i][cot]).trim() === tableCode) tab.deleteRow(i + 1);
+  });
+  SpreadsheetApp.flush();
+  return { ok: true, soFileDonVi: soFile };
+}
+
+/** Gỡ người được chia sẻ rồi bỏ file vào thùng rác (file đã mất thì bỏ qua). */
+function boFile_(fileId) {
+  try {
+    var f = DriveApp.getFileById(fileId);
+    f.getEditors().forEach(function (u) { f.removeEditor(u); });
+    f.getViewers().forEach(function (u) { f.removeViewer(u); });
+    f.setTrashed(true);
+  } catch (err) { /* file đã bị xoá tay */ }
+}
+
 /** Thư mục bảng không còn gì (vừa tạo cho lần tải lỗi) → bỏ vào thùng rác. */
 function boThuMucRong_(thuMuc) {
   // getFiles() còn đếm file trong thùng rác → lọc trashed = false
@@ -645,6 +689,10 @@ function xuLyQtTaoBang_(token, khai, maYeuCau) {
 
 function xuLyQtTaiMau_(token, khai, maYeuCau) {
   return quanTriChay_(token, function (ss) { return taiMauExcel_(ss, khai, maYeuCau); });
+}
+
+function xuLyQtXoaBang_(token, tableCode) {
+  return quanTriChay_(token, function (ss) { return xoaBang_(ss, String(tableCode || '').trim()); });
 }
 
 function xuLyQtLuuBang_(token, tableCode, caiDat) {
