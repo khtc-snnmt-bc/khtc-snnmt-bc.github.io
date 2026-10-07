@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.11.0 · Cập nhật: 07/10/2026 17:25
+// Phiên bản: 0.12.0 · Cập nhật: 07/10/2026 23:40
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -177,9 +177,17 @@ var API = (function () {
     return goi('qtLuuPhanQuyen', { token: token, tableCode: tableCode, managerUnits: managerUnits, units: units }, CHO_LUU);
   }
 
-  /** Tạo kỳ (ngay 'yyyy-mm-dd') cho một bảng, từ đơn vị thứ batDau; GAS trả tiepTu nếu chưa xong. */
-  function qtTaoKy(token, tableCode, ngay, batDau) {
-    return goi('qtTaoKy', { token: token, tableCode: tableCode, ngay: ngay, batDau: batDau }, CHO_LUU);
+  /**
+   * Tạo kỳ (ngay 'yyyy-mm-dd') cho một bảng, từ đơn vị thứ batDau; GAS trả tiepTu nếu chưa xong.
+   * hanKhoa 'yyyy-mm-dd' | '' (không tự khoá) | bỏ trống tham số (theo cài đặt bảng).
+   */
+  function qtTaoKy(token, tableCode, ngay, batDau, hanKhoa) {
+    return goi('qtTaoKy', { token: token, tableCode: tableCode, ngay: ngay, batDau: batDau, hanKhoa: hanKhoa }, CHO_LUU);
+  }
+
+  /** Đặt / bỏ ('') ngày tự khoá (hanKhoa 'yyyy-mm-dd') của kỳ tenKy đang mở. */
+  function qtHanKhoaKy(token, tableCode, tenKy, hanKhoa) {
+    return goi('qtHanKhoaKy', { token: token, tableCode: tableCode, tenKy: tenKy, hanKhoa: hanKhoa }, CHO_LUU);
   }
 
   /** Khoá (khoa = true) / mở khoá kỳ tenKy ('dd.mm.yyyy') của một bảng, từ file thứ batDau. */
@@ -265,6 +273,7 @@ var API = (function () {
     qtLuuPhanQuyen: qtLuuPhanQuyen,
     qtTaoKy: qtTaoKy,
     qtKhoaKy: qtKhoaKy,
+    qtHanKhoaKy: qtHanKhoaKy,
     layDanhSachDonVi: layDanhSachDonVi,
     layTaiKhoan: layTaiKhoan,
     timDonViTheoEmail: timDonViTheoEmail,

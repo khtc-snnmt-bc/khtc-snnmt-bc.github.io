@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-gas-ky.mjs
-// Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá)
+// Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá)
 // Chạy     : node app/kiem-thu/kiem-gas-ky.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 21:41
+// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 23:40
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +13,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n;this.ham = { chuanHoaTenKy_, docKyQuanLy_, dongKy_, giaoCuaBangKy_, docCaiDat_, keHoachKhoa_,' +
-  ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_ };', sandbox);
+  ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -35,16 +35,16 @@ bai('tên kỳ từ ô chọn ngày / gõ tay', () => {
 const tabKy = [
   ['tableCode', 'periodName', 'locked', 'createdAt'],
   ['duan', '10.09.2026', true, 'ngay'],
-  ['duan', '10.10.2026', 'FALSE', 'ngay'],
-  ['khokhan', '10.10.2026', 'TRUE', 'ngay'],
+  ['duan', '10.10.2026', 'FALSE', 'ngay', '05.11.2026'],
+  ['khokhan', '10.10.2026', 'TRUE', 'ngay', new Date(2026, 10, 5)],
   ['', '', '', '']
 ];
 
 bai('đọc sổ kỳ', () => {
   assert.deepEqual(sach(h.docKyQuanLy_(tabKy)), [
-    { tableCode: 'duan', periodName: '10.09.2026', locked: true },
-    { tableCode: 'duan', periodName: '10.10.2026', locked: false },
-    { tableCode: 'khokhan', periodName: '10.10.2026', locked: true }
+    { tableCode: 'duan', periodName: '10.09.2026', locked: true, lockDate: '' },
+    { tableCode: 'duan', periodName: '10.10.2026', locked: false, lockDate: '05.11.2026' },
+    { tableCode: 'khokhan', periodName: '10.10.2026', locked: true, lockDate: '05.11.2026' }
   ]);
   assert.deepEqual(sach(h.docKyQuanLy_([])), []);
   // Sheet tự đổi chữ '10.11.2026' thành ngày → vẫn đọc ra đúng tên kỳ
@@ -92,6 +92,46 @@ bai('soát quyền theo danh sách file mới tạo', () => {
   const file = h.docFileQuanLy_([['unitCode', 'tableCode', 'fileId'], ['A', 'duan', 'F_A'], ['B', 'duan', 'F_B']]);
   assert.deepEqual(sach(h.fileTrongPhamVi_(bang, file, { fileIds: ['F_B'] })), ['F_B']);
   assert.deepEqual(sach(h.fileTrongPhamVi_(bang, file, { fileIds: ['F_B'], unitCodes: ['A'] })), ['F_B', 'F_A']);
+});
+
+bai('ngày tự khoá hằng tháng của bảng', () => {
+  assert.equal(h.ngayKhoaThang_(''), '');
+  assert.equal(h.ngayKhoaThang_(undefined), '');
+  assert.equal(h.ngayKhoaThang_(' 5 '), 5);
+  assert.equal(h.ngayKhoaThang_(31), 31);
+  assert.equal(h.ngayKhoaThang_('0'), -1);
+  assert.equal(h.ngayKhoaThang_('32'), -1);
+  assert.equal(h.ngayKhoaThang_('5.5'), -1);
+});
+
+bai('ngày tự khoá mặc định = ngày N đầu tiên SAU ngày kỳ', () => {
+  assert.equal(h.hanKhoaMacDinh_('30.09.2026', 5), '05.10.2026');
+  assert.equal(h.hanKhoaMacDinh_('01.10.2026', 5), '05.10.2026');
+  assert.equal(h.hanKhoaMacDinh_('05.10.2026', 5), '05.11.2026');   // trùng ngày kỳ → tháng sau
+  assert.equal(h.hanKhoaMacDinh_('10.12.2026', '5'), '05.01.2027');
+  assert.equal(h.hanKhoaMacDinh_('31.01.2026', 31), '28.02.2026');   // tháng thiếu ngày → cuối tháng
+  assert.equal(h.hanKhoaMacDinh_('15.01.2026', 31), '31.01.2026');
+  assert.equal(h.hanKhoaMacDinh_('10.10.2026', ''), '');
+  assert.equal(h.hanKhoaMacDinh_('', 5), '');
+});
+
+bai('kỳ tới hạn tự khoá: đang mở, có ngày, ngày ≤ hôm nay', () => {
+  const ds = [
+    { tableCode: 'a', periodName: '10.09.2026', locked: false, lockDate: '05.10.2026' },
+    { tableCode: 'a', periodName: '10.10.2026', locked: false, lockDate: '05.11.2026' },
+    { tableCode: 'b', periodName: '10.09.2026', locked: true, lockDate: '05.10.2026' },
+    { tableCode: 'c', periodName: '10.09.2026', locked: false, lockDate: '' },
+    { tableCode: 'd', periodName: '10.09.2026', locked: false, lockDate: '05.11.2025' }
+  ];
+  assert.deepEqual(sach(h.kyDenHan_(ds, '05.10.2026')).map((k) => k.tableCode), ['a', 'd']);
+  assert.deepEqual(sach(h.kyDenHan_(ds, '04.10.2026')).map((k) => k.tableCode), ['d']);
+});
+
+bai('ô ngày tự khoá gửi lên', () => {
+  assert.equal(h.docHanKhoaGui_(undefined).han, undefined);
+  assert.equal(h.docHanKhoaGui_('').han, '');
+  assert.equal(h.docHanKhoaGui_('2026-11-05').han, '05.11.2026');
+  assert.ok(h.docHanKhoaGui_('2026-02-30').loi);
 });
 
 console.log('kiem-gas-ky: ' + soBai + ' bài ĐẠT');

@@ -1,11 +1,11 @@
 // ============================================================
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
-//            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá), Tài khoản (Gmail theo đơn vị),
+//            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá, ngày tự khoá), Tài khoản (Gmail theo đơn vị),
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.10.0 · Cập nhật: 07/10/2026 12:55
+// Phiên bản: 0.11.0 · Cập nhật: 07/10/2026 23:40
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -369,7 +369,12 @@ var PAGE_QUAN_TRI = (function () {
     hangMoi.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Kỳ mới'));
     var oMoi = hangMoi.appendChild(DOM.tao('div', { class: 'qt-ky-moi' }));
     var oNgay = oMoi.appendChild(DOM.tao('input', { type: 'date', class: 'form-control' }));
+    oMoi.appendChild(DOM.tao('span', { class: 'qt-ky-han-nhan' }, 'Tự khoá'));
+    var oHanMoi = oMoi.appendChild(DOM.tao('input', { type: 'date', class: 'form-control' }));
     var nutTao = oMoi.appendChild(DOM.tao('button', { type: 'button', class: 'btn-login-main qt-nut-luu' }, 'Tạo kỳ'));
+    oNgay.addEventListener('change', function () {
+      oHanMoi.value = KY_BAO_CAO.hanKhoaGoiY(oNgay.value, (bang.caiDat || {}).lockDay);
+    });
 
     var ds = khung.appendChild(DOM.tao('div', { class: 'qt-ds-ky' }));
     var bao = khung.appendChild(DOM.tao('div'));
@@ -386,9 +391,33 @@ var PAGE_QUAN_TRI = (function () {
         var hang = ds.appendChild(DOM.tao('div', { class: 'qt-ky' }));
         hang.appendChild(DOM.tao('span', { class: 'qt-ky-ten' }, k.periodName));
         hang.appendChild(DOM.tao('span', { class: 'qt-ky-tt' + (k.locked ? ' khoa' : '') }, k.locked ? 'Đã khoá' : 'Đang mở'));
+        var han = hang.appendChild(DOM.tao('span', { class: 'qt-ky-han' }));
+        if (!k.locked) {
+          han.appendChild(DOM.tao('span', { class: 'qt-ky-han-nhan' }, 'Tự khoá'));
+          var oHan = han.appendChild(DOM.tao('input', { type: 'date', class: 'form-control', value: KY_BAO_CAO.ngayChoO(k.lockDate) }));
+          oHan.addEventListener('change', function () { doiHan(k, oHan); });
+        }
         var nut = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, k.locked ? 'Mở khoá' : 'Khoá'));
         nut.addEventListener('click', function () { khoaMo(k, nut); });
       });
+    }
+
+    function doiHan(k, oHan) {
+      if (dangChay) { oHan.value = KY_BAO_CAO.ngayChoO(k.lockDate); return; }
+      dangChay = true;
+      oHan.disabled = true;
+      bao.innerHTML = '';
+      API.qtHanKhoaKy(token(), bang.tableCode, k.periodName, oHan.value)
+        .then(function (res) {
+          if (!res || !res.ok) throw new Error((res && res.loi) || 'Không lưu được ngày tự khoá');
+          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, k.periodName, k.locked, res.hanKhoa);
+          baoKetQua(res.hanKhoa ? 'Kỳ ' + k.periodName + ' tự khoá ngày ' + res.hanKhoa + '.' : 'Kỳ ' + k.periodName + ' không tự khoá.');
+        })
+        .catch(function (err) { baoKetQua(err.message, true); })
+        .then(function () {
+          dangChay = false;
+          veDanhSach();
+        });
     }
 
     function khoaMo(k, nut) {
@@ -400,7 +429,7 @@ var PAGE_QUAN_TRI = (function () {
         return API.qtKhoaKy(token(), bang.tableCode, k.periodName, !k.locked, batDau);
       }, nut, k.locked ? 'Đang mở khoá' : 'Đang khoá')
         .then(function (kq) {
-          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, k.periodName, kq.khoa);
+          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, k.periodName, kq.khoa, kq.hanKhoa);
           veDanhSach();
           baoKetQua(KY_BAO_CAO.tomTatKhoaKy(kq), kq.loi.length > 0);
         })
@@ -418,13 +447,14 @@ var PAGE_QUAN_TRI = (function () {
       nutTao.disabled = true;
       bao.innerHTML = '';
       chayTheoLo(function (batDau) {
-        return API.qtTaoKy(token(), bang.tableCode, oNgay.value, batDau);
+        return API.qtTaoKy(token(), bang.tableCode, oNgay.value, batDau, oHanMoi.value);
       }, nutTao, 'Đang tạo')
         .then(function (kq) {
           var cu = KY_BAO_CAO.kyCuaBang(duLieu.ky, bang.tableCode).filter(function (k) { return k.periodName === kq.tenKy; })[0];
-          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, kq.tenKy, cu ? cu.locked : false);
+          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, kq.tenKy, cu ? cu.locked : false, kq.hanKhoa);
           if (kq.fileMoi) taiLaiNgam();
           oNgay.value = '';
+          oHanMoi.value = '';
           veDanhSach();
           baoKetQua(KY_BAO_CAO.tomTatTaoKy(kq), (kq.loi.length + ((kq.quyen && kq.quyen.loi.length) || 0)) > 0);
         })
@@ -731,6 +761,12 @@ var PAGE_QUAN_TRI = (function () {
     khung.appendChild(hangSoDong);
     khung.appendChild(phanLoai.hangThem);
     khung.appendChild(dong('Tab chú thích', oChuThich));
+    var oNgayKhoa = oNhap(cd.lockDay, { type: 'number', min: '1', max: '31', class: 'form-control qt-o-ngay-khoa' });
+    var hangKhoa = DOM.tao('span', { class: 'qt-ngay-khoa' });
+    hangKhoa.appendChild(document.createTextNode('ngày '));
+    hangKhoa.appendChild(oNgayKhoa);
+    hangKhoa.appendChild(document.createTextNode(' hằng tháng'));
+    khung.appendChild(dong('Tự khoá', hangKhoa));
     phanLoai.apLuat();
 
     var hangNut = khung.appendChild(DOM.tao('div', { class: 'qt-hang-nut' }));
@@ -755,7 +791,7 @@ var PAGE_QUAN_TRI = (function () {
     nut.addEventListener('click', function () {
       var caiDat = Object.assign(phanLoai.giaTri(), {
         tableName: oTen.value.trim(), inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(),
-        lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim()
+        lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim(), lockDay: oNgayKhoa.value.trim()
       });
       caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {
@@ -811,7 +847,7 @@ var PAGE_QUAN_TRI = (function () {
       }, nut, 'Đang tạo')
         .then(function (kq) {
           var cu = KY_BAO_CAO.kyCuaBang(duLieu.ky, bang.tableCode).filter(function (k) { return k.periodName === kq.tenKy; })[0];
-          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, kq.tenKy, cu ? cu.locked : false);
+          duLieu.ky = KY_BAO_CAO.datKy(duLieu.ky, bang.tableCode, kq.tenKy, cu ? cu.locked : false, kq.hanKhoa);
           if (kq.fileMoi) taiLaiNgam();
           bao.appendChild(thongBao(KY_BAO_CAO.tomTatTaoKy(kq), (kq.loi.length + ((kq.quyen && kq.quyen.loi.length) || 0)) > 0));
         })

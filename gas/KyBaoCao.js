@@ -1,9 +1,10 @@
 // ============================================================
 // bcsnn · gas/KyBaoCao.js
 // Vai trò  : Kỳ báo cáo — tạo tab kỳ ở mọi file đơn vị của một bảng (thiếu file
-//            thì tạo file), khoá / mở khoá kỳ; sổ kỳ ở tab "Kỳ" của Sheet quản lý
-// Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử) · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 05:13
+//            thì tạo file), khoá / mở khoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
+// Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
+//            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
+// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 23:40
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -11,6 +12,9 @@
 // thì vùng nhập cũ cất vào developer metadata của tab → Mở khoá trả lại đúng.
 // 168 file không xong trong một lần chạy (6 phút) → mỗi lần chạy tối đa
 // KY_MS_TOI_DA rồi trả `tiepTu`; trang gọi lại với batDau = tiepTu tới khi null.
+// Tự khoá (thiết kế mục 7): mỗi kỳ có ngày tự khoá (tab Kỳ cột lockDate), mặc định
+// = ngày `lockDay` của bảng đầu tiên sau ngày kỳ. Trigger theo giờ gọi tuKhoaKy —
+// chủ dự án tự cài trong trình soạn (không dùng ScriptApp → không thêm quyền mới).
 
 var NHAN_COT_A = 'Mã đơn vị';
 var MA_MOI_DON_VI = 'all';      // cột A của mẫu ghi 'all' = dòng giao cho mọi đơn vị
@@ -18,6 +22,7 @@ var TIEN_TO_KHOA_KY = 'Khoá kỳ';
 var META_KHOA_KY = 'bcsnn_khoaKy';
 var TAB_KY = 'Kỳ';
 var KY_MS_TOI_DA = 240000;
+var TU_KHOA_TIEP = 'TU_KHOA_TIEP';   // Script Properties: chỗ dừng của lần tự khoá trước
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-ky.mjs) ----------
 
@@ -83,6 +88,40 @@ function chuanHoaTenKy_(chuoi) {
   var ngay = new Date(y, t - 1, d);
   if (ngay.getFullYear() !== y || ngay.getMonth() !== t - 1 || ngay.getDate() !== d || y < 2000) return '';
   return tenTabKy_(ngay);
+}
+
+/** 'dd.mm.yyyy' → số yyyymmdd để so ngày; sai dạng → 0. */
+function soNgay_(ten) {
+  var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(ten || ''));
+  return m ? Number(m[3] + m[2] + m[1]) : 0;
+}
+
+/** Ô "Tự khoá ngày … hằng tháng" của bảng → số 1–31; trống → ''; sai → -1. */
+function ngayKhoaThang_(o) {
+  var s = String(o === undefined || o === null ? '' : o).trim();
+  if (!s) return '';
+  return /^\d{1,2}$/.test(s) && +s >= 1 && +s <= 31 ? +s : -1;
+}
+
+/**
+ * Ngày tự khoá mặc định của kỳ: ngày `lockDay` đầu tiên SAU ngày kỳ (tháng thiếu
+ * ngày đó thì lấy ngày cuối tháng). VD kỳ 30.09.2026, ngày 5 → 05.10.2026. Không cài → ''.
+ */
+function hanKhoaMacDinh_(tenKy, lockDay) {
+  var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(tenKy || '')), n = ngayKhoaThang_(lockDay);
+  if (!m || !(n > 0)) return '';
+  var ky = new Date(+m[3], +m[2] - 1, +m[1]);
+  for (var i = 0; ; i++) {
+    var ngay = new Date(ky.getFullYear(), ky.getMonth() + i, Math.min(n, new Date(ky.getFullYear(), ky.getMonth() + i + 1, 0).getDate()));
+    if (ngay > ky) return tenTabKy_(ngay);
+  }
+}
+
+/** Kỳ đang mở đã tới ngày tự khoá (ngày tự khoá ≤ hôm nay). */
+function kyDenHan_(dsKy, homNay) {
+  return dsKy.filter(function (k) {
+    return !k.locked && soNgay_(k.lockDate) && soNgay_(k.lockDate) <= soNgay_(homNay);
+  });
 }
 
 // Dòng tiêu đề cột = dòng đầu có ô A đúng 'Mã đơn vị' (số dòng từ 1; 0 = không có)
@@ -171,12 +210,12 @@ function tenKyTuO_(o) {
   return String(o === undefined || o === null ? '' : o).trim();
 }
 
-/** Tab Kỳ → [{tableCode, periodName, locked}] */
+/** Tab Kỳ → [{tableCode, periodName, locked, lockDate}] (lockDate cột E, '' = không tự khoá) */
 function docKyQuanLy_(dsKy) {
   var kq = [];
   for (var i = 1; i < (dsKy || []).length; i++) {
     var tc = String(dsKy[i][0] || '').trim(), ten = tenKyTuO_(dsKy[i][1]);
-    if (tc && ten) kq.push({ tableCode: tc, periodName: ten, locked: laDung_(dsKy[i][2]) });
+    if (tc && ten) kq.push({ tableCode: tc, periodName: ten, locked: laDung_(dsKy[i][2]), lockDate: tenKyTuO_(dsKy[i][4]) });
   }
   return kq;
 }
@@ -333,9 +372,15 @@ function tabKyQuanLy_(ss) {
   var tab = ss.getSheetByName(TAB_KY);
   if (tab) return tab;
   tab = ss.insertSheet(TAB_KY);
-  tab.getRange(1, 1, 1, 4).setValues([['tableCode', 'periodName', 'locked', 'createdAt']]).setFontWeight('bold');
+  tab.getRange(1, 1, 1, 5).setValues([['tableCode', 'periodName', 'locked', 'createdAt', 'lockDate']]).setFontWeight('bold');
   tab.setFrozenRows(1);
   return tab;
+}
+
+/** Ghi ngày tự khoá ('dd.mm.yyyy' hoặc '') vào cột E dòng `dong` của tab Kỳ (tab cũ thiếu tiêu đề thì thêm). */
+function ghiHanKhoa_(tabKy, dong, hanKhoa) {
+  if (!String(tabKy.getRange(1, 5).getValue()).trim()) tabKy.getRange(1, 5).setValue('lockDate').setFontWeight('bold');
+  tabKy.getRange(dong, 5).setNumberFormat('@').setValue(hanKhoa);   // chữ — kẻo Sheet đổi thành ngày
 }
 
 function caiDatBang_(ss, tableCode) {
@@ -350,8 +395,10 @@ function caiDatBang_(ss, tableCode) {
 /**
  * Tạo kỳ `tenKy` cho bảng: từ đơn vị thứ batDau trong tab File, mỗi đơn vị
  * thiếu file thì tạo file, chưa có tab kỳ thì sinh tab. Hết giờ thì trả tiepTu.
+ * hanKhoa ('dd.mm.yyyy' | '' = không tự khoá | undefined = theo lockDay của bảng)
+ * chỉ ghi khi kỳ mới vào sổ.
  */
-function taoKy_(ss, tableCode, tenKy, batDau) {
+function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
   var batDauLuc = Date.now();
   if (!tenKy) return { ok: false, loi: 'Ngày kỳ không hợp lệ' };
   var caiDat = caiDatBang_(ss, tableCode);
@@ -366,17 +413,23 @@ function taoKy_(ss, tableCode, tenKy, batDau) {
   var dsKy = tabKy.getDataRange().getValues();
   var dong = dongKy_(dsKy, tableCode, tenKy);
   if (dong && laDung_(dsKy[dong - 1][2])) return { ok: false, loi: 'Kỳ ' + tenKy + ' đang khoá — mở khoá trước' };
+  var han;
   if (!dong) {
+    han = hanKhoa === undefined ? hanKhoaMacDinh_(tenKy, caiDat.lockDay) : hanKhoa;
     // Không dùng appendRow: nó bỏ qua định dạng chữ, '10.11.2026' thành ngày
-    var moi = tabKy.getRange(dsKy.length + 1, 1, 1, 4);
+    dong = dsKy.length + 1;
+    var moi = tabKy.getRange(dong, 1, 1, 4);
     moi.offset(0, 1, 1, 1).setNumberFormat('@');
     moi.setValues([[tableCode, tenKy, false, new Date()]]);
+    ghiHanKhoa_(tabKy, dong, han);
+  } else {
+    han = tenKyTuO_(dsKy[dong - 1][4]);
   }
 
   var giao = giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode);
   var tabFile = ss.getSheetByName('File');
   var mau = SpreadsheetApp.openById(caiDat.templateFileId);
-  var kq = { ok: true, tenKy: tenKy, tong: giao.length, daTao: 0, fileMoi: 0, daCo: 0, loi: [], tiepTu: null };
+  var kq = { ok: true, tenKy: tenKy, hanKhoa: han, tong: giao.length, daTao: 0, fileMoi: 0, daCo: 0, loi: [], tiepTu: null };
   var fileMoi = [];
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() - batDauLuc > KY_MS_TOI_DA) { kq.tiepTu = i; break; }
@@ -408,16 +461,22 @@ function taoKy_(ss, tableCode, tenKy, batDau) {
   return kq;
 }
 
-/** Khoá (khoa = true) / mở khoá kỳ ở mọi file đơn vị của bảng; xong hết thì ghi sổ kỳ. */
-function khoaMoKy_(ss, tableCode, tenKy, khoa, batDau) {
-  var batDauLuc = Date.now();
+/**
+ * Khoá (khoa = true) / mở khoá kỳ ở mọi file đơn vị của bảng; xong hết thì ghi sổ kỳ.
+ * Mở khoá tay thì bỏ luôn ngày tự khoá — kẻo giờ sau trigger khoá lại.
+ * hetGio (ms, tuỳ chọn): mốc dừng chung khi tự khoá nhiều kỳ trong một lần chạy.
+ */
+function khoaMoKy_(ss, tableCode, tenKy, khoa, batDau, hetGio) {
+  hetGio = hetGio || Date.now() + KY_MS_TOI_DA;
   var tabKy = tabKyQuanLy_(ss);
-  var dong = dongKy_(tabKy.getDataRange().getValues(), tableCode, tenKy);
+  var dsKy = tabKy.getDataRange().getValues();
+  var dong = dongKy_(dsKy, tableCode, tenKy);
   if (!dong) return { ok: false, loi: 'Không có kỳ ' + tenKy };
   var giao = giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode).filter(function (g) { return g.fileId; });
-  var kq = { ok: true, tenKy: tenKy, khoa: !!khoa, tong: giao.length, daLam: 0, khongCoTab: 0, loi: [], tiepTu: null };
+  var kq = { ok: true, tenKy: tenKy, khoa: !!khoa, hanKhoa: tenKyTuO_(dsKy[dong - 1][4]),
+    tong: giao.length, daLam: 0, khongCoTab: 0, loi: [], tiepTu: null };
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
-    if (Date.now() - batDauLuc > KY_MS_TOI_DA) { kq.tiepTu = i; break; }
+    if (Date.now() > hetGio) { kq.tiepTu = i; break; }
     try {
       var tab = SpreadsheetApp.openById(giao[i].fileId).getSheetByName(tenKy);
       if (!tab) { kq.khongCoTab++; continue; }
@@ -427,15 +486,90 @@ function khoaMoKy_(ss, tableCode, tenKy, khoa, batDau) {
       kq.loi.push(giao[i].unitCode + ': ' + String(err.message || err));
     }
   }
-  if (kq.tiepTu === null) tabKy.getRange(dong, 3).setValue(!!khoa);
+  if (kq.tiepTu === null) {
+    tabKy.getRange(dong, 3).setValue(!!khoa);
+    if (!khoa && kq.hanKhoa) { ghiHanKhoa_(tabKy, dong, ''); kq.hanKhoa = ''; }
+  }
   return kq;
+}
+
+/** Đặt / bỏ ('') ngày tự khoá của một kỳ đang mở. */
+function datHanKhoa_(ss, tableCode, tenKy, hanKhoa) {
+  var tabKy = tabKyQuanLy_(ss);
+  var dsKy = tabKy.getDataRange().getValues();
+  var dong = dongKy_(dsKy, tableCode, tenKy);
+  if (!dong) return { ok: false, loi: 'Không có kỳ ' + tenKy };
+  if (laDung_(dsKy[dong - 1][2])) return { ok: false, loi: 'Kỳ ' + tenKy + ' đã khoá' };
+  ghiHanKhoa_(tabKy, dong, hanKhoa);
+  return { ok: true, tenKy: tenKy, hanKhoa: hanKhoa };
+}
+
+function homNay_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
+}
+
+/**
+ * Khoá lần lượt các kỳ tới ngày tự khoá. Hết giờ giữa chừng thì cất chỗ dừng vào
+ * Script Properties — lần chạy sau (giờ sau) làm tiếp từ đó.
+ */
+function tuKhoaKyDenHan_(ss, homNay, hetGio) {
+  var p = PropertiesService.getScriptProperties();
+  var tiep = JSON.parse(p.getProperty(TU_KHOA_TIEP) || 'null');
+  var denHan = kyDenHan_(docKyQuanLy_(docTabQuanLy_(ss, TAB_KY)), homNay);
+  var ketQua = [];
+  for (var i = 0; i < denHan.length && Date.now() < hetGio; i++) {
+    var k = denHan[i];
+    var batDau = tiep && tiep.tableCode === k.tableCode && tiep.periodName === k.periodName ? tiep.batDau : 0;
+    var kq = khoaMoKy_(ss, k.tableCode, k.periodName, true, batDau, hetGio);
+    ketQua.push({ tableCode: k.tableCode, kq: kq });
+    if (kq.ok && kq.tiepTu !== null) {
+      p.setProperty(TU_KHOA_TIEP, JSON.stringify({ tableCode: k.tableCode, periodName: k.periodName, batDau: kq.tiepTu }));
+      return ketQua;
+    }
+  }
+  p.deleteProperty(TU_KHOA_TIEP);
+  return ketQua;
+}
+
+/**
+ * TRIGGER theo giờ — chủ dự án cài một lần: trình soạn Apps Script → Trình kích hoạt →
+ * Thêm → hàm tuKhoaKy · Theo thời gian · Theo giờ · Mỗi giờ. Quản trị đang chạy việc
+ * (đang giữ khoá) thì bỏ lượt này, giờ sau làm.
+ */
+function tuKhoaKy() {
+  var khoa = LockService.getScriptLock();
+  if (!khoa.tryLock(30000)) return;
+  try {
+    var kq = tuKhoaKyDenHan_(SpreadsheetApp.openById(layQuanLyId_()), homNay_(), Date.now() + KY_MS_TOI_DA);
+    if (kq.length) console.log('Tự khoá: ' + JSON.stringify(kq));
+  } finally {
+    khoa.releaseLock();
+  }
 }
 
 // ---------- Action quản trị ----------
 
-function xuLyQtTaoKy_(token, tableCode, ngay, batDau) {
+/** Ô ngày tự khoá gửi lên → {han} ('dd.mm.yyyy' | '' | undefined = không gửi) hoặc {loi}. */
+function docHanKhoaGui_(hanKhoa) {
+  if (hanKhoa === undefined || hanKhoa === null) return { han: undefined };
+  var han = chuanHoaTenKy_(hanKhoa);
+  if (!han && String(hanKhoa).trim()) return { loi: 'Ngày tự khoá không hợp lệ' };
+  return { han: han };
+}
+
+function xuLyQtTaoKy_(token, tableCode, ngay, batDau, hanKhoa) {
   return quanTriChay_(token, function (ss) {
-    return taoKy_(ss, String(tableCode || '').trim(), chuanHoaTenKy_(ngay), batDau);
+    var h = docHanKhoaGui_(hanKhoa);
+    if (h.loi) return { ok: false, loi: h.loi };
+    return taoKy_(ss, String(tableCode || '').trim(), chuanHoaTenKy_(ngay), batDau, h.han);
+  });
+}
+
+function xuLyQtHanKhoaKy_(token, tableCode, tenKy, hanKhoa) {
+  return quanTriChay_(token, function (ss) {
+    var h = docHanKhoaGui_(hanKhoa === undefined ? '' : hanKhoa);
+    if (h.loi) return { ok: false, loi: h.loi };
+    return datHanKhoa_(ss, String(tableCode || '').trim(), chuanHoaTenKy_(tenKy), h.han);
   });
 }
 

@@ -1,8 +1,9 @@
 // ============================================================
 // bcsnn · js/domains/ky-bao-cao.js
-// Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ + câu báo tạo/khoá kỳ (trang quản trị)
+// Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
+//            câu báo tạo/khoá kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 21:41
+// Phiên bản: 0.5.0 · Cập nhật: 07/10/2026 23:40
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -43,15 +44,42 @@ var KY_BAO_CAO = (function () {
       .sort(function (a, b) { return soNgayKy(b.periodName) - soNgayKy(a.periodName); });
   }
 
-  /** Ghi trạng thái một kỳ vào danh sách (thêm nếu chưa có) — trả mảng mới. */
-  function datKy(dsKy, tableCode, tenKy, locked) {
+  /**
+   * Ghi trạng thái một kỳ vào danh sách (thêm nếu chưa có) — trả mảng mới.
+   * lockDate ('dd.mm.yyyy' | '') bỏ trống tham số thì giữ ngày tự khoá cũ.
+   */
+  function datKy(dsKy, tableCode, tenKy, locked, lockDate) {
     var co = false;
     var kq = (dsKy || []).map(function (k) {
       if (k.tableCode !== tableCode || k.periodName !== tenKy) return k;
       co = true;
-      return { tableCode: tableCode, periodName: tenKy, locked: locked };
+      return { tableCode: tableCode, periodName: tenKy, locked: locked,
+        lockDate: lockDate === undefined ? k.lockDate || '' : lockDate };
     });
-    return co ? kq : kq.concat([{ tableCode: tableCode, periodName: tenKy, locked: locked }]);
+    return co ? kq : kq.concat([{ tableCode: tableCode, periodName: tenKy, locked: locked, lockDate: lockDate || '' }]);
+  }
+
+  /** 'dd.mm.yyyy' → 'yyyy-mm-dd' (giá trị ô chọn ngày); sai dạng → ''. */
+  function ngayChoO(ten) {
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(ten || ''));
+    return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  }
+
+  /**
+   * Ngày tự khoá gợi ý cho kỳ mới: ngày lockDay (1–31) đầu tiên SAU ngày kỳ, tháng thiếu
+   * ngày đó thì lấy cuối tháng — giống GAS hanKhoaMacDinh_. Vào/ra dạng 'yyyy-mm-dd'.
+   */
+  function hanKhoaGoiY(ngayKy, lockDay) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ngayKy || '')), n = Number(lockDay);
+    if (!m || !(n >= 1 && n <= 31)) return '';
+    var ky = new Date(+m[1], +m[2] - 1, +m[3]);
+    for (var i = 0; ; i++) {
+      var ngay = new Date(ky.getFullYear(), ky.getMonth() + i, Math.min(n, new Date(ky.getFullYear(), ky.getMonth() + i + 1, 0).getDate()));
+      if (ngay > ky) {
+        var hai = function (x) { return (x < 10 ? '0' : '') + x; };
+        return ngay.getFullYear() + '-' + hai(ngay.getMonth() + 1) + '-' + hai(ngay.getDate());
+      }
+    }
   }
 
   /** Cộng kết quả các lô GAS trả về (tạo / khoá kỳ chạy nhiều lần nối tiếp). */
@@ -90,6 +118,6 @@ var KY_BAO_CAO = (function () {
 
   return {
     taoUrlSheet: taoUrlSheet, dsFileBang: dsFileBang,
-    kyCuaBang: kyCuaBang, datKy: datKy, gopLo: gopLo, tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy
+    kyCuaBang: kyCuaBang, datKy: datKy, ngayChoO: ngayChoO, hanKhoaGoiY: hanKhoaGoiY, gopLo: gopLo, tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy
   };
 })();

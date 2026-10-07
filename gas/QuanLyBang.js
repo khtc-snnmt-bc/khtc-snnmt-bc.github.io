@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.4.1 · Cập nhật: 07/10/2026 20:50
+// Phiên bản: 0.4.2 · Cập nhật: 07/10/2026 23:40
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -193,6 +193,8 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
   var soDong = soDongSan_(cd.dataRows, '');
   if (soDong === -1) return { loi: 'Số dòng sẵn phải là số nguyên từ 1 đến ' + MAU_DONG_TOI_DA };
   kq.dataRows = soDong;
+  kq.lockDay = ngayKhoaThang_(cd.lockDay);
+  if (kq.lockDay === -1) return { loi: 'Tự khoá: ghi ngày trong tháng, từ 1 đến 31 (để trống = không tự khoá)' };
   return { caiDat: kq };
 }
 
@@ -510,7 +512,8 @@ function caiDatChoTrang_(gtBang) {
     kq[cd.tableCode] = {
       templateFileId: cd.templateFileId, sourceType: chu(cd.sourceType), inputCols: chu(cd.inputCols),
       inputRows: chu(cd.inputRows), lockedRows: chu(cd.lockedRows), allowAddRows: cd.allowAddRows,
-      noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType
+      noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType,
+      lockDay: chu(cd.lockDay)
     };
   }
   return kq;
