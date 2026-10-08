@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.16.0 · Cập nhật: 07/10/2026 23:28
+   Phiên bản: 0.16.1 · Cập nhật: 08/10/2026 08:45
    ============================================================ */
 
 :root {
@@ -891,22 +891,25 @@ a.sidebar-btn {
 .qt-nut-xoa,
 .qt-nut-them {
   font: inherit;
-  color: var(--text-muted);
-  background: #ffffff;
-  border: 1.5px solid var(--border);
+  color: var(--xd);
+  background: #e6f4ec;
+  border: 1.5px solid #74b494;
   border-radius: 8px;
   cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
 }
 
-.qt-nut-xoa { font-size: 18px; line-height: 1; }
-.qt-nut-xoa:hover { color: var(--error); border-color: #f5c6c0; }
+.qt-nut-xoa { font-size: 18px; line-height: 1; color: #8a2b20; background: #fbeceA; border-color: #e0a89f; }
+.qt-nut-xoa:hover { color: #ffffff; background: var(--error); border-color: var(--error); }
 
 .qt-nut-them {
   padding: 7px 12px;
   font-size: 13px;
+  font-weight: 600;
 }
 
-.qt-nut-them:hover { color: var(--xc); border-color: var(--xn); }
+.qt-nut-them:hover:not(:disabled) { color: #ffffff; background: var(--xc); border-color: var(--xc); }
+.qt-nut-them:disabled { opacity: 0.55; }
 
 .qt-luoi-don-vi {
   display: grid;
@@ -1197,7 +1200,8 @@ a.sidebar-btn {
   margin-right: 6px;
 }
 
-.qt-nut-do:hover { color: var(--error); border-color: #f5c6c0; }
+.qt-nut-do { color: #8a2b20; background: #fbeceA; border-color: #e0a89f; }
+.qt-nut-do:hover:not(:disabled) { color: #ffffff; background: var(--error); border-color: var(--error); }
 
 .qt-chi-tiet-dau {
   display: flex;
