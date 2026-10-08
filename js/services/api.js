@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.12.1 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.13.0 · Cập nhật: 08/10/2026 09:27
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -256,9 +256,21 @@ var API = (function () {
     return goi('qtGiaoTheoMau', { token: token, tableCode: tableCode }, CHO_LUU);
   }
 
+  /** Đơn vị của một bảng cho mục Phân quyền, đọc từ cột A file tổng → { ma, laTach, coAll, sai } */
+  function qtDonViBang(token, tableCode) {
+    return goi('qtDonViBang', { token: token, tableCode: tableCode }, CHO_LUU);
+  }
+
+  /** Thêm một dòng cho đơn vị vào file tổng (bảng Sở giao dòng) + giao bảng cho đơn vị đó. */
+  function qtThemDongDonVi(token, tableCode, unitCode) {
+    return goi('qtThemDongDonVi', { token: token, tableCode: tableCode, unitCode: unitCode }, CHO_LUU);
+  }
+
   return {
     goi: goi,
     qtGiaoTheoMau: qtGiaoTheoMau,
+    qtDonViBang: qtDonViBang,
+    qtThemDongDonVi: qtThemDongDonVi,
     qtThemLinhVuc: qtThemLinhVuc,
     qtThemDonVi: qtThemDonVi,
     qtTaoBang: qtTaoBang,

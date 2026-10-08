@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.5.1 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 09:27
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -336,6 +336,23 @@ function maTrongMau_(cotA, dsMaDonVi) {
     else if (kq.ma.indexOf(ma) < 0) kq.ma.push(ma);
   });
   return kq;
+}
+
+/**
+ * Đơn vị hiện ở mục Phân quyền của một bảng (mã): Sở giao dòng → mã ở cột A file tổng;
+ * có dòng 'all' hoặc bảng đơn vị tự nhập dòng → mọi đơn vị. Bỏ đơn vị nhóm Quản trị
+ * (đã thấy mọi bảng — PhanQuyen.js donViToanQuyen_).
+ */
+function donViPhanQuyen_(laTach, doc, tatCa, toanQuyen) {
+  var ds = laTach && !doc.coAll ? doc.ma : tatCa;
+  return ds.filter(function (m) { return toanQuyen.indexOf(m) < 0; });
+}
+
+/** Dòng cuối (số dòng từ 1) có chữ ở cột A dưới dòng tiêu đề; chưa có dòng nào → dòng tiêu đề. */
+function dongCuoiCoMa_(cotA, dongTieuDe) {
+  var cuoi = dongTieuDe;
+  for (var d = dongTieuDe + 1; d <= cotA.length; d++) if (String(cotA[d - 1] === undefined || cotA[d - 1] === null ? '' : cotA[d - 1]).trim()) cuoi = d;
+  return cuoi;
 }
 
 /** Giá trị cài đặt → mảng một dòng theo thứ tự tiêu đề tab Bảng (giữ ô cũ ở cột không có trong giaTri). */
@@ -691,6 +708,74 @@ function giaoTheoMau_(ss, tableCode) {
     return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId, access: f.access };
   });
   return kq;
+}
+
+/** Cột A tab đầu của file tổng (mảng ô). */
+function docCotAMau_(templateFileId) {
+  var tab = SpreadsheetApp.openById(templateFileId).getSheets()[0];
+  return tab.getRange(1, 1, Math.max(tab.getLastRow(), 1), 1).getValues().map(function (d) { return d[0]; });
+}
+
+/** Danh sách đơn vị cho mục Phân quyền của bảng, đọc từ file tổng → { ma, laTach, coAll, sai }. */
+function donViCuaBang_(ss, tableCode) {
+  var cd = caiDatBang_(ss, tableCode);
+  if (!cd) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
+  var tatCa = maDonViCo_(ss), toanQuyen = donViToanQuyen_(docTabQuanLy_(ss, 'Đơn vị'));
+  var laTach = cd.sourceType === 'gopTach';
+  var doc = { ma: [], coAll: false, sai: [] };
+  if (laTach) {
+    if (!cd.templateFileId) return { ok: false, loi: 'Bảng chưa có file tổng' };
+    doc = maTrongMau_(docCotAMau_(cd.templateFileId), tatCa);
+  }
+  return { ok: true, tableCode: tableCode, laTach: laTach, coAll: doc.coAll, sai: doc.sai,
+    ma: donViPhanQuyen_(laTach, doc, tatCa, toanQuyen) };
+}
+
+/**
+ * Thêm một dòng cho đơn vị vào cuối phần dữ liệu file tổng (bảng Sở giao dòng): chép dòng
+ * có mã cuối cùng (định dạng, công thức, danh sách chọn), xoá ô chữ/số, ghi mã ở cột A;
+ * rồi giao bảng cho đơn vị (được nhập) + chia quyền. Nội dung dòng quản trị tự ghi ở file tổng.
+ */
+function themDongDonVi_(ss, tableCode, unitCode) {
+  var cd = caiDatBang_(ss, tableCode);
+  if (!cd) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
+  if (cd.sourceType !== 'gopTach' || !cd.templateFileId) return { ok: false, loi: 'Chỉ bảng Sở giao dòng có file tổng mới thêm dòng đơn vị được' };
+  var uc = String(unitCode || '').trim();
+  if (maDonViCo_(ss).indexOf(uc) < 0) return { ok: false, loi: 'Không có đơn vị ' + uc + ' trong danh mục' };
+  var tab = SpreadsheetApp.openById(cd.templateFileId).getSheets()[0];
+  var cotA = tab.getRange(1, 1, Math.max(tab.getLastRow(), 1), 1).getValues().map(function (d) { return d[0]; });
+  var dongTieuDe = timDongTieuDe_(cotA);
+  if (!dongTieuDe) return { ok: false, loi: 'File tổng không có dòng nào ô A ghi "' + NHAN_COT_A + '"' };
+  var cuoi = dongCuoiCoMa_(cotA, dongTieuDe), moi = cuoi + 1, soCot = tab.getLastColumn();
+  tab.insertRowAfter(cuoi);
+  var vung = tab.getRange(moi, 1, 1, soCot);
+  if (cuoi > dongTieuDe) {
+    tab.getRange(cuoi, 1, 1, soCot).copyTo(vung);
+    vung.setFormulas(vung.getFormulas());   // giữ công thức, ô không công thức thành trống
+  }
+  tab.getRange(moi, 1).setValue(uc);
+
+  var tabFile = ss.getSheetByName('File');
+  var dsFile = tabFile.getDataRange().getValues(), quyen = {};
+  docFileQuanLy_(dsFile).forEach(function (f) { if (f.tableCode === tableCode) quyen[f.unitCode] = f.access; });
+  if (quyen[uc] !== 'xem') quyen[uc] = 'sua';
+  ghiTabFile_(tabFile, capNhatGiao_(dsFile, tableCode, quyen).dong);
+  SpreadsheetApp.flush();
+  var kq = donViCuaBang_(ss, tableCode);
+  kq.dong = moi;
+  kq.quyen = dongBoQuyen_(ss, { tableCodes: [tableCode] });
+  kq.giao = docFileQuanLy_(docTabQuanLy_(ss, 'File')).map(function (f) {
+    return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId, access: f.access };
+  });
+  return kq;
+}
+
+function xuLyQtDonViBang_(token, tableCode) {
+  return quanTriChay_(token, function (ss) { return donViCuaBang_(ss, String(tableCode || '').trim()); });
+}
+
+function xuLyQtThemDongDonVi_(token, tableCode, unitCode) {
+  return quanTriChay_(token, function (ss) { return themDongDonVi_(ss, String(tableCode || '').trim(), unitCode); });
 }
 
 function dsMaLinhVuc_(ss) {

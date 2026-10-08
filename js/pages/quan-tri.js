@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.13.0 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.14.0 · Cập nhật: 08/10/2026 09:27
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -27,6 +27,8 @@ var PAGE_QUAN_TRI = (function () {
   var mucDangChon = MUC[0];
   var chon = { bang: '', bangQl: '', tabBang: 'ds', viecBang: 'sua' };
   var ketQuaBang = null;      // { tableCode, chu, kiem } — báo ngay sau khi tạo / lưu bảng
+  var donViBang = {};         // { tableCode: {ma, laTach, coAll, sai} } — đơn vị đọc từ file tổng (GAS qtDonViBang)
+  var baoPhanQuyen = null;    // { chu, laLoi } — báo sau khi thêm dòng đơn vị (vẽ lại xong mới hiện)
 
   function khoiTao() {
     phien = PHIEN.doc();
@@ -117,6 +119,7 @@ var PAGE_QUAN_TRI = (function () {
 
   function taiDuLieu() {
     duLieu = null;
+    donViBang = {};
     veNoiDung();
     API.qtLayDuLieu(token())
       .then(kiemPhien)
@@ -491,6 +494,21 @@ var PAGE_QUAN_TRI = (function () {
     var themQl = cotQl.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm đơn vị quản lý'));
     themQl.addEventListener('click', function () { DOM.$('select', themQuanLy('')).focus(); });
 
+    // Đơn vị của bảng đọc từ file tổng (lần đầu mở bảng thì hỏi GAS)
+    var maBang = chon.bang, dvb = donViBang[maBang];
+    if (!dvb) {
+      var cho = khung.appendChild(DOM.tao('p', { class: 'qt-dang-tai' }, 'Đang đọc đơn vị trong bảng tổng…'));
+      API.qtDonViBang(token(), maBang).then(kiemPhien).then(function (res) {
+        donViBang[maBang] = res;
+        if (mucDangChon.ma === 'phan-quyen' && chon.bang === maBang) veNoiDung();
+      }).catch(function (err) {
+        cho.remove();
+        khung.appendChild(thongBao(err.message, true));
+      });
+      return;
+    }
+    var chia = PHAN_QUYEN.chiaDonViBang(duLieu.donVi, dvb.ma);
+
     var quyen = PHAN_QUYEN.quyenCuaBang(duLieu.giao, chon.bang);
     var tieuDe = khung.appendChild(DOM.tao('div', { class: 'qt-dong' }));
     tieuDe.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Đơn vị được giao'));
@@ -512,7 +530,7 @@ var PAGE_QUAN_TRI = (function () {
       td.appendChild(DOM.tao('input', { type: 'checkbox', 'data-cot': cot }));
       return td;
     }
-    duLieu.donVi.forEach(function (d) {
+    chia.trong.forEach(function (d) {
       var q = quyen[d.unitCode];
       var tr = than.appendChild(DOM.tao('tr', { 'data-ma': d.unitCode }));
       tr.appendChild(DOM.tao('td', {}, d.unitName));
@@ -532,11 +550,18 @@ var PAGE_QUAN_TRI = (function () {
     nutChon.addEventListener('click', function () { chonHet(true); });
     nutBo.addEventListener('click', function () { chonHet(false); });
     loc.addEventListener('input', function () {
-      var hien = PHAN_QUYEN.locDonVi(duLieu.donVi, loc.value).map(function (d) { return d.unitCode; });
+      var hien = PHAN_QUYEN.locDonVi(chia.trong, loc.value).map(function (d) { return d.unitCode; });
       DOM.$$('tr', than).forEach(function (el) {
         DOM.batTat(el, 'an', hien.indexOf(el.getAttribute('data-ma')) < 0);
       });
     });
+    if (dvb.laTach && !chia.trong.length) {
+      khungBang.appendChild(DOM.tao('p', { class: 'qt-dang-tai' }, 'Cột A của bảng tổng chưa có mã đơn vị nào.'));
+    }
+    if (dvb.sai && dvb.sai.length) {
+      khung.appendChild(thongBao('Mã ở cột A bảng tổng không có trong danh mục đơn vị: ' + dvb.sai.join(', '), true));
+    }
+    veThemDonViBang(khung, bangChon, dvb, chia.themDuoc);
 
     nutLuu(khung, function () {
       var q = {};
@@ -552,6 +577,51 @@ var PAGE_QUAN_TRI = (function () {
     }, function (res) {
       bangChon.managerUnits = res.ql;
       duLieu.giao = PHAN_QUYEN.thayGiao(duLieu.giao, chon.bang, res.q);
+    });
+    if (baoPhanQuyen) {
+      khung.appendChild(thongBao(baoPhanQuyen.chu, baoPhanQuyen.laLoi));
+      baoPhanQuyen = null;
+    }
+  }
+
+  // Bảng Sở giao dòng: thêm đơn vị vào bảng tổng — chọn trên app (GAS thêm dòng) hoặc tự thêm
+  // trong Google Sheet rồi Đọc lại. Bảng có dòng all / đơn vị tự nhập dòng: hiện mọi đơn vị, không cần.
+  function veThemDonViBang(khung, bangChon, dvb, themDuoc) {
+    if (!dvb.laTach || dvb.coAll) return;
+    var hang = khung.appendChild(DOM.tao('div', { class: 'qt-dong' }));
+    hang.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Thêm đơn vị'));
+    var cot = hang.appendChild(DOM.tao('div', { class: 'qt-hang-loc' }));
+    var sel = cot.appendChild(oChon([{ giaTri: '', nhan: '— Chọn đơn vị —' }].concat(themDuoc.map(function (d) {
+      return { giaTri: d.unitCode, nhan: d.unitName };
+    })), ''));
+    var nutThem = cot.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Thêm dòng vào bảng tổng'));
+    var idTong = (bangChon.caiDat || {}).templateFileId;
+    if (idTong) {
+      cot.appendChild(DOM.tao('a', { class: 'qt-nut-them', href: KY_BAO_CAO.taoUrlSheet(idTong),
+        target: '_blank', rel: 'noopener' }, 'Mở bảng tổng ↗'));
+    }
+    var nutDoc = cot.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Đọc lại'));
+    var bao = khung.appendChild(DOM.tao('div'));
+    var ma = bangChon.tableCode;
+
+    nutThem.addEventListener('click', function () {
+      if (!sel.value) { sel.focus(); return; }
+      var uc = sel.value;
+      chayNut(nutThem, 'Đang thêm…', function () { return API.qtThemDongDonVi(token(), ma, uc); }, function (res) {
+        donViBang[ma] = res;
+        duLieu.giao = res.giao;
+        var loi = (res.quyen && res.quyen.loi) || [];
+        baoPhanQuyen = {
+          chu: 'Đã thêm dòng ' + res.dong + ' cho ' + tenDonVi(uc) + ' vào bảng tổng và cho phép nhập. ' +
+            'Mở bảng tổng để ghi nội dung dòng.' + (loi.length ? ' Lỗi chia quyền: ' + loi.join(' · ') : ''),
+          laLoi: loi.length > 0
+        };
+        veNoiDung();
+      }, bao);
+    });
+    nutDoc.addEventListener('click', function () {
+      delete donViBang[ma];
+      veNoiDung();
     });
   }
 

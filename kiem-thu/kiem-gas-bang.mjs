@@ -13,9 +13,21 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(['DangNhap.js', 'QuanTri.js', 'PhanQuyen.js', 'KyBaoCao.js', 'QuanLyBang.js'].map(doc).join('\n') +
   '\n;this.ham = { cotNhapTuKhai_, kiemKhaiBangMoi_, kiemCaiDatSua_, kiemMau_, dongBangMoi_, caiDatChoTrang_, docCaiDat_,' +
-  ' docLinhVuc_, kiemLinhVucMoi_, dongGiuLai_, maTrongMau_, kiemKhaiTaiMau_, loiChoExcel_ };', sandbox);
+  ' docLinhVuc_, kiemLinhVucMoi_, dongGiuLai_, maTrongMau_, kiemKhaiTaiMau_, loiChoExcel_,' +
+  ' donViPhanQuyen_, dongCuoiCoMa_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
+
+{
+  // Đơn vị ở mục Phân quyền theo file tổng; nhóm Quản trị không hiện
+  const tatCa = ['A', 'B', 'C', 'KHTC'], tq = ['KHTC'];
+  assert.deepEqual(sach(h.donViPhanQuyen_(true, { ma: ['B', 'KHTC'], coAll: false }, tatCa, tq)), ['B']);
+  assert.deepEqual(sach(h.donViPhanQuyen_(true, { ma: ['B'], coAll: true }, tatCa, tq)), ['A', 'B', 'C']);
+  assert.deepEqual(sach(h.donViPhanQuyen_(false, { ma: [], coAll: false }, tatCa, tq)), ['A', 'B', 'C']);
+  // Dòng cuối có mã ở cột A (bỏ dòng trống phía sau); chưa có → dòng tiêu đề
+  assert.equal(h.dongCuoiCoMa_(['Tên', 'Mã đơn vị', 'A', '', 'B', '', ''], 2), 5);
+  assert.equal(h.dongCuoiCoMa_(['Tên', 'Mã đơn vị', '', ''], 2), 2);
+}
 
 let soBai = 0;
 function bai(ten, fn) { fn(); soBai++; }

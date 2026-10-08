@@ -2,7 +2,7 @@
 // bcsnn · js/domains/phan-quyen.js
 // Vai trò  : Nghiệp vụ thuần trang quản trị: tài khoản theo đơn vị, giao bảng, lọc đơn vị
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 09:27
 // ============================================================
 // Dữ liệu dạng GAS qtLayDuLieu trả: taiKhoan [{email, unitCode, role}],
 // giao [{unitCode, tableCode, coFile, access: sua|xem|khong}], donVi [{unitCode, unitName}].
@@ -61,6 +61,19 @@ var PHAN_QUYEN = (function () {
     return kq;
   }
 
+  /** Đơn vị nhóm Quản trị (Quản trị / Quản lý báo cáo) — mặc định thấy mọi bảng, không phân quyền từng bảng. */
+  function laDonViToanQuyen(d) {
+    return !!d && (d.role === 'Quản trị' || d.role === 'Quản lý báo cáo');
+  }
+
+  /** Mục Phân quyền của bảng: đơn vị có trong bảng (dsMa từ GAS) và đơn vị còn thêm vào bảng tổng được. */
+  function chiaDonViBang(donVi, dsMa) {
+    return {
+      trong: donVi.filter(function (d) { return dsMa.indexOf(d.unitCode) >= 0; }),
+      themDuoc: donVi.filter(function (d) { return dsMa.indexOf(d.unitCode) < 0 && !laDonViToanQuyen(d); })
+    };
+  }
+
   /** Hai ô Nhập / Xem → quyền: nhập kéo theo xem. */
   function quyenTuO(nhap, xem) {
     return nhap ? 'sua' : (xem ? 'xem' : 'khong');
@@ -109,7 +122,7 @@ var PHAN_QUYEN = (function () {
   return {
     VAI_TRO: VAI_TRO, VAI_TRO_DON_VI: VAI_TRO_DON_VI, maDonViTuTen: maDonViTuTen, xepDonVi: xepDonVi, locDonVi: locDonVi, taiKhoanCuaDonVi: taiKhoanCuaDonVi,
     thayTaiKhoan: thayTaiKhoan, giaoCuaBang: giaoCuaBang, quyenCuaBang: quyenCuaBang, quyenTuO: quyenTuO,
-    thayGiao: thayGiao, quanLyMacDinh: quanLyMacDinh,
+    thayGiao: thayGiao, quanLyMacDinh: quanLyMacDinh, laDonViToanQuyen: laDonViToanQuyen, chiaDonViBang: chiaDonViBang,
     tomTatLuu: tomTatLuu
   };
 })();

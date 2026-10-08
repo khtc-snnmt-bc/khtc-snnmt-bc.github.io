@@ -48,6 +48,11 @@ bai('giaoCuaBang / thayGiao: bỏ quyền đơn vị đã có file thì giữ d�
   assert.equal(PQ.quyenTuO(true, false), 'sua');
   assert.equal(PQ.quyenTuO(false, true), 'xem');
   assert.equal(PQ.quyenTuO(false, false), 'khong');
+  const dv = [{ unitCode: 'A', role: 'Đơn vị báo cáo' }, { unitCode: 'B', role: 'Đơn vị báo cáo' },
+    { unitCode: 'KHTC', role: 'Quản trị' }, { unitCode: 'BT', role: 'Quản lý báo cáo' }];
+  const chia = sach(PQ.chiaDonViBang(dv, ['B']));
+  assert.deepEqual(chia.trong.map((d) => d.unitCode), ['B']);
+  assert.deepEqual(chia.themDuoc.map((d) => d.unitCode), ['A']);   // nhóm Quản trị không thêm vào bảng
 });
 
 bai('quanLyMacDinh: đã lưu → giữ; cùng lĩnh vực → theo; còn lại → mã mở đầu bằng lĩnh vực', () => {
