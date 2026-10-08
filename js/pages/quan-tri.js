@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.14.1 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.15.0 · Cập nhật: 08/10/2026 17:05
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -738,6 +738,22 @@ var PAGE_QUAN_TRI = (function () {
     tt.dong.forEach(function (d) { ul.appendChild(DOM.tao('li', {}, d)); });
   }
 
+  // Đủ file đơn vị (quan trọng nhất) rồi đủ tab kỳ — cùng khuôn với veKiem
+  function veDuFile(noi, du) {
+    noi.innerHTML = '';
+    if (!du) return;
+    var tt = QUAN_LY_BANG.tomTatDuFile(du, tenDonVi);
+    [tt.file, tt.ky].forEach(function (phan) {
+      if (!phan) return;
+      if (phan.hopLe) { noi.appendChild(thongBao(phan.chu)); return; }
+      var bao = noi.appendChild(DOM.tao('div', { class: 'alert alert-error' }));
+      bao.appendChild(DOM.tao('div', {}, phan.chu));
+      var ul = bao.appendChild(DOM.tao('ul', { class: 'qt-ds-loi' }));
+      phan.dong.forEach(function (d) { ul.appendChild(DOM.tao('li', {}, d)); });
+      if (phan.cach) bao.appendChild(DOM.tao('div', {}, phan.cach));
+    });
+  }
+
   /** Bấm nút → chờ GAS (nút quay), lỗi báo vào `bao`. */
   function chayNut(nut, chuCho, goi, xong, bao) {
     var chuCu = nut.textContent;
@@ -833,6 +849,7 @@ var PAGE_QUAN_TRI = (function () {
     var khoiFile = DOM.tao('div', {});
     khoiFile.appendChild(hangFile);
     khoiFile.appendChild(DOM.tao('div', { class: 'qt-mo-ta' },
+      'Kiểm tra các đơn vị được giao đã đủ file chưa, mỗi file đủ tab các kỳ chưa. ' +
       'Kiểm tra file tổng: mã đơn vị ở cột A có trong danh mục; "Cột được nhập" ghi đúng dạng, không gồm cột A, không vượt quá cột cuối của bảng; ' +
       '"Dòng được nhập" và "Dòng khoá" nằm trong vùng dữ liệu; tab chú thích có thật; không ô công thức nào báo lỗi. ' +
       'Đồng thời đưa file tổng và file các đơn vị về thư mục của bảng.'));
@@ -867,6 +884,7 @@ var PAGE_QUAN_TRI = (function () {
     var hangNut = khung.appendChild(DOM.tao('div', { class: 'qt-hang-nut' }));
     var nut = hangNut.appendChild(DOM.tao('button', { type: 'button', class: 'btn-login-main qt-nut-luu' }, 'Lưu'));
     var bao = khung.appendChild(DOM.tao('div'));
+    var noiDu = khung.appendChild(DOM.tao('div'));
     var noiKiem = khung.appendChild(DOM.tao('div'));
     if (ketQuaBang && ketQuaBang.tableCode === bang.tableCode) {
       bao.appendChild(thongBao(ketQuaBang.chu));
@@ -879,6 +897,7 @@ var PAGE_QUAN_TRI = (function () {
         function (res) {
           var tt = tomTatDoi(res.doi);
           if (tt.chu) bao.appendChild(thongBao(tt.chu, tt.laLoi));
+          veDuFile(noiDu, res.du);
           veKiem(noiKiem, res.kiem);
         }, bao);
     });

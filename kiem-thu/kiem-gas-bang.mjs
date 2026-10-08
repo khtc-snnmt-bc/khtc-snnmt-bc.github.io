@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
-// Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all)
+// Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all, đủ file / tab kỳ)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.3.2 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 17:05
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(['DangNhap.js', 'QuanTri.js', 'PhanQuyen.js', 'KyBaoCao.js', 'QuanLyBang.js'].map(doc).join('\n') +
   '\n;this.ham = { cotNhapTuKhai_, kiemKhaiBangMoi_, kiemCaiDatSua_, kiemMau_, dongBangMoi_, caiDatChoTrang_, docCaiDat_,' +
   ' docLinhVuc_, kiemLinhVucMoi_, dongGiuLai_, maTrongMau_, kiemKhaiTaiMau_, loiChoExcel_,' +
-  ' donViPhanQuyen_, dongCuoiCoMa_ };', sandbox);
+  ' donViPhanQuyen_, dongCuoiCoMa_, kiemDuFile_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -27,6 +27,24 @@ const sach = (x) => JSON.parse(JSON.stringify(x));
   // Dòng cuối có mã ở cột A (bỏ dòng trống phía sau); chưa có → dòng tiêu đề
   assert.equal(h.dongCuoiCoMa_(['Tên', 'Mã đơn vị', 'A', '', 'B', '', ''], 2), 5);
   assert.equal(h.dongCuoiCoMa_(['Tên', 'Mã đơn vị', '', ''], 2), 2);
+}
+
+{
+  // Đủ file / đủ tab kỳ: A đủ · B thiếu kỳ · C chưa file (không có dòng cột A) · D file hỏng
+  // · E bỏ quyền (không tính) · F chưa kiểm kịp · G có mã cột A nhưng chưa giao
+  const giao = [
+    { unitCode: 'A', fileId: 'fA', access: 'sua' }, { unitCode: 'B', fileId: 'fB', access: 'xem' },
+    { unitCode: 'C', fileId: '', access: 'sua' }, { unitCode: 'D', fileId: 'fD', access: 'sua' },
+    { unitCode: 'E', fileId: '', access: 'khong' }, { unitCode: 'F', fileId: 'fF', access: 'sua' }
+  ];
+  const kq = sach(h.kiemDuFile_(giao, { ma: ['A', 'B', 'D', 'E', 'F', 'G'], coAll: false }, ['10.10.2026', '10.11.2026'],
+    { A: ['10.11.2026', 'Chú thích', '10.10.2026'], B: ['10.10.2026'], D: null }, ['Mẫu', '10.10.2026']));
+  assert.deepEqual(kq, { soKy: 2, soDonVi: 5, coFile: 4, tongThieu: ['10.11.2026'],
+    thieuFile: [{ unitCode: 'C', ly: 'không có dòng nào mang mã này ở cột A file tổng' }], fileHong: ['D'], chuaGiao: ['G'],
+    thieuTab: [{ unitCode: 'B', ky: ['10.11.2026'] }], chuaKiem: 1 });
+  // Có dòng all / bảng tự nhập dòng → không nêu lý do cột A, không có "chưa giao"
+  assert.equal(h.kiemDuFile_(giao, { ma: [], coAll: true }, [], {}).thieuFile[0].ly, '');
+  assert.deepEqual(sach(h.kiemDuFile_(giao, null, [], {}).chuaGiao), []);
 }
 
 let soBai = 0;

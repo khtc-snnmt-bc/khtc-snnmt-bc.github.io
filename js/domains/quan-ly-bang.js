@@ -1,9 +1,10 @@
 // ============================================================
 // bcsnn · js/domains/quan-ly-bang.js
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
-//            cách nhập dòng / tổng hợp, kiểu kỳ, nhãn lĩnh vực, số đơn vị có file, câu báo kiểm mẫu / giao theo mã
+//            cách nhập dòng / tổng hợp, kiểu kỳ, nhãn lĩnh vực, số đơn vị có file,
+//            câu báo kiểm mẫu / đủ file + tab kỳ / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.5.1 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 17:05
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -91,6 +92,48 @@ var QUAN_LY_BANG = (function () {
     };
   }
 
+  var DV_HIEN_TOI_DA = 8;   // mỗi kỳ thiếu chỉ kể tên tối đa chừng này đơn vị
+
+  /** 'dd.mm.yyyy' → yyyymmdd để xếp kỳ */
+  function soNgay(ten) {
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(ten);
+    return m ? Number(m[3] + m[2] + m[1]) : 0;
+  }
+
+  /**
+   * Kết quả kiểm đủ file / đủ tab kỳ (GAS kiemDuFile_) → hai phần để vẽ:
+   * { file: {hopLe, chu, dong, cach}, ky: {…} | null } — ky null khi chưa có kỳ nào.
+   * @param {function(string): string} tenDv — mã đơn vị → tên hiện
+   */
+  function tomTatDuFile(du, tenDv) {
+    if (!du.soKy) return { file: { hopLe: true, chu: 'Chưa tạo kỳ nào nên chưa có file đơn vị.', dong: [] }, ky: null };
+    var dongFile = du.thieuFile.map(function (t) { return tenDv(t.unitCode) + ': chưa có file' + (t.ly ? ' — ' + t.ly : ''); })
+      .concat(du.fileHong.map(function (uc) { return tenDv(uc) + ': file đã xoá hoặc không mở được'; }))
+      .concat(du.chuaGiao.map(function (uc) { return tenDv(uc) + ': có mã ở cột A file tổng nhưng chưa được giao'; }));
+    var file = dongFile.length
+      ? { hopLe: false, chu: 'Thiếu file: ' + du.coFile + '/' + du.soDonVi + ' đơn vị có file.', dong: dongFile,
+        cach: 'Tạo lại kỳ gần nhất ở mục Kỳ báo cáo (chỉ tạo phần còn thiếu); đơn vị chưa giao thì bấm Giao theo mã trong bảng.' }
+      : { hopLe: true, chu: 'Đủ file: ' + du.coFile + '/' + du.soDonVi + ' đơn vị.', dong: [] };
+    // Gom theo kỳ: một kỳ tạo dở thường thiếu ở hàng chục file cùng lúc
+    var theoKy = {};
+    du.thieuTab.forEach(function (t) {
+      t.ky.forEach(function (k) { (theoKy[k] = theoKy[k] || []).push(tenDv(t.unitCode)); });
+    });
+    var soDaKiem = du.coFile - du.fileHong.length - du.chuaKiem;
+    var dongKy = Object.keys(theoKy).sort(function (a, b) { return soNgay(a) - soNgay(b); }).map(function (k) {
+      var ten = theoKy[k];
+      return 'Kỳ ' + k + ': thiếu ở ' + ten.length + '/' + soDaKiem + ' file — ' +
+        ten.slice(0, DV_HIEN_TOI_DA).join(', ') + (ten.length > DV_HIEN_TOI_DA ? '… (còn ' + (ten.length - DV_HIEN_TOI_DA) + ')' : '');
+    });
+    if ((du.tongThieu || []).length) dongKy.unshift('File tổng: thiếu kỳ ' + du.tongThieu.join(', '));
+    if (du.chuaKiem) dongKy.push('Còn ' + du.chuaKiem + ' file chưa kiểm (hết thời gian một lần chạy).');
+    var ky = dongKy.length
+      ? { hopLe: false, chu: 'Tab kỳ chưa đủ (' + du.soKy + ' kỳ):', dong: dongKy,
+        cach: du.thieuTab.length || (du.tongThieu || []).length ? 'Tạo lại kỳ đó ở mục Kỳ báo cáo (kỳ đã khoá thì mở khoá trước).' : '' }
+      : { hopLe: true, chu: 'Đủ tab ' + du.soKy + ' kỳ ở file tổng và mọi file đơn vị.', dong: [] };
+    return { file: file, ky: ky };
+  }
+
   /** Câu báo sau khi giao theo mã ở cột A (kết quả GAS qtGiaoTheoMau) */
   function tomTatGiaoTheoMau(kq) {
     var chu;
@@ -142,6 +185,6 @@ var QUAN_LY_BANG = (function () {
     tenBangTuExcel: tenBangTuExcel, baoTaoTuExcel: baoTaoTuExcel,
     KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, KIEU_KY: KIEU_KY, DONG_DAU: DONG_DAU,
     chuCot: chuCot, maTuTen: maTuTen, luaChonLinhVuc: luaChonLinhVuc, maLinhVucTuTen: maLinhVucTuTen,
-    oPhu: oPhu, tomTatKiem: tomTatKiem, tenLinhVuc: tenLinhVuc, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
+    oPhu: oPhu, tomTatKiem: tomTatKiem, tomTatDuFile: tomTatDuFile, tenLinhVuc: tenLinhVuc, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
   };
 })();

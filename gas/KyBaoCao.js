@@ -4,10 +4,11 @@
 //            thì tạo file), khoá / mở khoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 17:15
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
+// File tổng cũng có tab kỳ (chép tab mẫu, đặt sau tab mẫu) — chỗ gom số ở bước tổng hợp.
 // Bảng kiểu kỳ "Cập nhật": chép tab kỳ trước của chính file đơn vị (giữ số), dòng
 // mẫu mới (so theo cột khung) chèn sau khối dòng của Sở. Cột A + hiddenCols luôn ẩn.
 // Khoá kỳ = khoá cả tab + ẩn tab. Tab vốn đã có bảo vệ cả tab (chừa vùng nhập)
@@ -489,6 +490,18 @@ function themDongMau_(ss, tab, mauKy, ghep, maDonVi) {
   vungA.setValues(vungA.getValues().map(function (d) { return [String(d[0]).trim() === MA_MOI_DON_VI ? maDonVi : d[0]]; }));
 }
 
+/**
+ * Tab kỳ trong file tổng (chỗ gom số các đơn vị ở bước tổng hợp): chép tab mẫu, đặt ngay sau
+ * tab mẫu — tab mẫu luôn đứng đầu vì tạo kỳ chép tab đầu. Đã có thì thôi → true nếu vừa tạo.
+ */
+function taoTabKyTong_(mau, tenKy) {
+  if (mau.getSheetByName(tenKy)) return false;
+  var tab = mau.getSheets()[0].copyTo(mau).setName(tenKy);
+  mau.setActiveSheet(tab);
+  mau.moveActiveSheet(2);
+  return true;
+}
+
 function chepTabChuThich_(ss, mau, caiDat) {
   caiDat.noteTabs.forEach(function (ten) {
     var goc = mau.getSheetByName(ten);
@@ -627,6 +640,9 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
     ? tabMau.getRange(1, 1, Math.max(tabMau.getLastRow(), 1), 1).getValues().map(function (d) { return d[0]; }) : null;
   var kq = { ok: true, tenKy: tenKy, hanKhoa: han, tong: giao.length, daTao: 0, fileMoi: 0, daCo: 0,
     capNhat: 0, dongThem: 0, loi: [], tiepTu: null };
+  if (!Number(batDau)) {
+    try { kq.tabTong = taoTabKyTong_(mau, tenKy); } catch (err) { kq.loi.push('File tổng: ' + String(err.message || err)); }
+  }
   var fileMoi = [], mauKy = null;
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() - batDauLuc > KY_MS_TOI_DA) { kq.tiepTu = i; break; }

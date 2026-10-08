@@ -2,9 +2,10 @@
 // bcsnn · gas/QuanLyBang.js
 // Vai trò  : Quản lý bảng — dựng file tổng (bảng mẫu) từ khai báo cột trên app,
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
-//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
+//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng,
+//            kiểm bảng đủ file đơn vị + đủ tab kỳ
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.6.1 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 17:05
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -199,6 +200,38 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
   if (kq.hiddenCols && !hopLeDsCot_(kq.hiddenCols)) return { loi: 'Cột ẩn ở file đơn vị ghi chữ cột, ví dụ B, D:E' };
   kq.periodMode = cd.periodMode === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   return { caiDat: kq };
+}
+
+/**
+ * Bảng đã đủ file đơn vị, đủ tab kỳ chưa (nút Kiểm tra bảng).
+ * @param {Array<{unitCode, fileId, access}>} giao — dòng tab File của bảng
+ * @param {{ma: Array<string>, coAll: boolean}|null} cotA — mã ở cột A file tổng (bảng Sở giao dòng); null = tự nhập dòng
+ * @param {Array<string>} dsKy — tên các kỳ của bảng trong sổ kỳ
+ * @param {Object} tabFile — unitCode → tên các tab của file; null = không mở được; không có khoá = chưa kiểm (hết giờ)
+ * @param {Array<string>} tabTong — tên các tab của file tổng (mỗi kỳ một tab)
+ */
+function kiemDuFile_(giao, cotA, dsKy, tabFile, tabTong) {
+  var kq = { soKy: dsKy.length, soDonVi: 0, coFile: 0, thieuFile: [], fileHong: [], chuaGiao: [], thieuTab: [], chuaKiem: 0,
+    tongThieu: dsKy.filter(function (k) { return (tabTong || []).indexOf(k) < 0; }) };
+  var daGiao = {};
+  giao.forEach(function (g) {
+    daGiao[g.unitCode] = true;
+    if (g.access === 'khong') return;   // đã bỏ quyền: đơn vị không thấy bảng, không cần file
+    kq.soDonVi++;
+    if (!g.fileId) {
+      kq.thieuFile.push({ unitCode: g.unitCode,
+        ly: cotA && !cotA.coAll && cotA.ma.indexOf(g.unitCode) < 0 ? 'không có dòng nào mang mã này ở cột A file tổng' : '' });
+      return;
+    }
+    kq.coFile++;
+    if (!(g.unitCode in tabFile)) { kq.chuaKiem++; return; }
+    var ten = tabFile[g.unitCode];
+    if (!ten) { kq.fileHong.push(g.unitCode); return; }
+    var thieu = dsKy.filter(function (k) { return ten.indexOf(k) < 0; });
+    if (thieu.length) kq.thieuTab.push({ unitCode: g.unitCode, ky: thieu });
+  });
+  if (cotA) kq.chuaGiao = cotA.ma.filter(function (m) { return !daGiao[m]; });
+  return kq;
 }
 
 function loiMau_(cho, loi, cach) {
@@ -500,6 +533,31 @@ function kiemMauBang_(ss, tableCode) {
   var doi = doiFileVaoThuMucBang_(ss, tableCode);
   if (!caiDat.templateFileId) return { ok: true, doi: doi, kiem: [loiMau_('File tổng', 'Bảng chưa có file tổng', 'Tạo bảng mới trên app hoặc tải mẫu lên')] };
   return { ok: true, doi: doi, kiem: kiemMau_(docMau_(SpreadsheetApp.openById(caiDat.templateFileId)), caiDat, maDonViCo_(ss)) };
+}
+
+/**
+ * Mở từng file đơn vị của bảng, đọc tên tab → kiemDuFile_. ~0,5 s/file; quá KY_MS_TOI_DA thì
+ * dừng, phần còn lại báo "chưa kiểm". File trong thùng rác vẫn mở được → coi như hỏng.
+ */
+function kiemDuFileBang_(ss, tableCode) {
+  var hetGio = Date.now() + KY_MS_TOI_DA;
+  var cd = caiDatBang_(ss, tableCode);
+  var giao = docFileQuanLy_(docTabQuanLy_(ss, 'File')).filter(function (f) { return f.tableCode === tableCode; });
+  var cotA = cd.sourceType === 'gopTach' && cd.templateFileId ? maTrongMau_(docCotAMau_(cd.templateFileId), maDonViCo_(ss)) : null;
+  var dsKy = docKyQuanLy_(docTabQuanLy_(ss, TAB_KY))
+    .filter(function (k) { return k.tableCode === tableCode; }).map(function (k) { return k.periodName; });
+  var tabFile = {};
+  giao.forEach(function (g) {
+    if (!g.fileId || g.access === 'khong' || Date.now() > hetGio) return;
+    try {
+      tabFile[g.unitCode] = DriveApp.getFileById(g.fileId).isTrashed() ? null
+        : SpreadsheetApp.openById(g.fileId).getSheets().map(function (t) { return t.getName(); });
+    } catch (err) {
+      tabFile[g.unitCode] = null;
+    }
+  });
+  var tabTong = cd.templateFileId ? SpreadsheetApp.openById(cd.templateFileId).getSheets().map(function (t) { return t.getName(); }) : [];
+  return kiemDuFile_(giao, cotA, dsKy, tabFile, tabTong);
 }
 
 /** Ghi (thêm hoặc sửa) dòng của tableCode ở tab Bảng; thiếu cột thì thêm tiêu đề. */
@@ -862,5 +920,9 @@ function xuLyQtLuuBang_(token, tableCode, caiDat) {
 }
 
 function xuLyQtKiemMau_(token, tableCode) {
-  return quanTriChay_(token, function (ss) { return kiemMauBang_(ss, String(tableCode || '').trim()); });
+  return quanTriChay_(token, function (ss) {
+    var ma = String(tableCode || '').trim(), kq = kiemMauBang_(ss, ma);
+    if (kq.ok) kq.du = kiemDuFileBang_(ss, ma);   // chỉ nút Kiểm tra bảng — mở từng file, chậm
+    return kq;
+  });
 }
