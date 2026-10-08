@@ -1,9 +1,9 @@
 // ============================================================
 // bcsnn · js/domains/ky-bao-cao.js
 // Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
-//            câu báo tạo/khoá kỳ (trang quản trị)
+//            câu báo tạo/khoá/xoá kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.5.1 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 17:20
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -59,6 +59,11 @@ var KY_BAO_CAO = (function () {
     return co ? kq : kq.concat([{ tableCode: tableCode, periodName: tenKy, locked: locked, lockDate: lockDate || '' }]);
   }
 
+  /** Danh sách kỳ sau khi xoá một kỳ của bảng. */
+  function boKy(dsKy, tableCode, tenKy) {
+    return (dsKy || []).filter(function (k) { return k.tableCode !== tableCode || k.periodName !== tenKy; });
+  }
+
   /** 'dd.mm.yyyy' → 'yyyy-mm-dd' (giá trị ô chọn ngày); sai dạng → ''. */
   function ngayChoO(ten) {
     var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(ten || ''));
@@ -86,7 +91,7 @@ var KY_BAO_CAO = (function () {
   function gopLo(tong, lo) {
     if (!tong) return lo;
     var kq = Object.assign({}, lo);
-    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab', 'capNhat', 'dongThem'].forEach(function (k) {
+    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab', 'capNhat', 'dongThem', 'daXoa', 'fileBo'].forEach(function (k) {
       if (k in lo) kq[k] = (tong[k] || 0) + lo[k];
     });
     kq.loi = (tong.loi || []).concat(lo.loi || []);
@@ -112,6 +117,15 @@ var KY_BAO_CAO = (function () {
     return chu + phanLoi(kq);
   }
 
+  /** Câu báo sau khi xoá kỳ. */
+  function tomTatXoaKy(kq) {
+    var chu = kq.conSo
+      ? 'Đã xoá kỳ ' + kq.tenKy + ' ở ' + kq.daXoa + ' file; còn file lỗi nên kỳ chưa xoá khỏi danh sách — bấm Xoá lại.'
+      : 'Đã xoá kỳ ' + kq.tenKy + ' ở ' + kq.daXoa + ' file đơn vị và file tổng.';
+    if (kq.fileBo) chu += ' ' + kq.fileBo + ' file không còn kỳ nào đã vào thùng rác Google Drive.';
+    return chu + phanLoi(kq);
+  }
+
   function phanLoi(kq) {
     var loi = (kq.loi || []).concat((kq.quyen && kq.quyen.loi) || []);
     return loi.length ? ' Lỗi: ' + loi.join(' · ') : '';
@@ -119,6 +133,7 @@ var KY_BAO_CAO = (function () {
 
   return {
     taoUrlSheet: taoUrlSheet, dsFileBang: dsFileBang,
-    kyCuaBang: kyCuaBang, datKy: datKy, ngayChoO: ngayChoO, hanKhoaGoiY: hanKhoaGoiY, gopLo: gopLo, tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy
+    kyCuaBang: kyCuaBang, datKy: datKy, boKy: boKy, ngayChoO: ngayChoO, hanKhoaGoiY: hanKhoaGoiY, gopLo: gopLo,
+    tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy, tomTatXoaKy: tomTatXoaKy
   };
 })();

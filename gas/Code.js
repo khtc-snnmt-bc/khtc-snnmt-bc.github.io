@@ -2,7 +2,7 @@
 // bcsnn · gas/Code.js
 // Vai trò  : Cửa vào web app GAS — doPost định tuyến theo action, luôn trả JSON
 // Lớp      : gas — gọi: DangNhap.js, QuanTri.js, PhanQuyen.js, KyBaoCao.js, QuanLyBang.js, DonVi.js, XacMinhGoogle.js, VeDangNhap.js
-// Phiên bản: 0.11.0 · Cập nhật: 08/10/2026 09:27
+// Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 17:20
 // ============================================================
 // Nguồn GAS DUY NHẤT là thư mục app/gas/ (repo Public) → KHÔNG ghi ID file,
 // Gmail, mật khẩu ở đây. ID Sheet quản lý nằm ở Script Properties (QUAN_LY_ID).
@@ -42,6 +42,7 @@ function doPost(e) {
     case 'qtLuuPhanQuyen': return traJson_(xuLyQtLuuPhanQuyen_(yc.token, yc.tableCode, yc.managerUnits, yc.units));
     case 'qtTaoKy': return traJson_(xuLyQtTaoKy_(yc.token, yc.tableCode, yc.ngay, yc.batDau, yc.hanKhoa));
     case 'qtKhoaKy': return traJson_(xuLyQtKhoaKy_(yc.token, yc.tableCode, yc.tenKy, yc.khoa, yc.batDau));
+    case 'qtXoaKy': return traJson_(xuLyQtXoaKy_(yc.token, yc.tableCode, yc.tenKy, yc.batDau));
     case 'qtHanKhoaKy': return traJson_(xuLyQtHanKhoaKy_(yc.token, yc.tableCode, yc.tenKy, yc.hanKhoa));
     case 'qtTaoBang': return traJson_(xuLyQtTaoBang_(yc.token, yc.khai, yc.maYeuCau));
     case 'qtTaiMau': return traJson_(xuLyQtTaiMau_(yc.token, yc.khai, yc.maYeuCau));

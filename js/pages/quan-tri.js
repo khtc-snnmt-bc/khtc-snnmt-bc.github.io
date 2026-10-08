@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.15.0 · Cập nhật: 08/10/2026 17:05
+// Phiên bản: 0.16.0 · Cập nhật: 08/10/2026 17:20
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -402,7 +402,33 @@ var PAGE_QUAN_TRI = (function () {
         }
         var nut = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, k.locked ? 'Mở khoá' : 'Khoá'));
         nut.addEventListener('click', function () { khoaMo(k, nut); });
+        var nutXoa = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Xoá'));
+        nutXoa.addEventListener('click', function () { xoaKy(k, nutXoa); });
       });
+    }
+
+    function xoaKy(k, nut) {
+      if (dangChay) return;
+      if (!window.confirm('Xoá kỳ ' + k.periodName + ' của bảng "' + bang.tableName + '"?\n\n' +
+        'Tab kỳ này bị xoá ở mọi file đơn vị và file tổng — số đã nhập trong kỳ mất. ' +
+        'File đơn vị không còn kỳ nào khác sẽ vào thùng rác Google Drive (khôi phục được trong 30 ngày).')) return;
+      dangChay = true;
+      nut.disabled = true;
+      bao.innerHTML = '';
+      chayTheoLo(function (batDau) {
+        return API.qtXoaKy(token(), bang.tableCode, k.periodName, batDau);
+      }, nut, 'Đang xoá')
+        .then(function (kq) {
+          if (!kq.conSo) duLieu.ky = KY_BAO_CAO.boKy(duLieu.ky, bang.tableCode, k.periodName);
+          if (kq.fileBo) taiLaiNgam();
+          veDanhSach();
+          baoKetQua(KY_BAO_CAO.tomTatXoaKy(kq), kq.loi.length > 0);
+        })
+        .catch(function (err) {
+          veDanhSach();
+          baoKetQua(err.message, true);
+        })
+        .then(function () { dangChay = false; });
     }
 
     function doiHan(k, oHan) {

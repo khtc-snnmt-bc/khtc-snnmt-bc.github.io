@@ -1,7 +1,7 @@
 // ============================================================
 // bcsnn · gas/KyBaoCao.js
 // Vai trò  : Kỳ báo cáo — tạo tab kỳ ở mọi file đơn vị của một bảng (thiếu file
-//            thì tạo file), khoá / mở khoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
+//            thì tạo file), khoá / mở khoá / xoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
 // Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 17:15
@@ -717,6 +717,59 @@ function khoaMoKy_(ss, tableCode, tenKy, khoa, batDau, hetGio) {
   return kq;
 }
 
+/**
+ * Xoá kỳ: xoá tab kỳ ở mọi file đơn vị + file tổng, xong hết mới xoá dòng sổ kỳ. File đơn vị
+ * không còn kỳ nào khác → thùng rác (khôi phục được ~30 ngày) + bỏ trống fileId, Tạo kỳ sau
+ * tạo lại file (Google không cho file không còn tab). Tab đã xoá → bỏ qua, nên gọi lại an toàn.
+ */
+function xoaKy_(ss, tableCode, tenKy, batDau) {
+  var hetGio = Date.now() + KY_MS_TOI_DA;
+  if (!dongKy_(tabKyQuanLy_(ss).getDataRange().getValues(), tableCode, tenKy)) return { ok: false, loi: 'Không có kỳ ' + tenKy };
+  // Giữ cả dòng chưa có file: bỏ trống fileId giữa chừng không làm lệch chỉ số lô sau
+  var giao = giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode);
+  var tabFile = ss.getSheetByName('File');
+  var kq = { ok: true, tenKy: tenKy, tong: giao.length, daXoa: 0, fileBo: 0, loi: [], tiepTu: null };
+  for (var i = Number(batDau) || 0; i < giao.length; i++) {
+    if (Date.now() > hetGio) { kq.tiepTu = i; break; }
+    var g = giao[i];
+    if (!g.fileId) continue;
+    try {
+      var file = SpreadsheetApp.openById(g.fileId), tab = file.getSheetByName(tenKy);
+      if (!tab) continue;
+      var conKy = file.getSheets().filter(function (t) { return t.getName() !== tenKy && soNgay_(t.getName()); })
+        .sort(function (a, b) { return soNgay_(b.getName()) - soNgay_(a.getName()); });
+      if (conKy.length) {
+        // Google không cho xoá tab hiện cuối cùng → hiện kỳ gần nhất còn lại (đã khoá thì vẫn khoá)
+        if (!tab.isSheetHidden() && soTabDangHien_(file) < 2) conKy[0].showSheet();
+        file.deleteSheet(tab);
+      } else {
+        DriveApp.getFileById(g.fileId).setTrashed(true);
+        tabFile.getRange(g.dong, 3, 1, 2).setValues([['', '']]);
+        kq.fileBo++;
+      }
+      kq.daXoa++;
+    } catch (err) {
+      kq.loi.push(g.unitCode + ': ' + String(err.message || err));
+    }
+  }
+  if (kq.tiepTu !== null) return kq;
+  // File lỗi còn giữ tab → giữ kỳ trong sổ để bấm Xoá lại, không để tab mồ côi
+  if (kq.loi.length) { kq.conSo = true; return kq; }
+  var caiDat = caiDatBang_(ss, tableCode);
+  try {
+    var mau = caiDat && caiDat.templateFileId ? SpreadsheetApp.openById(caiDat.templateFileId) : null;
+    var tabTong = mau && mau.getSheetByName(tenKy);
+    if (tabTong && mau.getSheets()[0].getSheetId() !== tabTong.getSheetId()) mau.deleteSheet(tabTong);
+  } catch (err) {
+    kq.loi.push('File tổng: ' + String(err.message || err));
+  }
+  var tabKy = tabKyQuanLy_(ss), dong = dongKy_(tabKy.getDataRange().getValues(), tableCode, tenKy);
+  if (dong) tabKy.deleteRow(dong);
+  var p = PropertiesService.getScriptProperties(), tiep = JSON.parse(p.getProperty(TU_KHOA_TIEP) || 'null');
+  if (tiep && tiep.tableCode === tableCode && tiep.periodName === tenKy) p.deleteProperty(TU_KHOA_TIEP);
+  return kq;
+}
+
 /** Đặt / bỏ ('') ngày tự khoá của một kỳ đang mở. */
 function datHanKhoa_(ss, tableCode, tenKy, hanKhoa) {
   var tabKy = tabKyQuanLy_(ss);
@@ -794,6 +847,12 @@ function xuLyQtHanKhoaKy_(token, tableCode, tenKy, hanKhoa) {
     var h = docHanKhoaGui_(hanKhoa === undefined ? '' : hanKhoa);
     if (h.loi) return { ok: false, loi: h.loi };
     return datHanKhoa_(ss, String(tableCode || '').trim(), chuanHoaTenKy_(tenKy), h.han);
+  });
+}
+
+function xuLyQtXoaKy_(token, tableCode, tenKy, batDau) {
+  return quanTriChay_(token, function (ss) {
+    return xoaKy_(ss, String(tableCode || '').trim(), chuanHoaTenKy_(tenKy), batDau);
   });
 }
 
