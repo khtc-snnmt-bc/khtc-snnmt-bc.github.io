@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.4.2 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 09:20
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -549,7 +549,8 @@ function taoBang_(ss, khai, maYeuCau) {
 /**
  * Bảng mới từ Excel tải lên: chuyển xlsx thành Google Sheet `{mãBảng}_TONG` (giữ công thức,
  * ô gộp, danh sách chọn, mọi tab) rồi chạy kiemMau_. Mẫu sai → bỏ file vừa chuyển, không ghi
- * bảng, trả {kiem} để quản trị sửa Excel rồi tải lại. Mẫu đúng → ghi tab Bảng như taoBang_.
+ * bảng, trả {kiem} để quản trị sửa Excel rồi tải lại. Mẫu đúng → ghi tab Bảng như taoBang_;
+ * bảng Sở giao dòng thì giao luôn cho các mã ở cột A (giaoTuDong = kết quả giaoTheoMau_).
  * Tạo kỳ chỉ chép tab đầu + tab chú thích; các tab khác (VD Tổng hợp) ở lại file tổng.
  */
 function taiMauExcel_(ss, khai, maYeuCau) {
@@ -589,6 +590,10 @@ function taiMauExcel_(ss, khai, maYeuCau) {
         caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[ma] },
       kiem: []
     };
+    // Sở giao dòng: tự giao bảng cho các đơn vị có mã ở cột A (như bấm "Giao theo mã trong bảng")
+    if (cd.sourceType === 'gopTach') {
+      try { kq.giaoTuDong = giaoTheoMau_(ss, ma); } catch (err) { kq.giaoTuDong = { ok: false, loi: String(err.message || err) }; }
+    }
   }
   if (khoaCache) cache.put(khoaCache, JSON.stringify(kq), 600);
   return kq;

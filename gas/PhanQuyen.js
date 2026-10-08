@@ -3,16 +3,19 @@
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_, docLinhVuc_)
-// Phiên bản: 0.5.0 · Cập nhật: 07/10/2026 05:13
+// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 09:05
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị + Gmail của đơn vị quản lý bảng → SỬA.
 // - File tổng (templateFileId): Gmail của đơn vị quản lý bảng → chỉ XEM
 //   (số chỉ nhập ở file đơn vị — chủ dự án chốt 06/10/2026, không đồng bộ 2 chiều).
+// - Đơn vị nhóm Quản trị (tab Đơn vị, vai trò Quản trị / Quản lý báo cáo) mặc
+//   định là đơn vị quản lý của MỌI bảng: thấy tất cả, sửa mọi file đơn vị.
 // Chỉ đụng quyền kiểu "user", bỏ qua chủ file. Chia sẻ không gửi thư.
 // Giao bảng = dòng tab File (fileId để trống tới khi tạo file — b06c/d).
 
 var VAI_TRO_HOP_LE = ['Nhập liệu', 'Quản lý báo cáo', 'Quản trị'];
+var VAI_TRO_DON_VI_TOAN_QUYEN = ['Quản trị', 'Quản lý báo cáo'];
 var QUYEN_SUA = 'writer';
 var QUYEN_XEM = 'reader';
 var COT_DON_VI_QUAN_LY = 'managerUnits';   // một bảng có thể nhiều đơn vị quản lý: "A, B"
@@ -58,6 +61,26 @@ function docBangQuanLy_(dsBang) {
     });
   }
   return kq;
+}
+
+/** Tab Đơn vị (unitCode | unitName | region | role) → mã các đơn vị nhóm Quản trị. */
+function donViToanQuyen_(dsDonVi) {
+  var kq = [];
+  for (var i = 1; i < (dsDonVi || []).length; i++) {
+    var ma = String(dsDonVi[i][0] || '').trim();
+    if (ma && VAI_TRO_DON_VI_TOAN_QUYEN.indexOf(String(dsDonVi[i][3] || '').trim()) >= 0) kq.push(ma);
+  }
+  return kq;
+}
+
+/** Bảng (docBangQuanLy_) thêm các đơn vị toàn quyền vào managerUnits — bản mới, không sửa bản gốc. */
+function themToanQuyen_(bang, dsMa) {
+  return bang.map(function (b) {
+    var ql = b.managerUnits.slice();
+    dsMa.forEach(function (m) { if (ql.indexOf(m) < 0) ql.push(m); });
+    return { tableCode: b.tableCode, tableName: b.tableName, group: b.group,
+      templateFileId: b.templateFileId, managerUnits: ql };
+  });
 }
 
 /** Tab File → [{unitCode, tableCode, fileId}] */
@@ -214,7 +237,7 @@ function apQuyenFile_(fileId, chenh, tong) {
 
 /** Soát + sửa quyền các file trong phạm vi cho khớp Sheet quản lý. Lỗi từng file ghi lại, không dừng. */
 function dongBoQuyen_(ss, phamVi) {
-  var bang = docBangQuanLy_(docTabQuanLy_(ss, 'Bảng'));
+  var bang = themToanQuyen_(docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')), donViToanQuyen_(docTabQuanLy_(ss, 'Đơn vị')));
   var file = docFileQuanLy_(docTabQuanLy_(ss, 'File'));
   var mong = quyenMongMuon_(bang, file, emailTheoDonVi_(docTabQuanLy_(ss, 'Tài khoản')));
   var tong = { soFile: 0, them: 0, doi: 0, go: 0, loi: [] };

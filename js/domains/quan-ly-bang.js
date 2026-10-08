@@ -3,7 +3,7 @@
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
 //            cách nhập dòng / tổng hợp, nhãn lĩnh vực, số đơn vị có file, câu báo kiểm mẫu / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 09:20
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -118,10 +118,16 @@ var QUAN_LY_BANG = (function () {
     return { coMaDonVi: dongTieuDe >= 0, tenBang: tenBang.replace(/\s+/g, ' ') };
   }
 
-  /** Câu báo sau khi tạo bảng từ Excel: thành công + việc làm tiếp. */
-  function baoTaoTuExcel(bang, laGopTach) {
-    return 'Đã tải lên thành công — đã tạo bảng "' + bang.tableName + '". Việc tiếp theo: ' +
-      (laGopTach ? 'bấm "Tạo bảng cho đơn vị" → "Giao theo mã trong bảng"'
+  /**
+   * Câu báo sau khi tạo bảng từ Excel: thành công + việc làm tiếp.
+   * giaoTuDong = kết quả GAS tự giao theo mã cột A (chỉ bảng Sở giao dòng), có thể thiếu.
+   */
+  function baoTaoTuExcel(bang, laGopTach, giaoTuDong) {
+    var chu = 'Đã tải lên thành công — đã tạo bảng "' + bang.tableName + '". ';
+    if (giaoTuDong && giaoTuDong.ok) chu += tomTatGiaoTheoMau(giaoTuDong).chu + ' ';
+    else if (giaoTuDong) chu += 'Chưa tự giao được cho đơn vị (' + (giaoTuDong.loi || 'lỗi') + ') — bấm "Giao theo mã trong bảng". ';
+    return chu + 'Việc tiếp theo: ' +
+      (laGopTach ? 'bấm "Tạo bảng cho đơn vị"'
         : 'giao bảng cho các đơn vị ở mục Phân quyền, rồi bấm "Tạo bảng cho đơn vị"') +
       ', chọn ngày kỳ đầu và bấm "Tạo cho các đơn vị".';
   }

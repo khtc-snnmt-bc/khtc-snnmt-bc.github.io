@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.12.0 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.12.1 · Cập nhật: 08/10/2026 09:20
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -999,7 +999,9 @@ var PAGE_QUAN_TRI = (function () {
         });
       }, function (res) {
         if (!res.bang) { veKiem(noiKiem, res.kiem); return; }
-        moBangVuaTao(res.bang, QUAN_LY_BANG.baoTaoTuExcel(res.bang, (res.bang.caiDat || {}).sourceType === 'gopTach'), res.kiem);
+        if (res.giaoTuDong && res.giaoTuDong.ok) duLieu.giao = res.giaoTuDong.giao;
+        moBangVuaTao(res.bang, QUAN_LY_BANG.baoTaoTuExcel(res.bang, (res.bang.caiDat || {}).sourceType === 'gopTach',
+          res.giaoTuDong), res.kiem);
       }, bao);
     });
   }

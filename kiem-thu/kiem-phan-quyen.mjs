@@ -125,7 +125,12 @@ bai('tên bảng từ Excel: dòng một ô có chữ phía trên "Mã đơn v�
     { coMaDonVi: true, tenBang: '' });
   assert.deepEqual(sach(QLB.tenBangTuExcel([['Mã đơn vị', 'Tên']])), { coMaDonVi: true, tenBang: '' });
   assert.deepEqual(sach(QLB.tenBangTuExcel([['Bảng X'], ['Ma don vi']])), { coMaDonVi: false, tenBang: '' });
-  assert.match(QLB.baoTaoTuExcel({ tableName: 'T' }, true), /Giao theo mã trong bảng/);
+  // Bảng Sở giao dòng: GAS đã tự giao theo mã cột A → báo số đơn vị, không bảo bấm giao nữa
+  const g = { ok: true, moi: ['A', 'B'], tong: 2, coAll: false, sai: [], docDuoc: 2 };
+  const chu = QLB.baoTaoTuExcel({ tableName: 'T' }, true, g);
+  assert.match(chu, /Đã giao thêm 2 đơn vị/);
+  assert.doesNotMatch(chu, /Giao theo mã trong bảng/);
+  assert.match(QLB.baoTaoTuExcel({ tableName: 'T' }, true, { ok: false, loi: 'x' }), /Giao theo mã trong bảng/);
 });
 
 console.log('ĐẠT ' + soBai + ' bài — kiem-phan-quyen');

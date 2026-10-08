@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-phan-quyen.mjs
 // Vai trò  : Kiểm hàm thuần Tài khoản / Phân quyền / quyền Drive mong muốn phía GAS
 // Chạy     : node app/kiem-thu/kiem-gas-phan-quyen.mjs
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 21:12
+// Phiên bản: 0.3.0 · Cập nhật: 08/10/2026 09:05
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') +
   '\n;this.ham = { docBangQuanLy_, docFileQuanLy_, emailTheoDonVi_, fileTrongPhamVi_, quyenMongMuon_,' +
   ' chenhLechQuyen_, kiemDsTaiKhoan_, thayTaiKhoanDonVi_, capNhatGiao_, bangQuanLyCuaDonVi_,' +
-  ' danhSachBangDangNhap_, laTaiKhoanQuanTri_ };', sandbox);
+  ' danhSachBangDangNhap_, laTaiKhoanQuanTri_, donViToanQuyen_, themToanQuyen_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -148,6 +148,25 @@ bai('bangQuanLyCuaDonVi_ / danhSachBangDangNhap_', () => {
   const dsA = sach(h.danhSachBangDangNhap_(tabBang, tabFile, tabDV, 'A'));
   assert.deepEqual(dsA.map((b) => b.fileId), ['F_A_DUAN', 'F_A_KK']);
   assert.equal(dsA[0].donVi, undefined);
+});
+
+bai('đơn vị nhóm Quản trị (Quản trị / Quản lý báo cáo) thấy và sửa mọi bảng', () => {
+  const dv = [['unitCode', 'unitName', 'region', 'role'], ['A', 'Ban Ả', '', 'Đơn vị báo cáo'],
+    ['KHTC', 'Phòng KHTC', '', 'Quản trị'], ['QLBC', 'Phòng QLBC', '', 'Quản lý báo cáo']];
+  assert.deepEqual(sach(h.donViToanQuyen_(dv)), ['KHTC', 'QLBC']);
+  const ds = sach(h.danhSachBangDangNhap_(tabBang, tabFile, dv, 'KHTC'));
+  assert.deepEqual(ds.map((b) => b.tableCode), ['duan', 'khokhan']);   // cả bảng chưa ai quản lý
+  assert.deepEqual(ds[1].donVi.map((d) => d.unitCode), ['A']);
+  assert.equal(h.bangQuanLyCuaDonVi_(tabBang, tabFile, dv, 'A').length, 0);
+  const b2 = h.themToanQuyen_(bang, h.donViToanQuyen_(dv));
+  assert.deepEqual(sach(bang[0].managerUnits), ['QL']);                 // bản gốc không đổi
+  const ed = Object.assign({}, emailDv, { QLBC: ['qlbc@x.com'] });
+  const m = sach(h.quyenMongMuon_(b2, file, ed));
+  assert.equal(m.F_A_KK['qt@x.com'], 'writer');
+  assert.equal(m.F_B_DUAN['qlbc@x.com'], 'writer');
+  assert.equal(m.TONG_KK['qt@x.com'], 'reader');
+  assert.deepEqual(sach(h.fileTrongPhamVi_(b2, file, { unitCodes: ['KHTC'] })),
+    ['TONG_DUAN', 'TONG_KK', 'F_A_DUAN', 'F_B_DUAN', 'F_A_KK']);
 });
 
 console.log('ĐẠT ' + soBai + ' bài — kiem-gas-phan-quyen');
