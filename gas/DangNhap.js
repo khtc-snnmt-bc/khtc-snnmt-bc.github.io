@@ -2,7 +2,7 @@
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
 // Lớp      : gas backend — đọc Sheet quản lý, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_, themToanQuyen_, donViToanQuyen_)
-// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 09:05
+// Phiên bản: 0.8.0 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 
 /**
@@ -181,7 +181,7 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
     }
   }
 
-  // Tab File: unitCode, tableCode, fileId, createdAt
+  // Tab File: unitCode, tableCode, fileId, createdAt, access (khong = đã bỏ quyền → không thấy)
   var ketQua = [];
   for (var j = 1; j < dsFile.length; j++) {
     var f = dsFile[j];
@@ -189,7 +189,7 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
     var fTable = String(f[1] || '').trim();
     var fileId = String(f[2] || '').trim();
 
-    if (fUnit === uc && bangTheoMa[fTable] && fileId) {
+    if (fUnit === uc && bangTheoMa[fTable] && fileId && chuanQuyenDv_(f[4]) !== 'khong') {
       ketQua.push({
         tableCode: fTable,
         tableName: bangTheoMa[fTable].tableName,

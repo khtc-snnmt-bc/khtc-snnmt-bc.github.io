@@ -2,13 +2,15 @@
 // bcsnn · app/kiem-thu/kiem-gas-dang-nhap.mjs
 // Vai trò  : Kiểm thử các hàm thuần xử lý đăng nhập phía GAS bằng Node.js
 // Chạy     : node app/kiem-thu/kiem-gas-dang-nhap.mjs
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 13:33
+// Phiên bản: 0.2.1 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
-const ma = readFileSync(new URL('../gas/DangNhap.js', import.meta.url), 'utf8');
+// GAS: mọi file chung một phạm vi — DangNhap.js dùng hàm của PhanQuyen.js
+const doc = (f) => readFileSync(new URL('../gas/' + f, import.meta.url), 'utf8');
+const ma = doc('DangNhap.js') + '\n' + doc('PhanQuyen.js');
 const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_, chonDonViTheoEmail_ };', sandbox);

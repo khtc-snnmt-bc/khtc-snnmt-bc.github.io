@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-ky.mjs
 // Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá)
 // Chạy     : node app/kiem-thu/kiem-gas-ky.mjs
-// Phiên bản: 0.2.0 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.3.0 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,12 +13,20 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n;this.ham = { chuanHoaTenKy_, docKyQuanLy_, dongKy_, giaoCuaBangKy_, docCaiDat_, keHoachKhoa_,' +
-  ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_ };', sandbox);
+  ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_,' +
+  ' loiKhongCoDong_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
 let soBai = 0;
 function bai(ten, fn) { fn(); soBai++; }
+
+bai('loiKhongCoDong_: đơn vị không có dòng ở cột A mẫu → báo, không tạo file', () => {
+  const cotA = ['Tên bảng', 'Mã đơn vị', 'A', 'A', 'B'];
+  assert.equal(h.loiKhongCoDong_(cotA, 'A'), '');
+  assert.match(h.loiKhongCoDong_(cotA, 'KHTC'), /không có dòng nào/);
+  assert.equal(h.loiKhongCoDong_(cotA.concat(['all']), 'KHTC'), '');   // dòng chung mọi đơn vị
+});
 
 bai('tên kỳ từ ô chọn ngày / gõ tay', () => {
   assert.equal(h.chuanHoaTenKy_('2026-10-10'), '10.10.2026');

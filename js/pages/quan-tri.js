@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.12.1 · Cập nhật: 08/10/2026 09:20
+// Phiên bản: 0.13.0 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -491,7 +491,7 @@ var PAGE_QUAN_TRI = (function () {
     var themQl = cotQl.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm đơn vị quản lý'));
     themQl.addEventListener('click', function () { DOM.$('select', themQuanLy('')).focus(); });
 
-    var giao = PHAN_QUYEN.giaoCuaBang(duLieu.giao, chon.bang);
+    var quyen = PHAN_QUYEN.quyenCuaBang(duLieu.giao, chon.bang);
     var tieuDe = khung.appendChild(DOM.tao('div', { class: 'qt-dong' }));
     tieuDe.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Đơn vị được giao'));
     var hangLoc = tieuDe.appendChild(DOM.tao('div', { class: 'qt-hang-loc' }));
@@ -499,38 +499,59 @@ var PAGE_QUAN_TRI = (function () {
     var nutChon = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Chọn tất cả'));
     var nutBo = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Bỏ chọn tất cả'));
 
-    var luoi = khung.appendChild(DOM.tao('div', { class: 'qt-luoi-don-vi' }));
-    // Chỉ đụng đơn vị đang hiện (theo ô lọc); ô "Đã có file" khoá, không đổi
+    // Mỗi đơn vị một hàng: tên · đã có file · nhập · xem · tên file. Nhập kéo theo xem.
+    var khungBang = khung.appendChild(DOM.tao('div', { class: 'qt-bang-quyen-khung' }));
+    var bangQ = khungBang.appendChild(DOM.tao('table', { class: 'qt-bang-quyen' }));
+    var dau = bangQ.appendChild(DOM.tao('thead')).appendChild(DOM.tao('tr'));
+    ['Đơn vị', 'Đã có file', 'Cho phép nhập', 'Cho phép xem', 'Tên file'].forEach(function (t) {
+      dau.appendChild(DOM.tao('th', {}, t));
+    });
+    var than = bangQ.appendChild(DOM.tao('tbody'));
+    function oTich(cot) {
+      var td = DOM.tao('td', { class: 'qt-o-giua' });
+      td.appendChild(DOM.tao('input', { type: 'checkbox', 'data-cot': cot }));
+      return td;
+    }
+    duLieu.donVi.forEach(function (d) {
+      var q = quyen[d.unitCode];
+      var tr = than.appendChild(DOM.tao('tr', { 'data-ma': d.unitCode }));
+      tr.appendChild(DOM.tao('td', {}, d.unitName));
+      tr.appendChild(DOM.tao('td', { class: 'qt-o-giua' + (q && q.coFile ? ' qt-co-file' : '') }, q && q.coFile ? 'Đã có' : '—'));
+      var nhap = DOM.$('input', tr.appendChild(oTich('nhap')));
+      var xem = DOM.$('input', tr.appendChild(oTich('xem')));
+      nhap.checked = !!q && q.access === 'sua';
+      xem.checked = !!q && q.access !== 'khong';
+      nhap.addEventListener('change', function () { if (nhap.checked) xem.checked = true; });
+      xem.addEventListener('change', function () { if (!xem.checked) nhap.checked = false; });
+      tr.appendChild(DOM.tao('td', { class: 'qt-ten-file-dv' }, q && q.coFile ? chon.bang + '_' + d.unitCode : ''));
+    });
+    // Chỉ đụng đơn vị đang hiện (theo ô lọc)
     function chonHet(chon) {
-      DOM.$$('.qt-o-don-vi:not(.an) input:not(:disabled)', luoi).forEach(function (o) { o.checked = chon; });
+      DOM.$$('tr:not(.an) input', than).forEach(function (o) { o.checked = chon; });
     }
     nutChon.addEventListener('click', function () { chonHet(true); });
     nutBo.addEventListener('click', function () { chonHet(false); });
-    duLieu.donVi.forEach(function (d) {
-      var nhan = luoi.appendChild(DOM.tao('label', { class: 'qt-o-don-vi', 'data-ma': d.unitCode }));
-      var o = nhan.appendChild(DOM.tao('input', { type: 'checkbox', value: d.unitCode }));
-      o.checked = d.unitCode in giao;
-      if (giao[d.unitCode]) { o.disabled = true; nhan.title = 'Đã có file'; }
-      nhan.appendChild(DOM.tao('span', {}, d.unitName));
-    });
     loc.addEventListener('input', function () {
       var hien = PHAN_QUYEN.locDonVi(duLieu.donVi, loc.value).map(function (d) { return d.unitCode; });
-      DOM.$$('.qt-o-don-vi', luoi).forEach(function (el) {
+      DOM.$$('tr', than).forEach(function (el) {
         DOM.batTat(el, 'an', hien.indexOf(el.getAttribute('data-ma')) < 0);
       });
     });
 
     nutLuu(khung, function () {
-      var dsDv = DOM.$$('input:checked', luoi).map(function (o) { return o.value; });
+      var q = {};
+      DOM.$$('tr', than).forEach(function (tr) {
+        q[tr.getAttribute('data-ma')] = PHAN_QUYEN.quyenTuO(DOM.$('[data-cot="nhap"]', tr).checked, DOM.$('[data-cot="xem"]', tr).checked);
+      });
       var ql = DOM.$$('select', dsQl).map(function (s) { return s.value; })
         .filter(function (m, i, ds) { return m && ds.indexOf(m) === i; });
-      return API.qtLuuPhanQuyen(token(), chon.bang, ql, dsDv).then(function (res) {
-        if (res && res.ok) { res.dsDv = dsDv; res.ql = ql; }
+      return API.qtLuuPhanQuyen(token(), chon.bang, ql, q).then(function (res) {
+        if (res && res.ok) { res.q = q; res.ql = ql; }
         return res;
       });
     }, function (res) {
       bangChon.managerUnits = res.ql;
-      duLieu.giao = PHAN_QUYEN.thayGiao(duLieu.giao, chon.bang, res.dsDv);
+      duLieu.giao = PHAN_QUYEN.thayGiao(duLieu.giao, chon.bang, res.q);
     });
   }
 

@@ -3,10 +3,12 @@
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_, docLinhVuc_)
-// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 09:05
+// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
-// - File đơn vị: Gmail của đơn vị + Gmail của đơn vị quản lý bảng → SỬA.
+// - File đơn vị: Gmail của đơn vị theo cột access tab File (sua → SỬA, xem → XEM,
+//   khong → không chia; ô trống = sua) + Gmail của đơn vị quản lý bảng → SỬA.
+//   Bỏ quyền đơn vị đã có file thì giữ dòng (access = khong), không mất file.
 // - File tổng (templateFileId): Gmail của đơn vị quản lý bảng → chỉ XEM
 //   (số chỉ nhập ở file đơn vị — chủ dự án chốt 06/10/2026, không đồng bộ 2 chiều).
 // - Đơn vị nhóm Quản trị (tab Đơn vị, vai trò Quản trị / Quản lý báo cáo) mặc
@@ -19,6 +21,8 @@ var VAI_TRO_DON_VI_TOAN_QUYEN = ['Quản trị', 'Quản lý báo cáo'];
 var QUYEN_SUA = 'writer';
 var QUYEN_XEM = 'reader';
 var COT_DON_VI_QUAN_LY = 'managerUnits';   // một bảng có thể nhiều đơn vị quản lý: "A, B"
+var COT_QUYEN_DON_VI = 'access';           // cột E tab File
+var QUYEN_DON_VI = ['sua', 'xem', 'khong'];
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-phan-quyen.mjs) ----------
 
@@ -83,13 +87,19 @@ function themToanQuyen_(bang, dsMa) {
   });
 }
 
-/** Tab File → [{unitCode, tableCode, fileId}] */
+/** Ô access tab File → 'sua' | 'xem' | 'khong' (trống / lạ = sua, như trước khi có cột). */
+function chuanQuyenDv_(o) {
+  var q = String(o || '').trim().toLowerCase();
+  return QUYEN_DON_VI.indexOf(q) >= 0 ? q : 'sua';
+}
+
+/** Tab File → [{unitCode, tableCode, fileId, access}] */
 function docFileQuanLy_(dsFile) {
   var kq = [];
   for (var i = 1; i < (dsFile || []).length; i++) {
     var r = dsFile[i];
     var uc = String(r[0] || '').trim(), tc = String(r[1] || '').trim();
-    if (uc && tc) kq.push({ unitCode: uc, tableCode: tc, fileId: String(r[2] || '').trim() });
+    if (uc && tc) kq.push({ unitCode: uc, tableCode: tc, fileId: String(r[2] || '').trim(), access: chuanQuyenDv_(r[4]) });
   }
   return kq;
 }
@@ -141,7 +151,7 @@ function quyenMongMuon_(bang, file, emailDv) {
     b.managerUnits.forEach(function (uc) { dat(b.templateFileId, emailDv[uc], QUYEN_XEM); });
   });
   file.forEach(function (f) {
-    dat(f.fileId, emailDv[f.unitCode], QUYEN_SUA);
+    if (f.access !== 'khong') dat(f.fileId, emailDv[f.unitCode], f.access === 'xem' ? QUYEN_XEM : QUYEN_SUA);
     (quanLyCua[f.tableCode] || []).forEach(function (uc) { dat(f.fileId, emailDv[uc], QUYEN_SUA); });
   });
   return kq;
@@ -195,28 +205,39 @@ function thayTaiKhoanDonVi_(dsTaiKhoan, unitCode, dsMoi) {
   return giu.concat(dsMoi.map(function (d) { return [d.email, unitCode, d.role]; }));
 }
 
+/** Quyền gửi lên { unitCode: 'sua'|'xem'|'khong' } → {quyen} đã chuẩn hoá hoặc {loi}. */
+function kiemQuyenGiao_(quyen) {
+  if (!quyen || typeof quyen !== 'object' || Array.isArray(quyen)) return { loi: 'Danh sách đơn vị không hợp lệ' };
+  var kq = {};
+  for (var uc in quyen) {
+    var q = String(quyen[uc] || '').trim();
+    if (QUYEN_DON_VI.indexOf(q) < 0) return { loi: 'Quyền "' + q + '" không hợp lệ' };
+    if (String(uc).trim()) kq[String(uc).trim()] = q;
+  }
+  return { quyen: kq };
+}
+
 /**
- * Dòng mới của tab File khi giao bảng tableCode cho dsDonVi.
- * Đơn vị đã có file thì không bỏ giao được (giữ lại, báo về) — tránh mất file.
- * @returns {{dong: Array<Array>, giuLai: Array<string>}}
+ * Dòng mới của tab File (5 cột: unitCode, tableCode, fileId, createdAt, access) khi đặt
+ * quyền bảng tableCode. Đơn vị không có trong quyen = khong. Đã có file thì giữ dòng
+ * (access = khong — đơn vị không thấy file, file vẫn còn); chưa có file thì bỏ dòng.
+ * @returns {{dong: Array<Array>}}
  */
-function capNhatGiao_(dsFile, tableCode, dsDonVi) {
-  var dong = [], giuLai = [], daCo = [];
+function capNhatGiao_(dsFile, tableCode, quyen) {
+  var dong = [], daCo = [];
   (dsFile || []).slice(1).forEach(function (r) {
     if (!String(r[0] || '').trim()) return;
-    r = [r[0], r[1], r[2] || '', r[3] || ''];   // đúng 4 cột: unitCode, tableCode, fileId, createdAt
-    var uc = String(r[0]).trim();
-    if (String(r[1] || '').trim() !== tableCode) { dong.push(r); return; }
-    if (dsDonVi.indexOf(uc) >= 0 || String(r[2] || '').trim()) {
-      dong.push(r);
-      daCo.push(uc);
-      if (dsDonVi.indexOf(uc) < 0) giuLai.push(uc);
-    }
+    var uc = String(r[0]).trim(), coFile = !!String(r[2] || '').trim();
+    if (String(r[1] || '').trim() !== tableCode) { dong.push([r[0], r[1], r[2] || '', r[3] || '', r[4] || '']); return; }
+    var q = quyen[uc] || 'khong';
+    if (q === 'khong' && !coFile) return;
+    dong.push([r[0], r[1], r[2] || '', r[3] || '', q]);
+    daCo.push(uc);
   });
-  dsDonVi.forEach(function (uc) {
-    if (daCo.indexOf(uc) < 0) { dong.push([uc, tableCode, '', '']); daCo.push(uc); }
+  Object.keys(quyen).forEach(function (uc) {
+    if (daCo.indexOf(uc) < 0 && quyen[uc] !== 'khong') { dong.push([uc, tableCode, '', '', quyen[uc]]); daCo.push(uc); }
   });
-  return { dong: dong, giuLai: giuLai };
+  return { dong: dong };
 }
 
 // ---------- Chạm Drive ----------
@@ -259,6 +280,14 @@ function ghiDeDuLieuTab_(tab, soCot, dong) {
   if (dong.length) tab.getRange(2, 1, dong.length, soCot).setValues(dong);
 }
 
+/** Ghi đè tab File (5 cột); tab cũ chưa có tiêu đề cột access thì thêm. */
+function ghiTabFile_(tab, dong) {
+  if (String(tab.getRange(1, 5).getValue()).trim() !== COT_QUYEN_DON_VI) {
+    tab.getRange(1, 5).setValue(COT_QUYEN_DON_VI).setFontWeight('bold');
+  }
+  ghiDeDuLieuTab_(tab, 5, dong);
+}
+
 // ---------- Action quản trị (mọi action kiểm phiên trước) ----------
 
 function quanTriChay_(token, viec) {
@@ -293,7 +322,7 @@ function xuLyQtLayDuLieu_(token) {
           caiDat: caiDat[b.tableCode] };
       }),
       giao: docFileQuanLy_(docTabQuanLy_(ss, 'File')).map(function (f) {
-        return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId };
+        return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId, access: f.access };
       }),
       ky: docKyQuanLy_(docTabQuanLy_(ss, TAB_KY)),
       linhVuc: docLinhVuc_(docTabQuanLy_(ss, TAB_LINH_VUC), gtBang)
@@ -318,7 +347,8 @@ function xuLyQtLuuTaiKhoan_(token, unitCode, ds) {
   });
 }
 
-function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnits, dsDonVi) {
+/** quyenDv: { unitCode: 'sua'|'xem'|'khong' } — đơn vị không có trong đó = khong. */
+function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnits, quyenDv) {
   return quanTriChay_(token, function (ss) {
     if (!Array.isArray(managerUnits)) return { ok: false, loi: 'Danh sách đơn vị quản lý không hợp lệ' };
     var tc = String(tableCode || '').trim(), ql = tachDsMa_(managerUnits.join(',')).join(', ');
@@ -326,7 +356,8 @@ function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnits, dsDonVi) {
     var gtBang = tabBang.getDataRange().getValues();
     var dongBang = gtBang.map(function (r) { return String(r[chiSoCot_(gtBang[0], 'tableCode')]).trim(); }).indexOf(tc);
     if (!tc || dongBang < 1) return { ok: false, loi: 'Không tìm thấy bảng ' + tc };
-    if (!Array.isArray(dsDonVi)) return { ok: false, loi: 'Danh sách đơn vị không hợp lệ' };
+    var kiem = kiemQuyenGiao_(quyenDv);
+    if (kiem.loi) return { ok: false, loi: kiem.loi };
 
     var cotQl = chiSoCot_(gtBang[0], COT_DON_VI_QUAN_LY);
     if (cotQl < 0) {
@@ -336,11 +367,9 @@ function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnits, dsDonVi) {
     tabBang.getRange(dongBang + 1, cotQl + 1).setNumberFormat('@').setValue(ql);
 
     var tabFile = ss.getSheetByName('File');
-    var giao = capNhatGiao_(tabFile.getDataRange().getValues(),
-      tc, dsDonVi.map(function (u) { return String(u).trim(); }).filter(String));
-    ghiDeDuLieuTab_(tabFile, 4, giao.dong);
+    ghiTabFile_(tabFile, capNhatGiao_(tabFile.getDataRange().getValues(), tc, kiem.quyen).dong);
     SpreadsheetApp.flush();
     var quyen = dongBoQuyen_(ss, { tableCodes: [tc] });
-    return { ok: true, giuLai: giao.giuLai, quyen: quyen };
+    return { ok: true, quyen: quyen };
   });
 }

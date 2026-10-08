@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.16.1 · Cập nhật: 08/10/2026 08:45
+   Phiên bản: 0.17.0 · Cập nhật: 08/10/2026 09:16
    ============================================================ */
 
 :root {
@@ -911,37 +911,55 @@ a.sidebar-btn {
 .qt-nut-them:hover:not(:disabled) { color: #ffffff; background: var(--xc); border-color: var(--xc); }
 .qt-nut-them:disabled { opacity: 0.55; }
 
-.qt-luoi-don-vi {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 4px 12px;
-  max-height: 52vh;
-  overflow-y: auto;
-  padding: 10px 12px;
+/* Phân quyền: bảng mỗi đơn vị một hàng (tên · đã có file · nhập · xem · tên file) */
+.qt-khung:has(.qt-bang-quyen) { max-width: 1140px; }
+
+.qt-bang-quyen-khung {
+  max-height: 56vh;
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
 }
 
-.qt-o-don-vi {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 0;
+.qt-bang-quyen {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 13.5px;
-  cursor: pointer;
 }
 
-.qt-o-don-vi input {
-  flex-shrink: 0;
-  width: 20px;     /* to hơn ô mặc định (~13px) 50% */
+.qt-bang-quyen th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--xd);
+  background: #e6f4ec;
+  border-bottom: 1.5px solid #74b494;
+  white-space: nowrap;
+}
+
+.qt-bang-quyen td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+}
+
+.qt-bang-quyen tbody tr:hover { background: #f4faf6; }
+.qt-bang-quyen th:nth-child(n+2):nth-child(-n+4),
+.qt-bang-quyen .qt-o-giua { text-align: center; width: 1%; white-space: nowrap; }
+.qt-bang-quyen .qt-co-file { color: var(--xc); font-weight: 600; }
+.qt-bang-quyen td:first-child { min-width: 260px; }
+.qt-ten-file-dv { font-size: 12.5px; color: var(--text-muted); word-break: break-all; }
+
+.qt-bang-quyen input[type="checkbox"] {
+  width: 20px;
   height: 20px;
   accent-color: var(--xc);
   cursor: pointer;
+  vertical-align: middle;
 }
-
-/* Phân quyền rộng hơn 50% so với khung thường (760px) */
-.qt-khung:has(.qt-luoi-don-vi) { max-width: 1140px; }
-.qt-khung:has(.qt-luoi-don-vi) .qt-luoi-don-vi { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
 
 .qt-dong-tren { align-items: start; }
 .qt-dong-tren .qt-nhan { padding-top: 10px; }
@@ -967,7 +985,6 @@ a.sidebar-btn {
   grid-template-columns: 1fr 36px;
   gap: 8px;
 }
-.qt-o-don-vi input:disabled + span { color: var(--text-muted); }
 
 .qt-hang-nut {
   margin: 18px 0 12px;

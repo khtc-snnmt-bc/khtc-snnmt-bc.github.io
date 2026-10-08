@@ -4,7 +4,7 @@
 //            thì tạo file), khoá / mở khoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.3.0 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.3.1 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -141,6 +141,14 @@ function dongGiuLai_(cotA, dongTieuDe, maDonVi, laTachDong) {
   return giu;
 }
 
+// Bảng gộp–tách: đơn vị không có dòng nào (mã của nó hay 'all') ở cột A mẫu → không
+// tạo file được (Google không cho xoá hết dòng dưới tiêu đề), báo quản trị.
+function loiKhongCoDong_(cotA, maDonVi) {
+  var dongTieuDe = timDongTieuDe_(cotA);
+  if (!dongTieuDe || dongGiuLai_(cotA, dongTieuDe, maDonVi, true).length) return '';
+  return 'không có dòng nào mang mã này ở cột A file tổng — thêm dòng cho đơn vị vào file tổng, hoặc bỏ giao ở mục Phân quyền';
+}
+
 // Ánh xạ dòng mẫu → dòng file đơn vị (dòng giữ lại dồn lên ngay dưới tiêu đề)
 function anhXaDong_(giuLai, dongTieuDe) {
   var anhXa = {};
@@ -260,6 +268,15 @@ function boQuyenSua_(baoVe) {
 // Sinh tab kỳ từ tab đầu của mẫu: tách dòng, điền mã, khoá theo cài đặt bảng
 function taoTabKy_(ss, mau, caiDat, maDonVi, tenKy) {
   var tab = mau.getSheets()[0].copyTo(ss).setName(tenKy);
+  try {
+    return dungTabKy_(ss, tab, mau, caiDat, maDonVi);
+  } catch (err) {
+    ss.deleteSheet(tab);   // không để lại tab dở (chưa tách, chưa khoá) — lần sau tạo lại được
+    throw err;
+  }
+}
+
+function dungTabKy_(ss, tab, mau, caiDat, maDonVi) {
   dauTien_(ss, tab);
   var cotA = tab.getRange(1, 1, tab.getLastRow(), 1).getValues().map(function (d) { return d[0]; });
   var dongTieuDe = timDongTieuDe_(cotA);
@@ -429,11 +446,16 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
   var giao = giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode);
   var tabFile = ss.getSheetByName('File');
   var mau = SpreadsheetApp.openById(caiDat.templateFileId);
+  var tabMau = mau.getSheets()[0];
+  var cotAMau = caiDat.sourceType === 'gopTach'
+    ? tabMau.getRange(1, 1, Math.max(tabMau.getLastRow(), 1), 1).getValues().map(function (d) { return d[0]; }) : null;
   var kq = { ok: true, tenKy: tenKy, hanKhoa: han, tong: giao.length, daTao: 0, fileMoi: 0, daCo: 0, loi: [], tiepTu: null };
   var fileMoi = [];
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() - batDauLuc > KY_MS_TOI_DA) { kq.tiepTu = i; break; }
     var g = giao[i];
+    var khongDong = cotAMau ? loiKhongCoDong_(cotAMau, g.unitCode) : '';
+    if (khongDong) { kq.loi.push(g.unitCode + ': ' + khongDong); continue; }
     try {
       var file, macDinh = null;
       if (g.fileId) {

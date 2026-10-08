@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-phan-quyen.mjs
 // Vai trò  : Kiểm hàm thuần Tài khoản / Phân quyền / quyền Drive mong muốn phía GAS
 // Chạy     : node app/kiem-thu/kiem-gas-phan-quyen.mjs
-// Phiên bản: 0.3.0 · Cập nhật: 08/10/2026 09:05
+// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 09:16
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') +
   '\n;this.ham = { docBangQuanLy_, docFileQuanLy_, emailTheoDonVi_, fileTrongPhamVi_, quyenMongMuon_,' +
   ' chenhLechQuyen_, kiemDsTaiKhoan_, thayTaiKhoanDonVi_, capNhatGiao_, bangQuanLyCuaDonVi_,' +
-  ' danhSachBangDangNhap_, laTaiKhoanQuanTri_, donViToanQuyen_, themToanQuyen_ };', sandbox);
+  ' danhSachBangDangNhap_, laTaiKhoanQuanTri_, donViToanQuyen_, themToanQuyen_, kiemQuyenGiao_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -128,14 +128,29 @@ bai('thayTaiKhoanDonVi_ giữ đơn vị khác, thay dòng đơn vị đã chọ
   assert.equal(h.laTaiKhoanQuanTri_([['h']].concat(d2), 'qt@x.com', 'KHTC'), false);
 });
 
-bai('capNhatGiao_: thêm dòng chưa có file, bỏ dòng chưa có file, giữ dòng đã có file', () => {
-  const g = sach(h.capNhatGiao_(tabFile, 'duan', ['A', 'D']));
-  assert.deepEqual(g.giuLai, ['B']);
-  const duan = g.dong.filter((r) => r[1] === 'duan').map((r) => r[0]);
-  assert.deepEqual(duan, ['A', 'B', 'D']);          // C (chưa có file) bị bỏ giao
-  assert.deepEqual(g.dong.find((r) => r[0] === 'D'), ['D', 'duan', '', '']);
-  assert.ok(g.dong.some((r) => r[1] === 'khokhan')); // bảng khác giữ nguyên
-  assert.ok(g.dong.every((r) => r.length === 4));
+bai('capNhatGiao_: thêm dòng mới, bỏ dòng chưa có file, đã có file thì giữ dòng với access = khong', () => {
+  const g = sach(h.capNhatGiao_(tabFile, 'duan', { A: 'sua', D: 'xem' }));
+  const duan = g.dong.filter((r) => r[1] === 'duan');
+  assert.deepEqual(duan.map((r) => r[0]), ['A', 'B', 'D']);       // C (chưa có file) bị bỏ giao
+  assert.deepEqual(duan.find((r) => r[0] === 'B'), ['B', 'duan', 'F_B_DUAN', 'ngay', 'khong']);
+  assert.deepEqual(duan.find((r) => r[0] === 'D'), ['D', 'duan', '', '', 'xem']);
+  assert.ok(g.dong.some((r) => r[1] === 'khokhan'));              // bảng khác giữ nguyên
+  assert.ok(g.dong.every((r) => r.length === 5));
+});
+
+bai('access: khong → không thấy file, không chia quyền; xem → chỉ XEM', () => {
+  const tf = [tabFile[0], ['A', 'duan', 'F_A_DUAN', 'ngay', 'khong'], ['B', 'duan', 'F_B_DUAN', 'ngay', 'xem']];
+  const f = h.docFileQuanLy_(tf);
+  assert.deepEqual(sach(f.map((x) => x.access)), ['khong', 'xem']);
+  assert.equal(h.docFileQuanLy_(tabFile)[0].access, 'sua');      // tab cũ chưa có cột → sua
+  const m = sach(h.quyenMongMuon_(bang, f, emailDv));
+  assert.deepEqual(m.F_A_DUAN, { 'ql@x.com': 'writer' });         // quản lý vẫn sửa
+  assert.equal(m.F_B_DUAN['b1@x.com'], 'reader');
+  assert.equal(h.danhSachBangDangNhap_(tabBang, tf, tabDV, 'A').length, 0);
+  assert.equal(h.danhSachBangDangNhap_(tabBang, tf, tabDV, 'B').length, 1);
+  assert.match(h.kiemQuyenGiao_(['A']).loi, /không hợp lệ/);
+  assert.match(h.kiemQuyenGiao_({ A: 'vua' }).loi, /không hợp lệ/);
+  assert.deepEqual(sach(h.kiemQuyenGiao_({ ' A ': 'xem' }).quyen), { A: 'xem' });
 });
 
 bai('bangQuanLyCuaDonVi_ / danhSachBangDangNhap_', () => {

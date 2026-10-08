@@ -36,13 +36,18 @@ bai('taiKhoanCuaDonVi / thayTaiKhoan', () => {
   assert.deepEqual(moi, [tk[1], { email: 'c@x.com', unitCode: 'A', role: 'Quản trị' }]);
 });
 
-bai('giaoCuaBang / thayGiao giữ đơn vị đã có file', () => {
+bai('giaoCuaBang / thayGiao: bỏ quyền đơn vị đã có file thì giữ dòng access khong', () => {
   const giao = [{ unitCode: 'A', tableCode: 't', coFile: true }, { unitCode: 'B', tableCode: 't', coFile: false },
     { unitCode: 'A', tableCode: 'k', coFile: false }];
   assert.deepEqual(sach(PQ.giaoCuaBang(giao, 't')), { A: true, B: false });
-  const moi = sach(PQ.thayGiao(giao, 't', ['C']));
-  assert.deepEqual(moi.filter((g) => g.tableCode === 't').map((g) => g.unitCode).sort(), ['A', 'C']);
+  const moi = sach(PQ.thayGiao(giao, 't', { C: 'xem' }));
+  const t = moi.filter((g) => g.tableCode === 't');
+  assert.deepEqual(t.map((g) => g.unitCode + ':' + g.access).sort(), ['A:khong', 'C:xem']);
+  assert.deepEqual(sach(PQ.giaoCuaBang(moi, 't')), { C: false });   // A không còn tính là được giao
   assert.equal(moi.filter((g) => g.tableCode === 'k').length, 1);
+  assert.equal(PQ.quyenTuO(true, false), 'sua');
+  assert.equal(PQ.quyenTuO(false, true), 'xem');
+  assert.equal(PQ.quyenTuO(false, false), 'khong');
 });
 
 bai('quanLyMacDinh: đã lưu → giữ; cùng lĩnh vực → theo; còn lại → mã mở đầu bằng lĩnh vực', () => {
@@ -58,9 +63,8 @@ bai('quanLyMacDinh: đã lưu → giữ; cùng lĩnh vực → theo; còn lại 
 
 bai('tomTatLuu', () => {
   assert.equal(PQ.tomTatLuu({ quyen: { soFile: 2, them: 0, doi: 0, go: 0, loi: [] } }, String), 'Đã lưu.');
-  const c = PQ.tomTatLuu({ giuLai: ['A'], quyen: { soFile: 3, them: 1, doi: 0, go: 0, loi: ['x'] } }, () => 'Ban A');
+  const c = PQ.tomTatLuu({ quyen: { soFile: 3, them: 1, doi: 0, go: 0, loi: ['x'] } }, () => 'Ban A');
   assert.match(c, /cập nhật quyền 3 file/);
-  assert.match(c, /Ban A/);
   assert.match(c, /Lỗi chia quyền 1 file: x/);
 });
 
