@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
 // Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.3.1 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.3.2 · Cập nhật: 08/10/2026 13:05
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -103,6 +103,12 @@ bai('cài đặt sửa trên app', () => {
   assert.ok(cdSai({ dataRows: '-1' }).includes('Số dòng sẵn'));
   assert.ok(cdSai({ group: 'XX' }).includes('chưa có trong danh mục'));
   assert.ok(cdSai({ lockDay: '40' }).includes('Tự khoá'));
+  assert.ok(cdSai({ hiddenCols: 'B-D' }).includes('Cột ẩn'));
+  assert.equal(kq.caiDat.periodMode, 'nhapMoi');
+  const cdDung = (doi) => h.kiemCaiDatSua_(Object.assign({ tableName: 'X', group: 'TC', sourceType: 'docLap', inputCols: 'C' }, doi), LV).caiDat;
+  assert.equal(cdDung({ hiddenCols: ' b, d:e ' }).hiddenCols, 'B, D:E');
+  assert.equal(cdDung({ periodMode: 'capNhat' }).periodMode, 'capNhat');
+  assert.equal(cdDung({ periodMode: 'la' }).periodMode, 'nhapMoi');
   assert.equal(kq.caiDat.lockDay, '');
   assert.equal(h.kiemCaiDatSua_({ tableName: 'X', group: 'TC', sourceType: 'docLap', inputCols: 'C', lockDay: '5' }, LV).caiDat.lockDay, 5);
   assert.equal(sach(h.kiemCaiDatSua_({ tableName: 'X', group: 'TC', sourceType: 'docLap', aggregateType: 'tong', inputCols: 'C' }, LV)).caiDat.sourceType, 'gopTach');
@@ -200,7 +206,8 @@ bai('cài đặt cho trang: chữ hoá, noteTabs nối lại', () => {
   ]));
   assert.deepEqual(Object.keys(kq), ['a']);
   assert.deepEqual(kq.a, { templateFileId: 'ID', sourceType: 'docLap', inputCols: 'C:J', inputRows: '5', lockedRows: '',
-    allowAddRows: true, noteTabs: 'X, Y', dataRows: '20', aggregateType: 'ghep', lockDay: '' });
+    allowAddRows: true, noteTabs: 'X, Y', dataRows: '20', aggregateType: 'ghep', lockDay: '',
+    hiddenCols: '', periodMode: 'nhapMoi' });
 });
 
 bai('tải Excel: mã bảng, file .xlsx, cỡ file, cài đặt như Sửa', () => {

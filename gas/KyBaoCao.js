@@ -4,10 +4,12 @@
 //            thì tạo file), khoá / mở khoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.3.1 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 13:05
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
+// Bảng kiểu kỳ "Cập nhật": chép tab kỳ trước của chính file đơn vị (giữ số), dòng
+// mẫu mới (so theo cột khung) chèn sau khối dòng của Sở. Cột A + hiddenCols luôn ẩn.
 // Khoá kỳ = khoá cả tab + ẩn tab. Tab vốn đã có bảo vệ cả tab (chừa vùng nhập)
 // thì vùng nhập cũ cất vào developer metadata của tab → Mở khoá trả lại đúng.
 // 168 file không xong trong một lần chạy (6 phút) → mỗi lần chạy tối đa
@@ -23,6 +25,10 @@ var META_KHOA_KY = 'bcsnn_khoaKy';
 var TAB_KY = 'Kỳ';
 var KY_MS_TOI_DA = 240000;
 var TU_KHOA_TIEP = 'TU_KHOA_TIEP';   // Script Properties: chỗ dừng của lần tự khoá trước
+// Kiểu kỳ (cài đặt bảng periodMode): nhập mới = khung từ file tổng, ô nhập trống ·
+// cập nhật = chép tab kỳ trước của chính file đơn vị (giữ số), thêm dòng mẫu mới
+var KY_NHAP_MOI = 'nhapMoi';
+var KY_CAP_NHAT = 'capNhat';
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-ky.mjs) ----------
 
@@ -194,6 +200,67 @@ function keHoachKhoa_(caiDat, dongTieuDe, dongCuoi, anhXa, soCot) {
     cotKhoa: gomDoan_(cotKhoa).map(function (cot) { return { dong: [dongTieuDe + 1, dongCuoi], cot: cot }; }) };
 }
 
+/** Tên các tab của file đơn vị → tab kỳ gần nhất TRƯỚC kỳ tenKy ('' = không có). */
+function kyTruoc_(dsTen, tenKy) {
+  var moc = soNgay_(tenKy), tot = '', soTot = 0;
+  dsTen.forEach(function (ten) {
+    var n = soNgay_(ten);
+    if (n && n < moc && n > soTot) { soTot = n; tot = ten; }
+  });
+  return tot;
+}
+
+/** Cột ẩn ở file đơn vị: luôn có cột A + cột khai ở hiddenCols (bỏ cột quá soCot) → [[a, b]]. */
+function cotAn_(caiDat, soCot) {
+  return gomDoan_([1].concat((docDanhSachCot_(caiDat.hiddenCols) || []).filter(function (c) { return c > 1 && c <= soCot; })));
+}
+
+/**
+ * Cột khung để so dòng mẫu với dòng kỳ trước: không phải cột nhập, không có công thức ở
+ * dòng dữ liệu nào của mẫu (công thức ra số khác nhau mỗi kỳ).
+ * @param {Array<Array>} congThuc — getFormulas() các dòng dữ liệu của mẫu
+ */
+function cotKhung_(caiDat, congThuc, soCot) {
+  var nhap = docDanhSachCot_(caiDat.inputCols) || [];
+  return khoangSo_(1, soCot).filter(function (c) {
+    return nhap.indexOf(c) < 0 && !congThuc.some(function (r) { return String(r[c - 1] || '') !== ''; });
+  });
+}
+
+/** Dấu của một dòng = chữ ở các cột khung (cột A: 'all' → mã đơn vị, như ở file đơn vị). */
+function dauDong_(hienThi, cotKhung, maDonVi) {
+  return cotKhung.map(function (c) {
+    var s = String(hienThi[c - 1] === undefined || hienThi[c - 1] === null ? '' : hienThi[c - 1]).trim();
+    return c === 1 && s === MA_MOI_DON_VI ? maDonVi : s;
+  }).join('␟');
+}
+
+/**
+ * Kỳ kiểu Cập nhật, bảng Sở giao dòng: dòng mẫu của đơn vị khớp dấu với một dòng kỳ trước
+ * → dùng dòng đó (giữ số cũ); không khớp → dòng mới, chèn ngay sau dòng cuối khớp được
+ * (trước các dòng đơn vị tự thêm). Dòng kỳ trước không khớp mẫu nào thì giữ nguyên.
+ * @param {Array<{dong, dau}>} dauMau — dòng mẫu giữ lại cho đơn vị, theo thứ tự
+ * @param {Array<string>} dauTruoc — dấu dòng dữ liệu kỳ trước; phần tử i = dòng dongTieuDe + 1 + i
+ * @returns {{anhXa: Object, dongMoi: Array<number>, chenSau: number}} anhXa: dòng mẫu → dòng tab kỳ mới
+ */
+function ghepDongCapNhat_(dauMau, dauTruoc, dongTieuDe) {
+  var daDung = {}, anhXa = {}, dongMoi = [], chenSau = dongTieuDe;
+  dauMau.forEach(function (m) {
+    for (var i = 0; i < dauTruoc.length; i++) {
+      if (!daDung[i] && dauTruoc[i] === m.dau) {
+        daDung[i] = true;
+        anhXa[m.dong] = dongTieuDe + 1 + i;
+        chenSau = Math.max(chenSau, dongTieuDe + 1 + i);
+        return;
+      }
+    }
+    dongMoi.push(m.dong);
+  });
+  // dòng khớp đều ≤ chenSau nên không bị đẩy xuống khi chèn
+  dongMoi.forEach(function (d, j) { anhXa[d] = chenSau + 1 + j; });
+  return { anhXa: anhXa, dongMoi: dongMoi, chenSau: chenSau };
+}
+
 // Dòng tab "Bảng" → đối tượng cài đặt (ô Sheet có thể là boolean hay chữ)
 function docCaiDat_(tieuDe, dong) {
   var caiDat = {};
@@ -205,6 +272,8 @@ function docCaiDat_(tieuDe, dong) {
   if (caiDat.aggregateType === 'tong') caiDat.allowAddRows = false;   // bảng tổng: đơn vị không thêm dòng
   caiDat.noteTabs = String(caiDat.noteTabs || '').split(',')
     .map(function (t) { return t.trim(); }).filter(function (t) { return t; });
+  caiDat.hiddenCols = String(caiDat.hiddenCols || '').trim();
+  caiDat.periodMode = String(caiDat.periodMode || '').trim() === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   return caiDat;
 }
 
@@ -303,6 +372,20 @@ function dungTabKy_(ss, tab, mau, caiDat, maDonVi) {
   }
 
   var keHoach = keHoachKhoa_(caiDat, dongTieuDe, dongCuoi, anhXaDong_(giuLai, dongTieuDe), tab.getMaxColumns());
+  apKhoa_(tab, keHoach, caiDat);
+  anCot_(tab, caiDat);
+  return { tab: tab, keHoach: keHoach, soDong: giuLai.length };
+}
+
+/** Ẩn cột A + cột khai ở hiddenCols; cột khác hiện lại (cài đặt có thể đã đổi từ kỳ trước). */
+function anCot_(tab, caiDat) {
+  var soCot = tab.getMaxColumns();
+  tab.showColumns(1, soCot);
+  cotAn_(caiDat, soCot).forEach(function (d) { tab.hideColumns(d[0], d[1] - d[0] + 1); });
+}
+
+/** Khoá tab kỳ theo kế hoạch keHoachKhoa_ (tab chưa có bảo vệ nào). */
+function apKhoa_(tab, keHoach, caiDat) {
   var moTa = caiDat.tableCode + ' · ' + tab.getName();
   if (keHoach.kieu === 'toanTab') {
     var baoVe = tab.protect().setDescription('Ô cố định · ' + moTa);
@@ -319,7 +402,91 @@ function dungTabKy_(ss, tab, mau, caiDat, maDonVi) {
       boQuyenSua_(tab.getRange(doan[0] + ':' + doan[1]).protect().setDescription('Dòng khoá · ' + moTa));
     });
   }
-  return { tab: tab, keHoach: keHoach, soDong: giuLai.length };
+}
+
+/**
+ * Đọc tab đầu file tổng một lần cho cả lượt tạo kỳ kiểu Cập nhật: chữ hiển thị, cột A,
+ * dòng tiêu đề, cột khung (để so dòng). Bảng tự nhập dòng bù cột A tới dataRows như dungTabKy_.
+ */
+function docMauKy_(tabMau, caiDat) {
+  var soDong = Math.max(tabMau.getLastRow(), 1), soCot = Math.max(tabMau.getLastColumn(), 1);
+  var vung = tabMau.getRange(1, 1, soDong, soCot);
+  var hienThi = vung.getDisplayValues();
+  var cotA = hienThi.map(function (d) { return d[0]; });
+  var dongTieuDe = timDongTieuDe_(cotA);
+  if (!dongTieuDe) throw new Error('Mẫu ' + caiDat.tableCode + ': không có dòng nào ô A ghi "' + NHAN_COT_A + '"');
+  if (caiDat.sourceType !== 'gopTach') while (cotA.length < dongTieuDe + (Number(caiDat.dataRows) || 0)) cotA.push('');
+  return { tab: tabMau, soCot: soCot, hienThi: hienThi, cotA: cotA, dongTieuDe: dongTieuDe,
+    cotKhung: cotKhung_(caiDat, vung.getFormulas().slice(dongTieuDe), soCot) };
+}
+
+// Kỳ kiểu Cập nhật: chép tab kỳ trước của chính file đơn vị, thêm dòng mẫu mới, khoá lại theo cài đặt
+function taoTabKyCapNhat_(ss, tabTruoc, mauKy, caiDat, maDonVi, tenKy) {
+  var tab = tabTruoc.copyTo(ss).setName(tenKy);
+  try {
+    return dungTabCapNhat_(ss, tab, mauKy, caiDat, maDonVi);
+  } catch (err) {
+    ss.deleteSheet(tab);   // không để lại tab dở — lần sau tạo lại được
+    throw err;
+  }
+}
+
+function dungTabCapNhat_(ss, tab, mauKy, caiDat, maDonVi) {
+  dauTien_(ss, tab);
+  if (tab.isSheetHidden()) tab.showSheet();   // kỳ trước đã khoá thì đang ẩn
+  tab.getProtections(SpreadsheetApp.ProtectionType.SHEET)
+    .concat(tab.getProtections(SpreadsheetApp.ProtectionType.RANGE))
+    .forEach(function (p) { p.remove(); });
+  var meta = metaKhoaKy_(tab);
+  if (meta) meta.remove();
+
+  var soDong = tab.getMaxRows(), soCot = tab.getMaxColumns();
+  var dongTieuDe = timDongTieuDe_(tab.getRange(1, 1, soDong, 1).getDisplayValues().map(function (d) { return d[0]; }));
+  if (!dongTieuDe) throw new Error('tab kỳ trước không có dòng nào ô A ghi "' + NHAN_COT_A + '"');
+  var laTach = caiDat.sourceType === 'gopTach';
+  var giuLai = dongGiuLai_(mauKy.cotA, mauKy.dongTieuDe, maDonVi, laTach);
+  var anhXa, dongCuoi, dongThem = 0;
+
+  if (!laTach) {
+    // Bảng tự nhập dòng: dòng mẫu đều trống, dòng kỳ trước giữ nguyên vị trí
+    anhXa = anhXaDong_(giuLai, dongTieuDe);
+    dongCuoi = caiDat.allowAddRows ? dongTieuDe + giuLai.length : soDong;
+  } else {
+    var hienThi = soDong > dongTieuDe ? tab.getRange(dongTieuDe + 1, 1, soDong - dongTieuDe, soCot).getDisplayValues() : [];
+    var coChu = 0;   // dòng cuối có chữ (bỏ cột A) — bảng cho thêm dòng còn dòng trống ở dưới
+    hienThi.forEach(function (r, i) { if (r.slice(1).join('').trim()) coChu = i + 1; });
+    var cotKhung = mauKy.cotKhung.filter(function (c) { return c <= soCot; });
+    var ghep = ghepDongCapNhat_(
+      giuLai.map(function (d) { return { dong: d, dau: dauDong_(mauKy.hienThi[d - 1] || [], cotKhung, maDonVi) }; }),
+      hienThi.slice(0, coChu).map(function (r) { return dauDong_(r, cotKhung, maDonVi); }),
+      dongTieuDe);
+    if (ghep.dongMoi.length) themDongMau_(ss, tab, mauKy, ghep, maDonVi);
+    anhXa = ghep.anhXa;
+    dongThem = ghep.dongMoi.length;
+    dongCuoi = caiDat.allowAddRows ? ghep.chenSau + dongThem : tab.getMaxRows();
+  }
+
+  var keHoach = keHoachKhoa_(caiDat, dongTieuDe, dongCuoi, anhXa, tab.getMaxColumns());
+  apKhoa_(tab, keHoach, caiDat);
+  anCot_(tab, caiDat);
+  return { tab: tab, keHoach: keHoach, dongThem: dongThem };
+}
+
+/** Chèn dòng mẫu mới của đơn vị sau ghep.chenSau: chép tab mẫu vào file làm tab tạm rồi chép từng dòng. */
+function themDongMau_(ss, tab, mauKy, ghep, maDonVi) {
+  var n = ghep.dongMoi.length;
+  tab.insertRowsAfter(ghep.chenSau, n);
+  var tam = mauKy.tab.copyTo(ss);
+  try {
+    var soCot = Math.min(tam.getMaxColumns(), tab.getMaxColumns());
+    ghep.dongMoi.forEach(function (dongMau, j) {
+      tam.getRange(dongMau, 1, 1, soCot).copyTo(tab.getRange(ghep.chenSau + 1 + j, 1));
+    });
+  } finally {
+    ss.deleteSheet(tam);
+  }
+  var vungA = tab.getRange(ghep.chenSau + 1, 1, n, 1).clearDataValidations();
+  vungA.setValues(vungA.getValues().map(function (d) { return [String(d[0]).trim() === MA_MOI_DON_VI ? maDonVi : d[0]]; }));
 }
 
 function chepTabChuThich_(ss, mau, caiDat) {
@@ -365,6 +532,15 @@ function khoaTabKy_(tab) {
   }
   // Không ẩn được tab hiện cuối cùng của file
   if (!tab.isSheetHidden() && soTabDangHien_(tab.getParent()) > 1) tab.hideSheet();
+}
+
+/** Ẩn tab kỳ đã khoá còn đang hiện — lúc khoá nó là tab hiện duy nhất nên chưa ẩn được. */
+function anTabDaKhoa_(ss) {
+  ss.getSheets().forEach(function (tab) {
+    if (tab.isSheetHidden() || soTabDangHien_(ss) < 2) return;
+    var baoVe = tab.getProtections(SpreadsheetApp.ProtectionType.SHEET)[0];
+    if (baoVe && baoVe.getDescription().indexOf(TIEN_TO_KHOA_KY) === 0) tab.hideSheet();
+  });
 }
 
 /** Mở khoá kỳ: trả lại bảo vệ như trước khi khoá + hiện tab. */
@@ -449,8 +625,9 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
   var tabMau = mau.getSheets()[0];
   var cotAMau = caiDat.sourceType === 'gopTach'
     ? tabMau.getRange(1, 1, Math.max(tabMau.getLastRow(), 1), 1).getValues().map(function (d) { return d[0]; }) : null;
-  var kq = { ok: true, tenKy: tenKy, hanKhoa: han, tong: giao.length, daTao: 0, fileMoi: 0, daCo: 0, loi: [], tiepTu: null };
-  var fileMoi = [];
+  var kq = { ok: true, tenKy: tenKy, hanKhoa: han, tong: giao.length, daTao: 0, fileMoi: 0, daCo: 0,
+    capNhat: 0, dongThem: 0, loi: [], tiepTu: null };
+  var fileMoi = [], mauKy = null;
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() - batDauLuc > KY_MS_TOI_DA) { kq.tiepTu = i; break; }
     var g = giao[i];
@@ -468,9 +645,18 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
         kq.fileMoi++;
       }
       if (file.getSheetByName(tenKy)) { kq.daCo++; continue; }
-      taoTabKy_(file, mau, caiDat, g.unitCode, tenKy);
+      var truoc = caiDat.periodMode === KY_CAP_NHAT && !macDinh
+        ? kyTruoc_(file.getSheets().map(function (t) { return t.getName(); }), tenKy) : '';
+      if (truoc) {
+        mauKy = mauKy || docMauKy_(tabMau, caiDat);
+        kq.dongThem += taoTabKyCapNhat_(file, file.getSheetByName(truoc), mauKy, caiDat, g.unitCode, tenKy).dongThem;
+        kq.capNhat++;
+      } else {
+        taoTabKy_(file, mau, caiDat, g.unitCode, tenKy);   // nhập mới, hoặc đơn vị chưa có kỳ nào
+      }
       chepTabChuThich_(file, mau, caiDat);
       if (macDinh) file.deleteSheet(macDinh);
+      anTabDaKhoa_(file);
       kq.daTao++;
     } catch (err) {
       kq.loi.push(g.unitCode + ': ' + String(err.message || err));

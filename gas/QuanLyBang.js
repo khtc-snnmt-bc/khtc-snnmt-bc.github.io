@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 09:27
+// Phiên bản: 0.6.1 · Cập nhật: 08/10/2026 13:05
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -30,7 +30,7 @@ var MAU_EXCEL_TOI_DA = 10 * 1048576;
 var MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 var LOI_CONG_THUC = ['#ERROR!', '#NAME?', '#REF!', '#N/A'];
 // Cột chữ trong tab Bảng — đặt định dạng chữ kẻo Sheet đổi '5:7' thành giờ
-var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'managerUnits'];
+var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'managerUnits', 'hiddenCols'];
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-bang.mjs) ----------
 
@@ -195,6 +195,9 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
   kq.dataRows = soDong;
   kq.lockDay = ngayKhoaThang_(cd.lockDay);
   if (kq.lockDay === -1) return { loi: 'Tự khoá: ghi ngày trong tháng, từ 1 đến 31 (để trống = không tự khoá)' };
+  kq.hiddenCols = String(cd.hiddenCols || '').trim().toUpperCase();
+  if (kq.hiddenCols && !hopLeDsCot_(kq.hiddenCols)) return { loi: 'Cột ẩn ở file đơn vị ghi chữ cột, ví dụ B, D:E' };
+  kq.periodMode = cd.periodMode === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   return { caiDat: kq };
 }
 
@@ -530,7 +533,7 @@ function caiDatChoTrang_(gtBang) {
       templateFileId: cd.templateFileId, sourceType: chu(cd.sourceType), inputCols: chu(cd.inputCols),
       inputRows: chu(cd.inputRows), lockedRows: chu(cd.lockedRows), allowAddRows: cd.allowAddRows,
       noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType,
-      lockDay: chu(cd.lockDay)
+      lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode
     };
   }
   return kq;

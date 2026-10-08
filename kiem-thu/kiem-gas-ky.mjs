@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-gas-ky.mjs
-// Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá)
+// Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá, kỳ cập nhật)
 // Chạy     : node app/kiem-thu/kiem-gas-ky.mjs
-// Phiên bản: 0.3.0 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 13:05
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n;this.ham = { chuanHoaTenKy_, docKyQuanLy_, dongKy_, giaoCuaBangKy_, docCaiDat_, keHoachKhoa_,' +
   ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_,' +
-  ' loiKhongCoDong_ };', sandbox);
+  ' loiKhongCoDong_, kyTruoc_, cotAn_, cotKhung_, dauDong_, ghepDongCapNhat_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -140,6 +140,47 @@ bai('ô ngày tự khoá gửi lên', () => {
   assert.equal(h.docHanKhoaGui_('').han, '');
   assert.equal(h.docHanKhoaGui_('2026-11-05').han, '05.11.2026');
   assert.ok(h.docHanKhoaGui_('2026-02-30').loi);
+});
+
+bai('kiểu kỳ + cột ẩn đọc từ tab Bảng', () => {
+  assert.equal(h.docCaiDat_(['tableCode'], ['x']).periodMode, 'nhapMoi');
+  assert.equal(h.docCaiDat_(['tableCode', 'periodMode', 'hiddenCols'], ['x', ' capNhat ', ' B ']).periodMode, 'capNhat');
+  assert.equal(h.docCaiDat_(['tableCode', 'hiddenCols'], ['x', ' B ']).hiddenCols, 'B');
+});
+
+bai('kỳ trước = tab ngày gần nhất trước kỳ mới', () => {
+  const ten = ['10.09.2026', 'Chú thích', '10.10.2026', '10.12.2026', 'Trang tính1'];
+  assert.equal(h.kyTruoc_(ten, '10.11.2026'), '10.10.2026');
+  assert.equal(h.kyTruoc_(ten, '01.01.2027'), '10.12.2026');
+  assert.equal(h.kyTruoc_(ten, '10.09.2026'), '');
+  assert.equal(h.kyTruoc_(['Chú thích'], '10.11.2026'), '');
+});
+
+bai('cột ẩn: luôn có A, bỏ cột quá bảng', () => {
+  assert.deepEqual(sach(h.cotAn_({ hiddenCols: '' }, 10)), [[1, 1]]);
+  assert.deepEqual(sach(h.cotAn_({ hiddenCols: 'B, D:E, Z' }, 10)), [[1, 2], [4, 5]]);
+  assert.deepEqual(sach(h.cotAn_({ hiddenCols: 'A' }, 10)), [[1, 1]]);
+});
+
+bai('cột khung: không cột nhập, không cột có công thức', () => {
+  const ct = [['', '', '', '=C3*2', ''], ['', '', '', '', '']];
+  assert.deepEqual(sach(h.cotKhung_({ inputCols: 'C' }, ct, 5)), [1, 2, 5]);
+});
+
+bai('ghép kỳ cập nhật: giữ dòng cũ, dòng mẫu mới chèn sau khối của Sở', () => {
+  // dòng tiêu đề 2; kỳ trước: dòng 3 'A|DA1', 4 'A|DA2', 5 dòng đơn vị tự thêm
+  const dau = (r) => h.dauDong_(r, [1, 2], 'A');
+  assert.equal(dau(['all', 'DA1']), dau(['A', 'DA1']));
+  const g = h.ghepDongCapNhat_(
+    [{ dong: 3, dau: dau(['A', 'DA1']) }, { dong: 4, dau: dau(['all', 'DA2']) }, { dong: 9, dau: dau(['A', 'DA3']) }],
+    [dau(['A', 'DA1']), dau(['A', 'DA2']), dau(['A', 'tự thêm'])], 2);
+  assert.deepEqual(sach(g), { anhXa: { 3: 3, 4: 4, 9: 5 }, dongMoi: [9], chenSau: 4 });
+  // không dòng mới
+  const g2 = h.ghepDongCapNhat_([{ dong: 3, dau: 'x' }], ['x'], 2);
+  assert.deepEqual(sach(g2), { anhXa: { 3: 3 }, dongMoi: [], chenSau: 3 });
+  // hai dòng mẫu trùng dấu → khớp lần lượt, không dùng một dòng hai lần
+  const g3 = h.ghepDongCapNhat_([{ dong: 3, dau: 'x' }, { dong: 4, dau: 'x' }], ['x'], 2);
+  assert.deepEqual(sach(g3), { anhXa: { 3: 3, 4: 4 }, dongMoi: [4], chenSau: 3 });
 });
 
 console.log('kiem-gas-ky: ' + soBai + ' bài ĐẠT');

@@ -3,7 +3,7 @@
 // Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
 //            câu báo tạo/khoá kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.5.0 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.5.1 · Cập nhật: 08/10/2026 13:05
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -86,7 +86,7 @@ var KY_BAO_CAO = (function () {
   function gopLo(tong, lo) {
     if (!tong) return lo;
     var kq = Object.assign({}, lo);
-    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab'].forEach(function (k) {
+    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab', 'capNhat', 'dongThem'].forEach(function (k) {
       if (k in lo) kq[k] = (tong[k] || 0) + lo[k];
     });
     kq.loi = (tong.loi || []).concat(lo.loi || []);
@@ -101,6 +101,7 @@ var KY_BAO_CAO = (function () {
     if (!kq.tong) return 'Đã ghi kỳ ' + kq.tenKy + '. Bảng chưa giao cho đơn vị nào.';
     var chu = 'Đã tạo kỳ ' + kq.tenKy + ' cho ' + (kq.daTao + kq.daCo) + '/' + kq.tong + ' đơn vị';
     if (kq.fileMoi) chu += ' (tạo mới ' + kq.fileMoi + ' file)';
+    if (kq.dongThem) chu += ', thêm ' + kq.dongThem + ' dòng mới từ bảng tổng';
     return chu + '.' + phanLoi(kq);
   }
 
