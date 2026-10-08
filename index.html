@@ -9,7 +9,7 @@ Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
            Trang quản trị (pptx trang 4) là file riêng quantri.html
-Phiên bản: 0.11.0 · Cập nhật: 06/10/2026 20:11
+Phiên bản: 0.11.1 · Cập nhật: 08/10/2026 11:39
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -204,13 +204,16 @@ Phiên bản: 0.11.0 · Cập nhật: 06/10/2026 20:11
           PAGE_DIEU_HUONG.hien();
         });
 
-        // Phiên trong tab này, hoặc vé nhớ đăng nhập (vào thẳng, hỏi GAS ngầm)
+        // Phiên trong tab này, hoặc vé nhớ đăng nhập: vào thẳng bằng dữ liệu nhớ, rồi LUÔN hỏi
+        // GAS ngầm — danh sách bảng / file đơn vị đổi sau khi đăng nhập (VD vừa Tạo kỳ) thì vẽ lại
         var phien = PHIEN.doc();
-        var nho = phien ? null : PHIEN.docNho();
-        if (nho) {
+        var nho = PHIEN.docNho();
+        if (!phien && nho) {
           phien = nho.phien;
           PHIEN.luu(phien);
-          PAGE_DANG_NHAP.lamMoiTuVe(nho,
+        }
+        if (nho && phien && nho.phien.email === phien.email) {
+          PAGE_DANG_NHAP.lamMoiTuVe({ ve: nho.ve, phien: phien },
             function (moi) { PAGE_NHAP_LIEU.hien(moi); },
             function () { location.reload(); });
         }
