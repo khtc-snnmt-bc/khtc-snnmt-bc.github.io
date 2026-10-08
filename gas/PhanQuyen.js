@@ -3,7 +3,7 @@
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_, docLinhVuc_)
-// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.8.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị theo cột access tab File (sua → SỬA, xem → XEM,
@@ -13,7 +13,10 @@
 //   (số chỉ nhập ở file đơn vị — chủ dự án chốt 06/10/2026, không đồng bộ 2 chiều).
 // - Đơn vị nhóm Quản trị (tab Đơn vị, vai trò Quản trị / Quản lý báo cáo) mặc
 //   định là đơn vị quản lý của MỌI bảng: thấy tất cả, sửa mọi file đơn vị.
-// Chỉ đụng quyền kiểu "user", bỏ qua chủ file. Chia sẻ không gửi thư.
+// - Bảng công khai (shareType = congKhai): file đơn vị được nhập (sua) thêm quyền
+//   "Bất kỳ ai có link đều sửa được" khi bảng còn kỳ đang mở; hết kỳ mở → tắt
+//   (KIEN-TRUC.md mục 4, so-tay/chia-se-cong-khai.md). File khác không bao giờ công khai.
+// Chỉ đụng quyền kiểu "user" + "anyone", bỏ qua chủ file. Chia sẻ không gửi thư.
 // Giao bảng = dòng tab File (fileId để trống tới khi tạo file — b06c/d).
 
 var VAI_TRO_HOP_LE = ['Nhập liệu', 'Quản lý báo cáo', 'Quản trị'];
@@ -23,6 +26,8 @@ var QUYEN_XEM = 'reader';
 var COT_DON_VI_QUAN_LY = 'managerUnits';   // một bảng có thể nhiều đơn vị quản lý: "A, B"
 var COT_QUYEN_DON_VI = 'access';           // cột E tab File
 var QUYEN_DON_VI = ['sua', 'xem', 'khong'];
+var CHIA_SE_MOI = 'moi';                   // cột shareType tab Bảng: mời theo Gmail
+var CHIA_SE_CONG_KHAI = 'congKhai';        // nhập không cần đăng nhập
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-phan-quyen.mjs) ----------
 
@@ -44,13 +49,18 @@ function tachDsMa_(o) {
   return kq;
 }
 
-/** Tab Bảng → [{tableCode, tableName, group, templateFileId, managerUnits: []}] (đọc cột theo tên). */
+/** Ô shareType → 'congKhai' | 'moi' (trống / lạ = mời theo Gmail). */
+function chuanChiaSe_(o) {
+  return String(o === undefined || o === null ? '' : o).trim() === CHIA_SE_CONG_KHAI ? CHIA_SE_CONG_KHAI : CHIA_SE_MOI;
+}
+
+/** Tab Bảng → [{tableCode, tableName, group, templateFileId, managerUnits: [], shareType}] (đọc cột theo tên). */
 function docBangQuanLy_(dsBang) {
   if (!dsBang || !dsBang.length) return [];
   var td = dsBang[0];
   var cot = function (ten, macDinh) { var i = chiSoCot_(td, ten); return i < 0 ? macDinh : i; };
   var cMa = cot('tableCode', 0), cTen = cot('tableName', 1), cNhom = cot('group', 2);
-  var cMau = cot('templateFileId', -1), cQl = cot(COT_DON_VI_QUAN_LY, -1);
+  var cMau = cot('templateFileId', -1), cQl = cot(COT_DON_VI_QUAN_LY, -1), cChiaSe = cot('shareType', -1);
   var kq = [];
   for (var i = 1; i < dsBang.length; i++) {
     var r = dsBang[i];
@@ -61,7 +71,8 @@ function docBangQuanLy_(dsBang) {
       tableName: String(r[cTen] || ma).trim(),
       group: String(r[cNhom] || '').trim(),
       templateFileId: cMau < 0 ? '' : String(r[cMau] || '').trim(),
-      managerUnits: cQl < 0 ? [] : tachDsMa_(r[cQl])
+      managerUnits: cQl < 0 ? [] : tachDsMa_(r[cQl]),
+      shareType: chuanChiaSe_(cChiaSe < 0 ? '' : r[cChiaSe])
     });
   }
   return kq;
@@ -83,7 +94,7 @@ function themToanQuyen_(bang, dsMa) {
     var ql = b.managerUnits.slice();
     dsMa.forEach(function (m) { if (ql.indexOf(m) < 0) ql.push(m); });
     return { tableCode: b.tableCode, tableName: b.tableName, group: b.group,
-      templateFileId: b.templateFileId, managerUnits: ql };
+      templateFileId: b.templateFileId, managerUnits: ql, shareType: b.shareType };
   });
 }
 
@@ -180,6 +191,42 @@ function chenhLechQuyen_(mong, hienCo) {
   return kq;
 }
 
+/** Bảng còn kỳ đang mở (chưa khoá) không — bỏ qua kỳ boQua (kỳ đang khoá / xoá). dsKy: docKyQuanLy_. */
+function bangCoKyMo_(dsKy, tableCode, boQua) {
+  return (dsKy || []).some(function (k) { return k.tableCode === tableCode && k.periodName !== boQua && !k.locked; });
+}
+
+/** File đơn vị để "Bất kỳ ai có link đều sửa được": bảng công khai + đơn vị được nhập + còn kỳ mở. */
+function laCongKhai_(shareType, access, coKyMo) {
+  return shareType === CHIA_SE_CONG_KHAI && access === 'sua' && !!coKyMo;
+}
+
+/** { fileId: true } — các file đơn vị phải công khai lúc này (bang: docBangQuanLy_, dsKy: docKyQuanLy_). */
+function fileCongKhai_(bang, file, dsKy) {
+  var chiaSe = {}, kq = {};
+  bang.forEach(function (b) { chiaSe[b.tableCode] = b.shareType; });
+  file.forEach(function (f) {
+    if (f.fileId && laCongKhai_(chiaSe[f.tableCode], f.access, bangCoKyMo_(dsKy, f.tableCode))) kq[f.fileId] = true;
+  });
+  return kq;
+}
+
+/**
+ * So quyền "bất kỳ ai" đang có với mong muốn → { them: bool, doi: [id], go: [id] }.
+ * Muốn công khai: giữ đúng một quyền anyone = writer; không muốn: gỡ mọi quyền anyone.
+ */
+function chenhLechCongKhai_(muon, hienCo) {
+  var kq = { them: false, doi: [], go: [] };
+  var ds = (hienCo || []).filter(function (p) { return p.type === 'anyone'; });
+  if (!muon) { kq.go = ds.map(function (p) { return p.id; }); return kq; }
+  if (!ds.length) { kq.them = true; return kq; }
+  var dung = ds.filter(function (p) { return p.role === QUYEN_SUA; });
+  var giu = dung.length ? dung[0] : ds[0];
+  if (giu.role !== QUYEN_SUA) kq.doi.push(giu.id);
+  kq.go = ds.filter(function (p) { return p !== giu; }).map(function (p) { return p.id; });
+  return kq;
+}
+
 /** Kiểm danh sách Gmail quản trị gửi lên cho một đơn vị → {ds} hoặc {loi}. */
 function kiemDsTaiKhoan_(ds) {
   if (!Array.isArray(ds)) return { loi: 'Danh sách tài khoản không hợp lệ' };
@@ -256,15 +303,35 @@ function apQuyenFile_(fileId, chenh, tong) {
   chenh.go.forEach(function (q) { Drive.Permissions.remove(fileId, q.id); tong.go++; });
 }
 
+/** Áp chenhLechCongKhai_ lên file; tong (tuỳ chọn) đếm như apQuyenFile_. Trả true nếu có đổi. */
+function apCongKhai_(fileId, chenh, tong) {
+  tong = tong || { them: 0, doi: 0, go: 0 };
+  if (chenh.them) {
+    Drive.Permissions.create({ role: QUYEN_SUA, type: 'anyone', allowFileDiscovery: false }, fileId);
+    tong.them++;
+  }
+  chenh.doi.forEach(function (id) { Drive.Permissions.update({ role: QUYEN_SUA }, fileId, id); tong.doi++; });
+  chenh.go.forEach(function (id) { Drive.Permissions.remove(fileId, id); tong.go++; });
+  return chenh.them || chenh.doi.length > 0 || chenh.go.length > 0;
+}
+
+/** Bật / tắt "Bất kỳ ai có link đều sửa được" cho một file (tạo, khoá, xoá kỳ gọi theo từng file). */
+function datCongKhai_(fileId, muon) {
+  return apCongKhai_(fileId, chenhLechCongKhai_(muon, docQuyenFile_(fileId)));
+}
+
 /** Soát + sửa quyền các file trong phạm vi cho khớp Sheet quản lý. Lỗi từng file ghi lại, không dừng. */
 function dongBoQuyen_(ss, phamVi) {
   var bang = themToanQuyen_(docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')), donViToanQuyen_(docTabQuanLy_(ss, 'Đơn vị')));
   var file = docFileQuanLy_(docTabQuanLy_(ss, 'File'));
   var mong = quyenMongMuon_(bang, file, emailTheoDonVi_(docTabQuanLy_(ss, 'Tài khoản')));
+  var congKhai = fileCongKhai_(bang, file, docKyQuanLy_(docTabQuanLy_(ss, TAB_KY)));
   var tong = { soFile: 0, them: 0, doi: 0, go: 0, loi: [] };
   fileTrongPhamVi_(bang, file, phamVi).forEach(function (id) {
     try {
-      apQuyenFile_(id, chenhLechQuyen_(mong[id] || {}, docQuyenFile_(id)), tong);
+      var hienCo = docQuyenFile_(id);
+      apQuyenFile_(id, chenhLechQuyen_(mong[id] || {}, hienCo), tong);
+      apCongKhai_(id, chenhLechCongKhai_(!!congKhai[id], hienCo), tong);
       tong.soFile++;
     } catch (err) {
       tong.loi.push(String(err.message || err));

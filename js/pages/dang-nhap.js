@@ -3,8 +3,9 @@
 // Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
 //            Hai cách, cùng giao diện: index.html — Google xác minh Gmail;
 //            index2.html — tin Gmail đã gõ (cách cũ, giữ tới khi chốt b06h)
+//            Bảng công khai (index.html): chọn đơn vị, để trống Gmail → vào thẳng các bảng công khai
 // Lớp      : pages — được gọi bởi: index.html, index2.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.10.0 · Cập nhật: 06/10/2026 20:11
+// Phiên bản: 0.11.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -16,6 +17,7 @@ var PAGE_DANG_NHAP = (function () {
   var dsDonViGoc = [];
   var donViDangChon = null;   // { unitCode, unitName } hoặc null
   var taiKhoanTheoDonVi = {}; // bộ nhớ đệm: unitCode → [email]
+  var congKhaiTheoDonVi = {}; // unitCode → true: có bảng nhập không cần đăng nhập
   var luotHoiEmail = 0;       // bỏ qua kết quả trả về muộn của lần hỏi cũ
   var hen = null;
   var elTrang, elInputDonVi, elDsDonVi, elInputLoc, elListChonNhanh, elInputEmail, elDsTaiKhoan;
@@ -191,6 +193,7 @@ var PAGE_DANG_NHAP = (function () {
       .then(function (res) {
         if (!res.ok) return;
         taiKhoanTheoDonVi[unitCode] = res.emails || [];
+        congKhaiTheoDonVi[unitCode] = !!res.congKhai;
         // Người dùng đã đổi sang đơn vị khác trong lúc chờ → bỏ kết quả
         if (donViDangChon && donViDangChon.unitCode === unitCode) napDatalistTaiKhoan(taiKhoanTheoDonVi[unitCode]);
       })
@@ -239,8 +242,11 @@ var PAGE_DANG_NHAP = (function () {
     luotHoiEmail++; // bỏ kết quả tìm đơn vị theo Gmail còn đang chờ
     datTrangThaiNut(true);
 
+    // Để trống Gmail mà đơn vị có bảng công khai → vào thẳng, không qua Google.
     // Cửa sổ Google phải mở ngay trong lượt bấm → gọi layMaGoogle trước mọi việc chờ
-    var hoi = laGoogle
+    var hoi = laGoogle && !email && congKhaiTheoDonVi[maDonVi]
+      ? API.vaoCongKhai(maDonVi)
+      : laGoogle
       ? API.layMaGoogle(email).then(
           function (ma) { return API.dangNhapGoogle(ma, maDonVi); },
           function (err) { return { ok: false, loi: err.message }; })
@@ -254,7 +260,7 @@ var PAGE_DANG_NHAP = (function () {
           baoLoi(res.loi || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
           return;
         }
-        email = res.email || email; // cách Google: Gmail do Google xác nhận
+        email = res.congKhai ? '' : res.email || email; // cách Google: Gmail do Google xác nhận
         var thongTinPhien = {
           email: email,
           unitCode: res.unitCode || maDonVi,
@@ -262,10 +268,11 @@ var PAGE_DANG_NHAP = (function () {
           role: res.role || 'Nhập liệu',
           tables: res.tables || []
         };
+        if (res.congKhai) thongTinPhien.congKhai = true;
         PHIEN.luu(thongTinPhien);
         if (res.ve) PHIEN.luuNho(thongTinPhien, res.ve);
         PHIEN.ghiGanDay(thongTinPhien.unitCode);
-        PHIEN.ghiEmailGanDay(email);
+        if (email) PHIEN.ghiEmailGanDay(email);
         napDatalistTaiKhoan([]);
         an();
         if (typeof onDangNhapThanhCong === 'function') onDangNhapThanhCong(thongTinPhien);
@@ -299,6 +306,19 @@ var PAGE_DANG_NHAP = (function () {
       .catch(function () { /* mất mạng: cứ dùng dữ liệu nhớ */ });
   }
 
+  /** Phiên không cần đăng nhập (bảng công khai): mở / tải lại trang thì hỏi GAS ngầm như lamMoiTuVe. */
+  function lamMoiCongKhai(phien, khiDoi, khiHong) {
+    API.vaoCongKhai(phien.unitCode)
+      .then(function (res) {
+        if (!res.ok) { PHIEN.xoa(); khiHong(); return; }
+        var moi = { email: '', unitCode: res.unitCode, unitName: res.unitName || res.unitCode,
+          role: res.role || 'Nhập liệu', tables: res.tables || [], congKhai: true };
+        PHIEN.luu(moi);
+        if (JSON.stringify(moi) !== JSON.stringify(phien)) khiDoi(moi);
+      })
+      .catch(function () { /* mất mạng: cứ dùng dữ liệu nhớ */ });
+  }
+
   function hien() {
     DOM.hien(elTrang);
     if (!dsDonViGoc.length) taiDanhSachDonVi();
@@ -308,5 +328,5 @@ var PAGE_DANG_NHAP = (function () {
     DOM.an(elTrang);
   }
 
-  return { khoiTao: khoiTao, hien: hien, an: an, lamMoiTuVe: lamMoiTuVe };
+  return { khoiTao: khoiTao, hien: hien, an: an, lamMoiTuVe: lamMoiTuVe, lamMoiCongKhai: lamMoiCongKhai };
 })();

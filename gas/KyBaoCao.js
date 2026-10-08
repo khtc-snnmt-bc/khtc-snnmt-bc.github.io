@@ -4,7 +4,7 @@
 //            thì tạo file), khoá / mở khoá / xoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 17:15
+// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -18,6 +18,8 @@
 // Tự khoá (thiết kế mục 7): mỗi kỳ có ngày tự khoá (tab Kỳ cột lockDate), mặc định
 // = ngày `lockDay` của bảng đầu tiên sau ngày kỳ. Trigger theo giờ gọi tuKhoaKy —
 // chủ dự án tự cài trong trình soạn (không dùng ScriptApp → không thêm quyền mới).
+// Bảng công khai: tạo / khoá / mở / xoá kỳ bật–tắt luôn link công khai từng file — bảng
+// không còn kỳ mở thì tắt (PhanQuyen.js laCongKhai_).
 
 var NHAN_COT_A = 'Mã đơn vị';
 var MA_MOI_DON_VI = 'all';      // cột A của mẫu ghi 'all' = dòng giao cho mọi đơn vị
@@ -275,6 +277,7 @@ function docCaiDat_(tieuDe, dong) {
     .map(function (t) { return t.trim(); }).filter(function (t) { return t; });
   caiDat.hiddenCols = String(caiDat.hiddenCols || '').trim();
   caiDat.periodMode = String(caiDat.periodMode || '').trim() === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
+  caiDat.shareType = chuanChiaSe_(caiDat.shareType);
   return caiDat;
 }
 
@@ -306,13 +309,13 @@ function dongKy_(dsKy, tableCode, tenKy) {
   return 0;
 }
 
-/** Các dòng giao của một bảng trong tab File, giữ thứ tự: [{unitCode, fileId, dong}] (dong = số dòng Sheet). */
+/** Các dòng giao của một bảng trong tab File, giữ thứ tự: [{unitCode, fileId, dong, access}] (dong = số dòng Sheet). */
 function giaoCuaBangKy_(dsFile, tableCode) {
   var kq = [];
   for (var i = 1; i < (dsFile || []).length; i++) {
     var uc = String(dsFile[i][0] || '').trim();
     if (uc && String(dsFile[i][1] || '').trim() === tableCode) {
-      kq.push({ unitCode: uc, fileId: String(dsFile[i][2] || '').trim(), dong: i + 1 });
+      kq.push({ unitCode: uc, fileId: String(dsFile[i][2] || '').trim(), dong: i + 1, access: chuanQuyenDv_(dsFile[i][4]) });
     }
   }
   return kq;
@@ -644,6 +647,8 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
     try { kq.tabTong = taoTabKyTong_(mau, tenKy); } catch (err) { kq.loi.push('File tổng: ' + String(err.message || err)); }
   }
   var fileMoi = [], mauKy = null;
+  // Bảng công khai: kỳ vừa tạo đang mở → file đơn vị được nhập bật link công khai
+  var laCK = caiDat.shareType === CHIA_SE_CONG_KHAI;
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() - batDauLuc > KY_MS_TOI_DA) { kq.tiepTu = i; break; }
     var g = giao[i];
@@ -660,7 +665,11 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
         fileMoi.push(file.getId());
         kq.fileMoi++;
       }
-      if (file.getSheetByName(tenKy)) { kq.daCo++; continue; }
+      if (file.getSheetByName(tenKy)) {
+        if (laCK) datCongKhai_(file.getId(), laCongKhai_(caiDat.shareType, g.access, true));
+        kq.daCo++;
+        continue;
+      }
       var truoc = caiDat.periodMode === KY_CAP_NHAT && !macDinh
         ? kyTruoc_(file.getSheets().map(function (t) { return t.getName(); }), tenKy) : '';
       if (truoc) {
@@ -673,6 +682,7 @@ function taoKy_(ss, tableCode, tenKy, batDau, hanKhoa) {
       chepTabChuThich_(file, mau, caiDat);
       if (macDinh) file.deleteSheet(macDinh);
       anTabDaKhoa_(file);
+      if (laCK) datCongKhai_(file.getId(), laCongKhai_(caiDat.shareType, g.access, true));
       kq.daTao++;
     } catch (err) {
       kq.loi.push(g.unitCode + ': ' + String(err.message || err));
@@ -699,10 +709,14 @@ function khoaMoKy_(ss, tableCode, tenKy, khoa, batDau, hetGio) {
   var giao = giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode).filter(function (g) { return g.fileId; });
   var kq = { ok: true, tenKy: tenKy, khoa: !!khoa, hanKhoa: tenKyTuO_(dsKy[dong - 1][4]),
     tong: giao.length, daLam: 0, khongCoTab: 0, loi: [], tiepTu: null };
+  // Bảng công khai: sau khi khoá / mở, bảng còn kỳ mở thì giữ link công khai, hết thì tắt
+  var cd = caiDatBang_(ss, tableCode), laCK = !!cd && cd.shareType === CHIA_SE_CONG_KHAI;
+  var conKyMo = !khoa || bangCoKyMo_(docKyQuanLy_(dsKy), tableCode, tenKy);
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() > hetGio) { kq.tiepTu = i; break; }
     try {
       var tab = SpreadsheetApp.openById(giao[i].fileId).getSheetByName(tenKy);
+      if (laCK) datCongKhai_(giao[i].fileId, laCongKhai_(cd.shareType, giao[i].access, conKyMo));
       if (!tab) { kq.khongCoTab++; continue; }
       if (khoa) khoaTabKy_(tab); else moKhoaTabKy_(tab);
       kq.daLam++;
@@ -724,11 +738,15 @@ function khoaMoKy_(ss, tableCode, tenKy, khoa, batDau, hetGio) {
  */
 function xoaKy_(ss, tableCode, tenKy, batDau) {
   var hetGio = Date.now() + KY_MS_TOI_DA;
-  if (!dongKy_(tabKyQuanLy_(ss).getDataRange().getValues(), tableCode, tenKy)) return { ok: false, loi: 'Không có kỳ ' + tenKy };
+  var dsKy = tabKyQuanLy_(ss).getDataRange().getValues();
+  if (!dongKy_(dsKy, tableCode, tenKy)) return { ok: false, loi: 'Không có kỳ ' + tenKy };
   // Giữ cả dòng chưa có file: bỏ trống fileId giữa chừng không làm lệch chỉ số lô sau
   var giao = giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode);
   var tabFile = ss.getSheetByName('File');
   var kq = { ok: true, tenKy: tenKy, tong: giao.length, daXoa: 0, fileBo: 0, loi: [], tiepTu: null };
+  // Bảng công khai: xoá kỳ mở cuối cùng → tắt link công khai của file còn lại
+  var cd = caiDatBang_(ss, tableCode), laCK = !!cd && cd.shareType === CHIA_SE_CONG_KHAI;
+  var conKyMo = bangCoKyMo_(docKyQuanLy_(dsKy), tableCode, tenKy);
   for (var i = Number(batDau) || 0; i < giao.length; i++) {
     if (Date.now() > hetGio) { kq.tiepTu = i; break; }
     var g = giao[i];
@@ -742,6 +760,7 @@ function xoaKy_(ss, tableCode, tenKy, batDau) {
         // Google không cho xoá tab hiện cuối cùng → hiện kỳ gần nhất còn lại (đã khoá thì vẫn khoá)
         if (!tab.isSheetHidden() && soTabDangHien_(file) < 2) conKy[0].showSheet();
         file.deleteSheet(tab);
+        if (laCK) datCongKhai_(g.fileId, laCongKhai_(cd.shareType, g.access, conKyMo));
       } else {
         DriveApp.getFileById(g.fileId).setTrashed(true);
         tabFile.getRange(g.dong, 3, 1, 2).setValues([['', '']]);
@@ -755,9 +774,8 @@ function xoaKy_(ss, tableCode, tenKy, batDau) {
   if (kq.tiepTu !== null) return kq;
   // File lỗi còn giữ tab → giữ kỳ trong sổ để bấm Xoá lại, không để tab mồ côi
   if (kq.loi.length) { kq.conSo = true; return kq; }
-  var caiDat = caiDatBang_(ss, tableCode);
   try {
-    var mau = caiDat && caiDat.templateFileId ? SpreadsheetApp.openById(caiDat.templateFileId) : null;
+    var mau = cd && cd.templateFileId ? SpreadsheetApp.openById(cd.templateFileId) : null;
     var tabTong = mau && mau.getSheetByName(tenKy);
     if (tabTong && mau.getSheets()[0].getSheetId() !== tabTong.getSheetId()) mau.deleteSheet(tabTong);
   } catch (err) {

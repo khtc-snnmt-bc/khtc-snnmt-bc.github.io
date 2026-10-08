@@ -2,7 +2,7 @@
 // bcsnn · gas/Code.js
 // Vai trò  : Cửa vào web app GAS — doPost định tuyến theo action, luôn trả JSON
 // Lớp      : gas — gọi: DangNhap.js, QuanTri.js, PhanQuyen.js, KyBaoCao.js, QuanLyBang.js, DonVi.js, XacMinhGoogle.js, VeDangNhap.js
-// Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 17:20
+// Phiên bản: 0.13.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 // Nguồn GAS DUY NHẤT là thư mục app/gas/ (repo Public) → KHÔNG ghi ID file,
 // Gmail, mật khẩu ở đây. ID Sheet quản lý nằm ở Script Properties (QUAN_LY_ID).
@@ -33,6 +33,7 @@ function doPost(e) {
     case 'dangNhap': return traJson_(xuLyDangNhap_(id, yc.email, yc.unitCode));
     case 'dangNhapGoogle': return traJson_(xuLyDangNhapGoogle_(id, yc.accessToken, yc.unitCode));
     case 'dangNhapVe': return traJson_(xuLyDangNhapVe_(id, yc.ve, yc.unitCode));
+    case 'vaoCongKhai': return traJson_(xuLyVaoCongKhai_(id, yc.unitCode));
     case 'quanTriDangNhap': return traJson_(xuLyQuanTriDangNhap_(id, yc.email, yc.unitCode, yc.matKhau));
     case 'xacMinhGoogle': return traJson_(xuLyXacMinhGoogle_(yc.idToken));
     case 'quanTriKiemPhien': return traJson_(xuLyQuanTriKiemPhien_(yc.token));

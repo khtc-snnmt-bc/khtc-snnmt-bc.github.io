@@ -2,7 +2,7 @@
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
 // Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.6.0 · Cập nhật: 06/10/2026 20:54
+// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 22:33
 // Bảng có donVi (đơn vị quản lý bảng): hộp chọn Bảng tổng / file từng đơn vị dưới tên bảng.
 // ============================================================
 
@@ -59,8 +59,9 @@ var PAGE_NHAP_LIEU = (function () {
 
     // 1. Cập nhật thông tin người dùng trên header
     if (elUserBadge) {
+      // Bảng công khai: vào không cần Gmail → chỉ tên đơn vị
       elUserBadge.innerHTML = '<span class="don-vi">' + escapeHtml(phienHienTai.unitName || phienHienTai.unitCode) + '</span>' +
-                              '<span class="email">' + escapeHtml(phienHienTai.email) + '</span>';
+                              (phienHienTai.email ? '<span class="email">' + escapeHtml(phienHienTai.email) + '</span>' : '');
     }
 
     // 2. Vẽ danh sách bảng được giao ở sidebar

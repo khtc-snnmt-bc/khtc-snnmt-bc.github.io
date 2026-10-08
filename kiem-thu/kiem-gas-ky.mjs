@@ -1,8 +1,9 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-gas-ky.mjs
-// Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá, kỳ cập nhật)
+// Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá, kỳ cập nhật,
+//            bảng công khai)
 // Chạy     : node app/kiem-thu/kiem-gas-ky.mjs
-// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 13:05
+// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -14,7 +15,8 @@ vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n;this.ham = { chuanHoaTenKy_, docKyQuanLy_, dongKy_, giaoCuaBangKy_, docCaiDat_, keHoachKhoa_,' +
   ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_,' +
-  ' loiKhongCoDong_, kyTruoc_, cotAn_, cotKhung_, dauDong_, ghepDongCapNhat_ };', sandbox);
+  ' loiKhongCoDong_, kyTruoc_, cotAn_, cotKhung_, dauDong_, ghepDongCapNhat_,' +
+  ' bangCoKyMo_, laCongKhai_, fileCongKhai_, chenhLechCongKhai_, bangCongKhaiCuaDonVi_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -68,15 +70,15 @@ bai('tìm dòng của kỳ trong sổ', () => {
 
 bai('giao của một bảng giữ số dòng Sheet (để ghi fileId mới)', () => {
   const tabFile = [
-    ['unitCode', 'tableCode', 'fileId', 'createdAt'],
+    ['unitCode', 'tableCode', 'fileId', 'createdAt', 'access'],
     ['A', 'duan', 'F_A', 'ngay'],
     ['A', 'khokhan', 'F_A_KK', 'ngay'],
-    ['C', 'duan', '', ''],
+    ['C', 'duan', '', '', 'xem'],
     ['', 'duan', 'X', '']
   ];
   assert.deepEqual(sach(h.giaoCuaBangKy_(tabFile, 'duan')), [
-    { unitCode: 'A', fileId: 'F_A', dong: 2 },
-    { unitCode: 'C', fileId: '', dong: 4 }
+    { unitCode: 'A', fileId: 'F_A', dong: 2, access: 'sua' },
+    { unitCode: 'C', fileId: '', dong: 4, access: 'xem' }
   ]);
 });
 
@@ -146,6 +148,8 @@ bai('kiểu kỳ + cột ẩn đọc từ tab Bảng', () => {
   assert.equal(h.docCaiDat_(['tableCode'], ['x']).periodMode, 'nhapMoi');
   assert.equal(h.docCaiDat_(['tableCode', 'periodMode', 'hiddenCols'], ['x', ' capNhat ', ' B ']).periodMode, 'capNhat');
   assert.equal(h.docCaiDat_(['tableCode', 'hiddenCols'], ['x', ' B ']).hiddenCols, 'B');
+  assert.equal(h.docCaiDat_(['tableCode'], ['x']).shareType, 'moi');
+  assert.equal(h.docCaiDat_(['tableCode', 'shareType'], ['x', ' congKhai ']).shareType, 'congKhai');
 });
 
 bai('kỳ trước = tab ngày gần nhất trước kỳ mới', () => {
@@ -181,6 +185,46 @@ bai('ghép kỳ cập nhật: giữ dòng cũ, dòng mẫu mới chèn sau khố
   // hai dòng mẫu trùng dấu → khớp lần lượt, không dùng một dòng hai lần
   const g3 = h.ghepDongCapNhat_([{ dong: 3, dau: 'x' }, { dong: 4, dau: 'x' }], ['x'], 2);
   assert.deepEqual(sach(g3), { anhXa: { 3: 3, 4: 4 }, dongMoi: [4], chenSau: 3 });
+});
+
+// ---------- Bảng công khai (b07) ----------
+const bangCK = [['tableCode', 'tableName', 'group', 'shareType'],
+  ['ck', 'Công khai', 'TC', 'congKhai'], ['kin', 'Kín', 'TC', 'moi']];
+const fileCK = [['unitCode', 'tableCode', 'fileId', 'createdAt', 'access'],
+  ['A', 'ck', 'F_A_CK', '', ''], ['B', 'ck', 'F_B_CK', '', 'xem'], ['C', 'ck', '', '', 'sua'],
+  ['A', 'kin', 'F_A_KIN', '', 'sua']];
+const kyCK = (khoa) => [['tableCode', 'periodName', 'locked'], ['ck', '01.10.2026', true], ['ck', '01.11.2026', khoa],
+  ['kin', '01.11.2026', false]];
+
+bai('công khai: chỉ bảng congKhai + đơn vị được nhập + còn kỳ mở', () => {
+  const ky = h.docKyQuanLy_(kyCK(false));
+  assert.equal(h.bangCoKyMo_(ky, 'ck'), true);
+  assert.equal(h.bangCoKyMo_(ky, 'ck', '01.11.2026'), false);   // khoá / xoá kỳ mở cuối cùng
+  assert.equal(h.laCongKhai_('congKhai', 'sua', true), true);
+  assert.equal(h.laCongKhai_('congKhai', 'xem', true), false);
+  assert.equal(h.laCongKhai_('congKhai', 'sua', false), false);
+  assert.equal(h.laCongKhai_('moi', 'sua', true), false);
+  const bang = h.docBangQuanLy_(bangCK), file = h.docFileQuanLy_(fileCK);
+  assert.deepEqual(sach(h.fileCongKhai_(bang, file, ky)), { F_A_CK: true });
+  assert.deepEqual(sach(h.fileCongKhai_(bang, file, h.docKyQuanLy_(kyCK(true)))), {});
+});
+
+bai('chenhLechCongKhai_: thêm / đổi / gỡ quyền "bất kỳ ai"', () => {
+  const u = { id: 'u1', type: 'user', role: 'writer' };
+  assert.deepEqual(sach(h.chenhLechCongKhai_(true, [u])), { them: true, doi: [], go: [] });
+  assert.deepEqual(sach(h.chenhLechCongKhai_(true, [u, { id: 'any', type: 'anyone', role: 'writer' }])), { them: false, doi: [], go: [] });
+  assert.deepEqual(sach(h.chenhLechCongKhai_(true, [{ id: 'any', type: 'anyone', role: 'reader' }])), { them: false, doi: ['any'], go: [] });
+  assert.deepEqual(sach(h.chenhLechCongKhai_(false, [u, { id: 'any', type: 'anyone', role: 'writer' }])), { them: false, doi: [], go: ['any'] });
+  assert.deepEqual(sach(h.chenhLechCongKhai_(false, [u])), { them: false, doi: [], go: [] });
+});
+
+bai('bangCongKhaiCuaDonVi_: vào không cần Gmail chỉ thấy bảng công khai đang mở', () => {
+  assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), 'A')),
+    [{ tableCode: 'ck', tableName: 'Công khai', group: 'TC', fileId: 'F_A_CK' }]);
+  assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(true), 'A')), []);
+  assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), 'B')), []);   // chỉ xem
+  assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), 'C')), []);   // chưa có file
+  assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), '')), []);
 });
 
 console.log('kiem-gas-ky: ' + soBai + ' bài ĐẠT');

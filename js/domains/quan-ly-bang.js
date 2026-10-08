@@ -1,10 +1,10 @@
 // ============================================================
 // bcsnn · js/domains/quan-ly-bang.js
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
-//            cách nhập dòng / tổng hợp, kiểu kỳ, nhãn lĩnh vực, số đơn vị có file,
+//            cách nhập dòng / tổng hợp, kiểu kỳ, cách đơn vị vào nhập, nhãn lĩnh vực, số đơn vị có file,
 //            câu báo kiểm mẫu / đủ file + tab kỳ / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 17:05
+// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -35,6 +35,12 @@ var QUAN_LY_BANG = (function () {
   var KIEU_KY = [
     { ma: 'nhapMoi', ten: 'Nhập mới' },
     { ma: 'capNhat', ten: 'Cập nhật từ kỳ trước' }
+  ];
+
+  // Thiết kế 4.2: mời theo Gmail, hoặc công khai (link tắt khi bảng hết kỳ mở)
+  var CACH_CHIA_SE = [
+    { ma: 'moi', ten: 'Đăng nhập bằng Gmail được cấp quyền' },
+    { ma: 'congKhai', ten: 'Không cần đăng nhập — ai có link đều sửa được' }
   ];
 
   /** Dòng dữ liệu đầu của mẫu dựng trên app (dòng 1 tên bảng, dòng 2 tiêu đề) */
@@ -183,7 +189,7 @@ var QUAN_LY_BANG = (function () {
 
   return {
     tenBangTuExcel: tenBangTuExcel, baoTaoTuExcel: baoTaoTuExcel,
-    KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, KIEU_KY: KIEU_KY, DONG_DAU: DONG_DAU,
+    KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, KIEU_KY: KIEU_KY, CACH_CHIA_SE: CACH_CHIA_SE, DONG_DAU: DONG_DAU,
     chuCot: chuCot, maTuTen: maTuTen, luaChonLinhVuc: luaChonLinhVuc, maLinhVucTuTen: maLinhVucTuTen,
     oPhu: oPhu, tomTatKiem: tomTatKiem, tomTatDuFile: tomTatDuFile, tenLinhVuc: tenLinhVuc, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
   };

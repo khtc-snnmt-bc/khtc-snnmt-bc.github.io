@@ -1,8 +1,10 @@
 // ============================================================
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
-// Lớp      : gas backend — đọc Sheet quản lý, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_, themToanQuyen_, donViToanQuyen_)
-// Phiên bản: 0.8.0 · Cập nhật: 08/10/2026 09:16
+// Lớp      : gas backend — đọc Sheet quản lý, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_, themToanQuyen_,
+//            donViToanQuyen_, laCongKhai_, bangCoKyMo_), KyBaoCao.js (docKyQuanLy_)
+// Phiên bản: 0.9.0 · Cập nhật: 08/10/2026 22:33
+// Bảng công khai (b07): chọn đơn vị, để trống Gmail → vaoCongKhai trả bảng công khai đang mở.
 // ============================================================
 
 /**
@@ -123,13 +125,51 @@ function docTabQuanLy_(ss, ten) {
   return tab ? tab.getDataRange().getValues() : [];
 }
 
+/**
+ * Bảng công khai đang nhập được của một đơn vị (hàm thuần): bảng công khai + đơn vị được
+ * nhập + đã có file + bảng còn kỳ mở (đúng lúc file đang để link công khai — PhanQuyen.js laCongKhai_).
+ * @returns {Array<object>} [{ tableCode, tableName, group, fileId }]
+ */
+function bangCongKhaiCuaDonVi_(dsBang, dsFile, dsKy, unitCode) {
+  var uc = String(unitCode || '').trim(), theoMa = {};
+  docBangQuanLy_(dsBang).forEach(function (b) { theoMa[b.tableCode] = b; });
+  var ky = docKyQuanLy_(dsKy);
+  return docFileQuanLy_(dsFile).filter(function (f) {
+    var b = theoMa[f.tableCode];
+    return uc && f.unitCode === uc && f.fileId && b && laCongKhai_(b.shareType, f.access, bangCoKyMo_(ky, f.tableCode));
+  }).map(function (f) {
+    var b = theoMa[f.tableCode];
+    return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, fileId: f.fileId };
+  });
+}
+
+function bangCongKhaiTuSs_(ss, unitCode) {
+  return bangCongKhaiCuaDonVi_(docTabQuanLy_(ss, 'Bảng'), docTabQuanLy_(ss, 'File'), docTabQuanLy_(ss, TAB_KY), unitCode);
+}
+
+/** Gmail của một đơn vị + đơn vị có bảng nhập không cần đăng nhập không (congKhai). */
 function xuLyLayTaiKhoan_(quanLyId, unitCode) {
   if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
   try {
     var ss = SpreadsheetApp.openById(quanLyId);
-    return { ok: true, emails: layEmailCuaDonVi_(docTabQuanLy_(ss, 'Tài khoản'), unitCode) };
+    return { ok: true, emails: layEmailCuaDonVi_(docTabQuanLy_(ss, 'Tài khoản'), unitCode),
+      congKhai: bangCongKhaiTuSs_(ss, unitCode).length > 0 };
   } catch (err) {
     return { ok: false, loi: 'Lỗi đọc tài khoản: ' + String(err) };
+  }
+}
+
+/** Vào không cần Gmail: chỉ trả bảng công khai đang mở của đơn vị (link vốn đã công khai). */
+function xuLyVaoCongKhai_(quanLyId, unitCode) {
+  if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
+  try {
+    var ss = SpreadsheetApp.openById(quanLyId), uc = String(unitCode || '').trim();
+    var ds = bangCongKhaiTuSs_(ss, uc);
+    if (!ds.length) return { ok: false, loi: 'Đơn vị chưa có bảng nào nhập không cần đăng nhập — vui lòng nhập Gmail để đăng nhập.' };
+    return { ok: true, email: '', unitCode: uc, unitName: layTenDonVi_(docTabQuanLy_(ss, 'Đơn vị'), uc),
+      role: 'Nhập liệu', congKhai: true, tables: ds };
+  } catch (err) {
+    return { ok: false, loi: 'Lỗi máy chủ: ' + String(err) };
   }
 }
 

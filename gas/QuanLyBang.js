@@ -5,7 +5,7 @@
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng,
 //            kiểm bảng đủ file đơn vị + đủ tab kỳ
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 17:05
+// Phiên bản: 0.8.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -199,6 +199,7 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
   kq.hiddenCols = String(cd.hiddenCols || '').trim().toUpperCase();
   if (kq.hiddenCols && !hopLeDsCot_(kq.hiddenCols)) return { loi: 'Cột ẩn ở file đơn vị ghi chữ cột, ví dụ B, D:E' };
   kq.periodMode = cd.periodMode === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
+  kq.shareType = chuanChiaSe_(cd.shareType);
   return { caiDat: kq };
 }
 
@@ -591,7 +592,7 @@ function caiDatChoTrang_(gtBang) {
       templateFileId: cd.templateFileId, sourceType: chu(cd.sourceType), inputCols: chu(cd.inputCols),
       inputRows: chu(cd.inputRows), lockedRows: chu(cd.lockedRows), allowAddRows: cd.allowAddRows,
       noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType,
-      lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode
+      lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode, shareType: cd.shareType
     };
   }
   return kq;
@@ -727,9 +728,10 @@ function boThuMucRong_(thuMuc) {
   if (!thuMuc.searchFiles('trashed = false').hasNext() && !thuMuc.searchFolders('trashed = false').hasNext()) thuMuc.setTrashed(true);
 }
 
-/** Lưu cài đặt bảng đã có rồi kiểm lại mẫu. */
+/** Lưu cài đặt bảng đã có rồi kiểm lại mẫu. Đổi cách nhập (công khai ↔ Gmail) → soát quyền mọi file của bảng. */
 function luuBang_(ss, tableCode, caiDat) {
-  if (!caiDatBang_(ss, tableCode)) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
+  var cu = caiDatBang_(ss, tableCode);
+  if (!cu) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
   var kiem = kiemCaiDatSua_(caiDat, dsMaLinhVuc_(ss));
   if (kiem.loi) return { ok: false, loi: kiem.loi };
   ghiCaiDatBang_(ss, tableCode, kiem.caiDat);
@@ -737,7 +739,9 @@ function luuBang_(ss, tableCode, caiDat) {
   var cd = caiDatBang_(ss, tableCode);
   if (cd.templateFileId && cd.sourceType === 'gopTach') capNhatChonMaMau_(cd.templateFileId, maDonViCo_(ss));
   var kt = kiemMauBang_(ss, tableCode);
-  return { ok: true, caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[tableCode], kiem: kt.kiem, doi: kt.doi };
+  var kq = { ok: true, caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[tableCode], kiem: kt.kiem, doi: kt.doi };
+  if (cu.shareType !== cd.shareType) kq.quyen = dongBoQuyen_(ss, { tableCodes: [tableCode] });
+  return kq;
 }
 
 /**

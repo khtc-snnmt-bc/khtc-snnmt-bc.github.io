@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-phan-quyen.mjs
 // Vai trò  : Kiểm hàm thuần Tài khoản / Phân quyền / quyền Drive mong muốn phía GAS
 // Chạy     : node app/kiem-thu/kiem-gas-phan-quyen.mjs
-// Phiên bản: 0.4.0 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.4.1 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -51,7 +51,7 @@ const emailDv = h.emailTheoDonVi_(tabTK);
 
 bai('docBangQuanLy_ đọc cột theo tên, bỏ dòng trống', () => {
   assert.equal(bang.length, 2);
-  assert.deepEqual(sach(bang[0]), { tableCode: 'duan', tableName: 'Tiến độ dự án', group: 'BTTDC', templateFileId: 'TONG_DUAN', managerUnits: ['QL'] });
+  assert.deepEqual(sach(bang[0]), { tableCode: 'duan', tableName: 'Tiến độ dự án', group: 'BTTDC', templateFileId: 'TONG_DUAN', managerUnits: ['QL'], shareType: 'moi' });
   // Tab Bảng cũ chưa có cột managerUnits → danh sách rỗng
   const cu = h.docBangQuanLy_([['tableCode', 'tableName', 'group'], ['x', 'X', 'G']]);
   assert.deepEqual(sach(cu[0].managerUnits), []);

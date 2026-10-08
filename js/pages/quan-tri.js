@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.16.0 · Cập nhật: 08/10/2026 17:20
+// Phiên bản: 0.17.0 · Cập nhật: 08/10/2026 22:33
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -905,6 +905,8 @@ var PAGE_QUAN_TRI = (function () {
     hangKhoa.appendChild(oNgayKhoa);
     hangKhoa.appendChild(document.createTextNode(' hằng tháng'));
     khung.appendChild(dong('Tự khoá', hangKhoa));
+    var oChiaSe = oChon(QUAN_LY_BANG.CACH_CHIA_SE.map(function (c) { return { giaTri: c.ma, nhan: c.ten }; }), cd.shareType || 'moi');
+    khung.appendChild(dong('Đơn vị vào nhập', oChiaSe));
     phanLoai.apLuat();
 
     var hangNut = khung.appendChild(DOM.tao('div', { class: 'qt-hang-nut' }));
@@ -932,7 +934,7 @@ var PAGE_QUAN_TRI = (function () {
       var caiDat = Object.assign(phanLoai.giaTri(), {
         tableName: oTen.value.trim(), inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(),
         lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim(), lockDay: oNgayKhoa.value.trim(),
-        hiddenCols: oCotAn.value.trim(), periodMode: oKieuKy.value
+        hiddenCols: oCotAn.value.trim(), periodMode: oKieuKy.value, shareType: oChiaSe.value
       });
       caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {
@@ -940,7 +942,9 @@ var PAGE_QUAN_TRI = (function () {
         bang.group = caiDat.group;
         bang.caiDat = res.caiDat;
         var tt = tomTatDoi(res.doi);
-        ketQuaBang = { tableCode: bang.tableCode, chu: 'Đã lưu.' + (tt.chu ? ' ' + tt.chu : ''), kiem: res.kiem };
+        // Đổi cách vào nhập → GAS đã soát quyền mọi file của bảng
+        var chu = res.quyen ? PHAN_QUYEN.tomTatLuu(res) : 'Đã lưu.';
+        ketQuaBang = { tableCode: bang.tableCode, chu: chu + (tt.chu ? ' ' + tt.chu : ''), kiem: res.kiem };
         veNoiDung();
       }, bao);
     });
