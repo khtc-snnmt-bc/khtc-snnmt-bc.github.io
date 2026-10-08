@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.17.0 · Cập nhật: 08/10/2026 09:16
+   Phiên bản: 0.17.1 · Cập nhật: 08/10/2026 10:37
    ============================================================ */
 
 :root {
@@ -912,10 +912,11 @@ a.sidebar-btn {
 .qt-nut-them:disabled { opacity: 0.55; }
 
 /* Phân quyền: bảng mỗi đơn vị một hàng (tên · đã có file · nhập · xem · tên file) */
-.qt-khung:has(.qt-bang-quyen) { max-width: 1140px; }
+/* Giãn theo bề ngang màn hình (không chừa trắng bên phải); cao theo màn hình, hàng nút luôn thấy */
+.qt-khung:has(.qt-bang-quyen) { max-width: 1800px; }
 
 .qt-bang-quyen-khung {
-  max-height: 56vh;
+  max-height: max(260px, calc(100vh - 380px));
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -951,7 +952,7 @@ a.sidebar-btn {
 .qt-bang-quyen .qt-o-giua { text-align: center; width: 1%; white-space: nowrap; }
 .qt-bang-quyen .qt-co-file { color: var(--xc); font-weight: 600; }
 .qt-bang-quyen td:first-child { min-width: 260px; }
-.qt-ten-file-dv { font-size: 12.5px; color: var(--text-muted); word-break: break-all; }
+.qt-ten-file-dv { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
 
 .qt-bang-quyen input[type="checkbox"] {
   width: 20px;
