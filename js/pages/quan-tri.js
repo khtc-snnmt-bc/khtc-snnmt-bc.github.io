@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.18.1 · Cập nhật: 09/10/2026 12:55
+// Phiên bản: 0.19.0 · Cập nhật: 09/10/2026 13:05
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -918,6 +918,8 @@ var PAGE_QUAN_TRI = (function () {
     khung.appendChild(dong('Cột ẩn ở file đơn vị', oCotAn));
     var oKieuKy = oChon(QUAN_LY_BANG.KIEU_KY.map(function (k) { return { giaTri: k.ma, nhan: k.ten }; }), cd.periodMode || 'nhapMoi');
     khung.appendChild(dong('Kỳ mới', oKieuKy));
+    var oGiuTh = oChon(QUAN_LY_BANG.GIU_KHI_TONG_HOP.map(function (g) { return { giaTri: g.ma, nhan: g.ten }; }), cd.aggregateKeep || 'congThuc');
+    khung.appendChild(dong('Khi tổng hợp', oGiuTh));
     var oNgayKhoa = oNhap(cd.lockDay, { type: 'number', min: '1', max: '31', class: 'form-control qt-o-ngay-khoa' });
     var hangKhoa = DOM.tao('span', { class: 'qt-ngay-khoa' });
     hangKhoa.appendChild(document.createTextNode('ngày '));
@@ -953,7 +955,8 @@ var PAGE_QUAN_TRI = (function () {
       var caiDat = Object.assign(phanLoai.giaTri(), {
         tableName: oTen.value.trim(), inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(),
         lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim(), lockDay: oNgayKhoa.value.trim(),
-        hiddenCols: oCotAn.value.trim(), periodMode: oKieuKy.value, shareType: oChiaSe.value
+        hiddenCols: oCotAn.value.trim(), periodMode: oKieuKy.value, shareType: oChiaSe.value,
+        aggregateKeep: oGiuTh.value
       });
       caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {

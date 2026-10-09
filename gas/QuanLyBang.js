@@ -5,7 +5,7 @@
 //            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng,
 //            kiểm bảng đủ file đơn vị + đủ tab kỳ
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.8.0 · Cập nhật: 08/10/2026 22:33
+// Phiên bản: 0.8.1 · Cập nhật: 09/10/2026 13:05
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -200,6 +200,7 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
   if (kq.hiddenCols && !hopLeDsCot_(kq.hiddenCols)) return { loi: 'Cột ẩn ở file đơn vị ghi chữ cột, ví dụ B, D:E' };
   kq.periodMode = cd.periodMode === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   kq.shareType = chuanChiaSe_(cd.shareType);
+  kq.aggregateKeep = cd.aggregateKeep === TH_GIA_TRI ? TH_GIA_TRI : TH_CONG_THUC;
   return { caiDat: kq };
 }
 
@@ -592,7 +593,8 @@ function caiDatChoTrang_(gtBang) {
       templateFileId: cd.templateFileId, sourceType: chu(cd.sourceType), inputCols: chu(cd.inputCols),
       inputRows: chu(cd.inputRows), lockedRows: chu(cd.lockedRows), allowAddRows: cd.allowAddRows,
       noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType,
-      lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode, shareType: cd.shareType
+      lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode, shareType: cd.shareType,
+      aggregateKeep: cd.aggregateKeep
     };
   }
   return kq;

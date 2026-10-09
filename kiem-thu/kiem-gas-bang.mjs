@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
 // Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all, đủ file / tab kỳ)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.4.1 · Cập nhật: 08/10/2026 22:33
+// Phiên bản: 0.4.2 · Cập nhật: 09/10/2026 13:05
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -129,6 +129,9 @@ bai('cài đặt sửa trên app', () => {
   assert.equal(cdDung({ periodMode: 'la' }).periodMode, 'nhapMoi');
   assert.equal(kq.caiDat.shareType, 'moi');                              // bảng công khai (b07)
   assert.equal(cdDung({ shareType: 'congKhai' }).shareType, 'congKhai');
+  assert.equal(kq.caiDat.aggregateKeep, 'congThuc');                     // tổng hợp giữ công thức (b08)
+  assert.equal(cdDung({ aggregateKeep: 'giaTri' }).aggregateKeep, 'giaTri');
+  assert.equal(cdDung({ aggregateKeep: 'la' }).aggregateKeep, 'congThuc');
   assert.equal(cdDung({ shareType: 'la' }).shareType, 'moi');
   assert.equal(kq.caiDat.lockDay, '');
   assert.equal(h.kiemCaiDatSua_({ tableName: 'X', group: 'TC', sourceType: 'docLap', inputCols: 'C', lockDay: '5' }, LV).caiDat.lockDay, 5);
@@ -228,7 +231,7 @@ bai('cài đặt cho trang: chữ hoá, noteTabs nối lại', () => {
   assert.deepEqual(Object.keys(kq), ['a']);
   assert.deepEqual(kq.a, { templateFileId: 'ID', sourceType: 'docLap', inputCols: 'C:J', inputRows: '5', lockedRows: '',
     allowAddRows: true, noteTabs: 'X, Y', dataRows: '20', aggregateType: 'ghep', lockDay: '',
-    hiddenCols: '', periodMode: 'nhapMoi', shareType: 'moi' });
+    hiddenCols: '', periodMode: 'nhapMoi', shareType: 'moi', aggregateKeep: 'congThuc' });
 });
 
 bai('tải Excel: mã bảng, file .xlsx, cỡ file, cài đặt như Sửa', () => {

@@ -2,7 +2,7 @@
 // bcsnn · gas/TongHop.js
 // Vai trò  : Tổng hợp kỳ — gom số tab kỳ ở mọi file đơn vị về tab kỳ cùng tên ở file tổng
 // Lớp      : gas — gọi bởi: Code.js · gọi: KyBaoCao.js, DangNhap.js, PhanQuyen.js
-// Phiên bản: 0.1.0 · Cập nhật: 09/10/2026 12:30
+// Phiên bản: 0.2.0 · Cập nhật: 09/10/2026 13:05
 // ============================================================
 // File tổng chỉ xem: số nhập ở file đơn vị, tổng hợp gom MỘT CHIỀU về file tổng (thiết kế 4.4).
 //   Cộng (aggregateType 'tong'): mỗi ô nhập của dòng mẫu = tổng số của các đơn vị có dòng đó
@@ -15,7 +15,7 @@
 // Dòng đơn vị tự thêm: chép GIÁ TRỊ (công thức file đơn vị có thể khác vùng → khác dấu ngăn);
 // cột công thức dùng công thức của dòng mẫu đứng trước nó (R1C1 — cùng dòng).
 // Tab kỳ ở file tổng dựng lại mỗi lần (chép tab mẫu) → bấm lại an toàn; công thức ở tab khác
-// trỏ vào tab kỳ sẽ thành #REF!.
+// trỏ vào tab kỳ sẽ thành #REF!. Cài đặt bảng aggregateKeep = giaTri → xong thì đổi mọi công thức của tab thành giá trị.
 // Theo lô: mỗi lần đọc tối đa KY_MS_TOI_DA, cất từng đơn vị vào CacheService (6 giờ), trả tiepTu;
 // đọc xong hết mới ghi file tổng (đọc đã lâu thì để lần gọi sau ghi).
 
@@ -230,8 +230,16 @@ function docDonViTongHop_(file, tenKy, mau, caiDat, ma) {
   return { ma: ma, anhXa: khop.anhXa, thua: khop.thua, hang: hang };
 }
 
-/** Dựng lại tab kỳ ở file tổng (chép tab mẫu) rồi ghi khối dòng dữ liệu. */
-function ghiTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
+/** Dựng lại tab kỳ ở file tổng (chép tab mẫu), ghi khối dòng dữ liệu; chiGiaTri → mọi ô công thức của tab thành giá trị. */
+function ghiTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep, chiGiaTri) {
+  var tab = dungTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep);
+  if (!chiGiaTri) return;
+  SpreadsheetApp.flush();   // công thức tính xong rồi mới chép giá trị
+  var vung = tab.getDataRange();
+  vung.copyTo(vung, SpreadsheetApp.CopyPasteType.PASTE_VALUES, false);
+}
+
+function dungTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
   var cu = fileTong.getSheetByName(tenKy);
   if (cu && cu.getSheetId() !== mau.tab.getSheetId()) fileTong.deleteSheet(cu);
   taoTabKyTong_(fileTong, tenKy);
@@ -239,7 +247,7 @@ function ghiTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
   var dau = mau.dongTieuDe + 1, soMau = mau.gt.length, soRa = khoi.gt.length, soCot = mau.soCot;
   if (soRa > soMau) tab.insertRowsAfter(mau.dongTieuDe + soMau, soRa - soMau);
   else if (soRa < soMau) tab.deleteRows(dau + soRa, soMau - soRa);
-  if (!soRa) return;
+  if (!soRa) return tab;
   // Định dạng theo dòng mẫu nguồn — mỗi đoạn dòng mẫu liên tiếp chép một lần; đoạn vẫn ở
   // đúng chỗ cũ của tab mẫu thì đã đúng định dạng, bỏ qua
   for (var j = 0; laGhep && j < ra.length; ) {
@@ -262,6 +270,7 @@ function ghiTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
       a = b + 1;
     }
   }
+  return tab;
 }
 
 /**
@@ -323,8 +332,9 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
     ra = keHoachGhep_(mau.cotA, mau.dongTieuDe, laTach, dsDv);
     khoi = khoiGhep_(ra, mau, dsDv, cotNhap, dongNhap);
   }
-  ghiTabTong_(fileTong, mau, tenKy, ra, khoi, !kq.laTong);
+  ghiTabTong_(fileTong, mau, tenKy, ra, khoi, !kq.laTong, caiDat.aggregateKeep === TH_GIA_TRI);
   kq.xong = true;
+  kq.chiGiaTri = caiDat.aggregateKeep === TH_GIA_TRI;
   kq.soDonVi = dsDv.length;
   kq.soDong = khoi.gt.length;
   kq.dongThem = ra.filter(function (r) { return r.moi; }).length;

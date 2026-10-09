@@ -4,7 +4,7 @@
 //            thì tạo file), khoá / mở khoá / xoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 22:33
+// Phiên bản: 0.6.1 · Cập nhật: 09/10/2026 13:05
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -32,6 +32,9 @@ var TU_KHOA_TIEP = 'TU_KHOA_TIEP';   // Script Properties: chỗ dừng của l�
 // cập nhật = chép tab kỳ trước của chính file đơn vị (giữ số), thêm dòng mẫu mới
 var KY_NHAP_MOI = 'nhapMoi';
 var KY_CAP_NHAT = 'capNhat';
+// Tổng hợp (cài đặt bảng aggregateKeep — TongHop.js): tab kỳ file tổng giữ công thức mẫu, hay chỉ giá trị
+var TH_CONG_THUC = 'congThuc';
+var TH_GIA_TRI = 'giaTri';
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-ky.mjs) ----------
 
@@ -278,6 +281,7 @@ function docCaiDat_(tieuDe, dong) {
   caiDat.hiddenCols = String(caiDat.hiddenCols || '').trim();
   caiDat.periodMode = String(caiDat.periodMode || '').trim() === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   caiDat.shareType = chuanChiaSe_(caiDat.shareType);
+  caiDat.aggregateKeep = String(caiDat.aggregateKeep || '').trim() === TH_GIA_TRI ? TH_GIA_TRI : TH_CONG_THUC;
   return caiDat;
 }
 
