@@ -584,7 +584,8 @@ body {
 .sidebar-brand .brand-logo { width: 36px; height: 36px; }
 
 .sidebar-brand .app-title {
-  font-size: 13px;
+  font-size: 12.5px;
+  white-space: nowrap;
   font-weight: 700;
   line-height: 1.3;
 }
