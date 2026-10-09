@@ -9,8 +9,8 @@
 var PAGE_NHAP_LIEU = (function () {
   'use strict';
 
-  var elTrang, elUserBadge, elBtnLogout, elListTables, elIframe, elSheetTitle;
-  var elBtnMoTabMoi, elBtnTaiLaiIframe, elLienKetMoSheet;
+  var elTrang, elUserBadge, elBtnLogout, elListTables, elIframe;
+  var elBtnMoTabMoi, elBtnTaiLaiIframe;
   var phienHienTai = null;
   var fileDangMo = '';        // fileId đang hiện trong iframe (bảng tổng hoặc file một đơn vị)
   var onDangXuatCallback = null;
@@ -22,10 +22,8 @@ var PAGE_NHAP_LIEU = (function () {
     elBtnLogout = DOM.$('#btn-dang-xuat');
     elListTables = DOM.$('#danh-sach-bang-sidebar');
     elIframe = DOM.$('#khung-nhung-sheet');
-    elSheetTitle = DOM.$('#tieu-de-bang-hien-tai');
     elBtnMoTabMoi = DOM.$('#btn-mo-tab-moi');
     elBtnTaiLaiIframe = DOM.$('#btn-tai-lai-iframe');
-    elLienKetMoSheet = DOM.$('#lien-ket-mo-sheet');
 
     ganSuKien();
   }
@@ -121,16 +119,12 @@ var PAGE_NHAP_LIEU = (function () {
     moFile(bang, dsFile[0]);
   }
 
-  /** Nạp iframe Google Sheet + lối dự phòng mở tab mới; tiêu đề ghi kèm tên file đang xem. */
+  /** Nạp iframe Google Sheet (lối dự phòng mở tab mới là nút ở sidebar). */
   function moFile(bang, file) {
     fileDangMo = file ? file.fileId : '';
-    if (elSheetTitle) {
-      elSheetTitle.textContent = (bang.tableName || bang.tableCode) + (bang.donVi && file ? ' · ' + file.nhan : '');
-    }
     if (!fileDangMo) return;
     var src = KY_BAO_CAO.taoUrlSheet(fileDangMo, phienHienTai ? phienHienTai.email : '');
     if (elIframe) elIframe.src = src;
-    if (elLienKetMoSheet) elLienKetMoSheet.href = src;
   }
 
   function moSheetTabMoi() {
@@ -148,8 +142,6 @@ var PAGE_NHAP_LIEU = (function () {
 
   function datIframeRong() {
     if (elIframe) elIframe.src = 'about:blank';
-    if (elSheetTitle) elSheetTitle.textContent = '—';
-    if (elLienKetMoSheet) elLienKetMoSheet.removeAttribute('href');
   }
 
   function xuLyDangXuat() {

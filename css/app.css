@@ -574,6 +574,40 @@ body {
   flex-shrink: 0;
 }
 
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 10px;
+}
+
+.sidebar-brand .brand-logo { width: 36px; height: 36px; }
+
+.sidebar-brand .app-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sidebar-brand .sub-title {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-user .user-badge { align-items: flex-start; min-width: 0; }
+.sidebar-user .user-badge .don-vi,
+.sidebar-user .user-badge .email { overflow-wrap: anywhere; }
+
 .sidebar-section-title {
   padding: 16px 18px 8px;
   font-size: 11px;

@@ -111,40 +111,32 @@ Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 22:33
 
   <!-- ==================== TRANG 3: MÀN HÌNH NHẬP LIỆU ==================== -->
   <div id="trang-nhap-lieu" class="workspace-container an">
-    <header class="app-header">
-      <div class="brand">
-        <img src="img/logo.svg" alt="" class="brand-logo">
-        <div class="brand-text">
-          <span class="app-title">Báo cáo định kỳ · Sở Nông nghiệp và Môi trường</span>
-          <span class="sub-title">Công tác bồi thường giải phóng mặt bằng</span>
-        </div>
-      </div>
-      <div class="user-info">
-        <div id="nhap-lieu-user-badge" class="user-badge an"></div>
-        <button id="btn-dang-xuat" class="btn-logout an">Đăng xuất</button>
-      </div>
-    </header>
-
     <div class="workspace-body">
-      <!-- Sidebar danh sách biểu được giao -->
+      <!-- Sidebar: thương hiệu + người dùng + danh sách biểu được giao -->
       <aside class="workspace-sidebar">
+        <div class="sidebar-brand">
+          <img src="img/logo.svg" alt="" class="brand-logo">
+          <div class="brand-text">
+            <span class="app-title">Báo cáo định kỳ · Sở Nông nghiệp và Môi trường</span>
+            <span class="sub-title">Công tác bồi thường giải phóng mặt bằng</span>
+          </div>
+        </div>
+        <div class="sidebar-user">
+          <div id="nhap-lieu-user-badge" class="user-badge an"></div>
+          <button id="btn-dang-xuat" class="btn-logout an">Đăng xuất</button>
+        </div>
         <div class="sidebar-section-title">Bảng báo cáo</div>
         <ul id="danh-sach-bang-sidebar" class="sidebar-tables-list"></ul>
 
         <div class="sidebar-footer">
           <a id="lien-ket-quan-tri" class="sidebar-btn an" href="quantri.html">Quản trị</a>
-          <button id="btn-mo-tab-moi" class="sidebar-btn sidebar-btn-primary">Mở bảng trong tab mới ↗</button>
+          <button id="btn-mo-tab-moi" class="sidebar-btn sidebar-btn-primary">Không tải được bảng! Bấm vào đây để nhập trên Google Sheet ↗</button>
           <button id="btn-tai-lai-iframe" class="sidebar-btn">Tải lại báo cáo ↻</button>
         </div>
       </aside>
 
       <!-- Khung chính: Iframe Google Sheet -->
       <section class="workspace-main">
-        <div class="sheet-toolbar">
-          <span id="tieu-de-bang-hien-tai" class="sheet-title">—</span>
-          <a id="lien-ket-mo-sheet" class="sheet-fallback" href="#" target="_blank" rel="noopener">Nếu không tải được bảng, bấm vào đây để nhập trên Google Sheet ↗</a>
-        </div>
-
         <div class="iframe-wrapper">
           <iframe id="khung-nhung-sheet" class="sheet-iframe" title="Google Sheet báo cáo"></iframe>
         </div>
