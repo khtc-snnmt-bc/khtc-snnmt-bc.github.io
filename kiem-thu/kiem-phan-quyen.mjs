@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-phan-quyen.mjs
 // Vai trò  : Kiểm domains trang quản trị (phan-quyen.js, ky-bao-cao.js, quan-ly-bang.js: tên bảng từ Excel)
 // Chạy     : node app/kiem-thu/kiem-phan-quyen.mjs
-// Phiên bản: 0.4.0 · Cập nhật: 07/10/2026 23:28
+// Phiên bản: 0.5.0 · Cập nhật: 09/10/2026 12:30
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -106,6 +106,18 @@ bai('gộp lô + câu báo tạo / khoá kỳ', () => {
   assert.equal(KY.tomTatTaoKy({ tenKy: '10.11.2026', tong: 0, loi: [] }), 'Đã ghi kỳ 10.11.2026. Bảng chưa giao cho đơn vị nào.');
   assert.equal(KY.tomTatKhoaKy({ tenKy: '10.11.2026', khoa: true, tong: 2, daLam: 1, khongCoTab: 1, loi: [] }),
     'Đã khoá kỳ 10.11.2026 ở 1/2 file. 1 file chưa có tab kỳ này.');
+});
+
+bai('gộp lô + câu báo tổng hợp kỳ', () => {
+  const lo1 = { tenKy: '20.11.2026', tong: 3, daDoc: 1, thieuTab: 1, loi: [], tiepTu: 2 };
+  const lo2 = { tenKy: '20.11.2026', laTong: false, tong: 3, daDoc: 1, thieuTab: 0, loi: [], tiepTu: null,
+    xong: true, soDonVi: 2, soDong: 5, dongThem: 1, khongKhop: 0, boQua: 0 };
+  const kq = KY.gopLo(KY.gopLo(null, lo1), lo2);
+  assert.equal(kq.thieuTab, 1);
+  assert.equal(KY.tomTatTongHop(kq), 'Đã tổng hợp kỳ 20.11.2026 từ 2/3 đơn vị vào file tổng (ghép 5 dòng). ' +
+    '1 file chưa có tab kỳ này. Trong đó 1 dòng đơn vị tự thêm.');
+  assert.equal(KY.tomTatTongHop({ tenKy: '20.11.2026', laTong: true, tong: 2, soDonVi: 2, soDong: 3, boQua: 1, loi: ['A: x'] }),
+    'Đã tổng hợp kỳ 20.11.2026 từ 2/2 đơn vị vào file tổng (cộng từng ô). 1 ô ghi chữ ở cột số bị bỏ qua. Lỗi: A: x');
 });
 
 bai('ngày tự khoá gợi ý (giống GAS hanKhoaMacDinh_)', () => {

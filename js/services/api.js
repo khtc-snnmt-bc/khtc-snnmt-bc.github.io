@@ -2,7 +2,7 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.15.0 · Cập nhật: 08/10/2026 22:33
+// Phiên bản: 0.16.0 · Cập nhật: 09/10/2026 12:30
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
@@ -205,6 +205,11 @@ var API = (function () {
     return goi('qtKhoaKy', { token: token, tableCode: tableCode, tenKy: tenKy, khoa: khoa, batDau: batDau }, CHO_LUU);
   }
 
+  /** Tổng hợp kỳ: đọc file đơn vị từ thứ batDau (theo lô), xong hết thì ghi tab kỳ ở file tổng. */
+  function qtTongHopKy(token, tableCode, tenKy, batDau) {
+    return goi('qtTongHopKy', { token: token, tableCode: tableCode, tenKy: tenKy, batDau: batDau }, CHO_LUU);
+  }
+
   /**
    * Tạo bảng mới: GAS dựng file tổng theo khai báo cột + ghi tab Bảng.
    * maYeuCau: mã riêng mỗi lần bấm — GAS trả HTML rồi gọi lại thì không tạo hai lần.
@@ -296,6 +301,7 @@ var API = (function () {
     qtTaoKy: qtTaoKy,
     qtKhoaKy: qtKhoaKy,
     qtXoaKy: qtXoaKy,
+    qtTongHopKy: qtTongHopKy,
     qtHanKhoaKy: qtHanKhoaKy,
     layDanhSachDonVi: layDanhSachDonVi,
     layTaiKhoan: layTaiKhoan,

@@ -1,11 +1,11 @@
 // ============================================================
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
-//            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá, ngày tự khoá), Tài khoản (Gmail theo đơn vị),
+//            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá, ngày tự khoá, tổng hợp, xoá), Tài khoản (Gmail theo đơn vị),
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.17.0 · Cập nhật: 08/10/2026 22:33
+// Phiên bản: 0.18.0 · Cập nhật: 09/10/2026 12:30
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -402,6 +402,8 @@ var PAGE_QUAN_TRI = (function () {
         }
         var nut = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, k.locked ? 'Mở khoá' : 'Khoá'));
         nut.addEventListener('click', function () { khoaMo(k, nut); });
+        var nutTh = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tổng hợp'));
+        nutTh.addEventListener('click', function () { tongHop(k, nutTh); });
         var nutXoa = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Xoá'));
         nutXoa.addEventListener('click', function () { xoaKy(k, nutXoa); });
       });
@@ -429,6 +431,22 @@ var PAGE_QUAN_TRI = (function () {
           baoKetQua(err.message, true);
         })
         .then(function () { dangChay = false; });
+    }
+
+    function tongHop(k, nut) {
+      if (dangChay) return;
+      dangChay = true;
+      nut.disabled = true;
+      bao.innerHTML = '';
+      chayTheoLo(function (batDau) {
+        return API.qtTongHopKy(token(), bang.tableCode, k.periodName, batDau);
+      }, nut, 'Đang tổng hợp')
+        .then(function (kq) { baoKetQua(KY_BAO_CAO.tomTatTongHop(kq), kq.loi.length > 0); })
+        .catch(function (err) { baoKetQua(err.message, true); })
+        .then(function () {
+          dangChay = false;
+          veDanhSach();
+        });
     }
 
     function doiHan(k, oHan) {

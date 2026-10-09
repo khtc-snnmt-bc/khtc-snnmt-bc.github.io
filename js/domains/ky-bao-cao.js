@@ -1,9 +1,9 @@
 // ============================================================
 // bcsnn · js/domains/ky-bao-cao.js
 // Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
-//            câu báo tạo/khoá/xoá kỳ (trang quản trị)
+//            câu báo tạo/khoá/xoá/tổng hợp kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.6.0 · Cập nhật: 08/10/2026 17:20
+// Phiên bản: 0.7.0 · Cập nhật: 09/10/2026 12:30
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -91,7 +91,7 @@ var KY_BAO_CAO = (function () {
   function gopLo(tong, lo) {
     if (!tong) return lo;
     var kq = Object.assign({}, lo);
-    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab', 'capNhat', 'dongThem', 'daXoa', 'fileBo'].forEach(function (k) {
+    ['daTao', 'fileMoi', 'daCo', 'daLam', 'khongCoTab', 'capNhat', 'dongThem', 'daXoa', 'fileBo', 'daDoc', 'thieuTab'].forEach(function (k) {
       if (k in lo) kq[k] = (tong[k] || 0) + lo[k];
     });
     kq.loi = (tong.loi || []).concat(lo.loi || []);
@@ -126,6 +126,18 @@ var KY_BAO_CAO = (function () {
     return chu + phanLoi(kq);
   }
 
+  /** Câu báo sau khi tổng hợp kỳ. */
+  function tomTatTongHop(kq) {
+    if (!kq.tong) return 'Bảng chưa có file đơn vị nào để tổng hợp.';
+    var chu = 'Đã tổng hợp kỳ ' + kq.tenKy + ' từ ' + (kq.soDonVi || 0) + '/' + kq.tong + ' đơn vị vào file tổng (' +
+      (kq.laTong ? 'cộng từng ô' : 'ghép ' + kq.soDong + ' dòng') + ').';
+    if (kq.thieuTab) chu += ' ' + kq.thieuTab + ' file chưa có tab kỳ này.';
+    if (kq.dongThem && kq.dongThem < kq.soDong) chu += ' Trong đó ' + kq.dongThem + ' dòng đơn vị tự thêm.';
+    if (kq.khongKhop) chu += ' ' + kq.khongKhop + ' dòng của đơn vị không khớp bảng tổng (bảng tổng đã sửa sau khi tạo kỳ?) — chưa được tính.';
+    if (kq.boQua) chu += ' ' + kq.boQua + ' ô ghi chữ ở cột số bị bỏ qua.';
+    return chu + phanLoi(kq);
+  }
+
   function phanLoi(kq) {
     var loi = (kq.loi || []).concat((kq.quyen && kq.quyen.loi) || []);
     return loi.length ? ' Lỗi: ' + loi.join(' · ') : '';
@@ -134,6 +146,6 @@ var KY_BAO_CAO = (function () {
   return {
     taoUrlSheet: taoUrlSheet, dsFileBang: dsFileBang,
     kyCuaBang: kyCuaBang, datKy: datKy, boKy: boKy, ngayChoO: ngayChoO, hanKhoaGoiY: hanKhoaGoiY, gopLo: gopLo,
-    tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy, tomTatXoaKy: tomTatXoaKy
+    tomTatTaoKy: tomTatTaoKy, tomTatKhoaKy: tomTatKhoaKy, tomTatXoaKy: tomTatXoaKy, tomTatTongHop: tomTatTongHop
   };
 })();
