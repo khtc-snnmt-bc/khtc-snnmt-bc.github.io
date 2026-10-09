@@ -3,7 +3,7 @@
    Giao diện WebApp Báo cáo định kỳ Sở NN&MT
    Ba trang chung một phong cách: nền xanh chuyển màu, thẻ trắng bo tròn.
    giaodien.pptx chỉ là ý tưởng bố cục — không chép y hệt.
-   Phiên bản: 0.17.2 · Cập nhật: 09/10/2026 12:30
+   Phiên bản: 0.17.3 · Cập nhật: 09/10/2026 12:55
    ============================================================ */
 
 :root {
@@ -1049,12 +1049,31 @@ a.sidebar-btn {
 
 .qt-ds-ky:empty { display: none; }
 
+.qt-khung:has(.qt-ds-ky) { max-width: 960px; }
+
 .qt-ky {
   display: grid;
-  grid-template-columns: 1fr auto 240px 136px auto auto;
+  grid-template-columns: minmax(90px, 1fr) auto 240px auto;
   align-items: center;
   gap: 14px;
   padding: 10px 14px;
+}
+
+/* Khoá · Tổng hợp · Xoá — nút Khoá giữ bề rộng khi chữ đổi "Mở khoá" */
+.qt-ky-nut {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.qt-ky-nut .qt-nut-them:first-child { min-width: 96px; }
+
+/* Khung hẹp (màn hình vừa, hoặc thanh menu chiếm chỗ): ngày tự khoá + nút xuống hàng 2 */
+@media (max-width: 1100px) {
+  .qt-ky { grid-template-columns: 1fr auto; }
+  .qt-ky-tt { justify-self: end; }
+  .qt-ky-han:empty { display: none; }
+  .qt-ky-han:empty + .qt-ky-nut { grid-column: 1 / -1; }
 }
 
 .qt-ky + .qt-ky { border-top: 1px solid var(--border); }
@@ -1267,8 +1286,6 @@ a.sidebar-btn {
   .qt-bang-ten { grid-column: 1 / -1; }
   .qt-gmail, .qt-khoi .qt-gmail { grid-template-columns: 1fr 36px; }
   .qt-gmail select { grid-row: 2; }
-  .qt-ky { grid-template-columns: 1fr auto; }
-  .qt-ky-han:empty { display: none; }
 }
 
 .spinner {

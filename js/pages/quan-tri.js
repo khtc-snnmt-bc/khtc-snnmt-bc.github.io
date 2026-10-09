@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.18.0 · Cập nhật: 09/10/2026 12:30
+// Phiên bản: 0.18.1 · Cập nhật: 09/10/2026 12:55
 // ============================================================
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
@@ -400,11 +400,12 @@ var PAGE_QUAN_TRI = (function () {
           var oHan = han.appendChild(DOM.tao('input', { type: 'date', class: 'form-control', value: KY_BAO_CAO.ngayChoO(k.lockDate) }));
           oHan.addEventListener('change', function () { doiHan(k, oHan); });
         }
-        var nut = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, k.locked ? 'Mở khoá' : 'Khoá'));
+        var cumNut = hang.appendChild(DOM.tao('div', { class: 'qt-ky-nut' }));
+        var nut = cumNut.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, k.locked ? 'Mở khoá' : 'Khoá'));
         nut.addEventListener('click', function () { khoaMo(k, nut); });
-        var nutTh = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tổng hợp'));
+        var nutTh = cumNut.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tổng hợp'));
         nutTh.addEventListener('click', function () { tongHop(k, nutTh); });
-        var nutXoa = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Xoá'));
+        var nutXoa = cumNut.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Xoá'));
         nutXoa.addEventListener('click', function () { xoaKy(k, nutXoa); });
       });
     }
