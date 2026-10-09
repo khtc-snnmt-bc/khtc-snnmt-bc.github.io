@@ -2,7 +2,7 @@
 // bcsnn · gas/TongHop.js
 // Vai trò  : Tổng hợp kỳ — gom số tab kỳ ở mọi file đơn vị về tab kỳ cùng tên ở file tổng
 // Lớp      : gas — gọi bởi: Code.js · gọi: KyBaoCao.js, DangNhap.js, PhanQuyen.js
-// Phiên bản: 0.2.0 · Cập nhật: 09/10/2026 13:05
+// Phiên bản: 0.3.0 · Cập nhật: 09/10/2026 13:45
 // ============================================================
 // File tổng chỉ xem: số nhập ở file đơn vị, tổng hợp gom MỘT CHIỀU về file tổng (thiết kế 4.4).
 //   Cộng (aggregateType 'tong'): mỗi ô nhập của dòng mẫu = tổng số của các đơn vị có dòng đó
@@ -15,7 +15,9 @@
 // Dòng đơn vị tự thêm: chép GIÁ TRỊ (công thức file đơn vị có thể khác vùng → khác dấu ngăn);
 // cột công thức dùng công thức của dòng mẫu đứng trước nó (R1C1 — cùng dòng).
 // Tab kỳ ở file tổng dựng lại mỗi lần (chép tab mẫu) → bấm lại an toàn; công thức ở tab khác
-// trỏ vào tab kỳ sẽ thành #REF!. Cài đặt bảng aggregateKeep = giaTri → xong thì đổi mọi công thức của tab thành giá trị.
+// trỏ vào tab kỳ sẽ thành #REF!. Cài đặt bảng aggregateKeep: giaTri → xong thì đổi mọi công thức của tab
+// thành giá trị · congThuc (mặc định) ở bảng Cộng → ô cột số = N(IMPORTRANGE(file đơn vị))+… , tự cập nhật;
+// file tổng tự được "Cho phép truy cập" từng file đơn vị (choPhepNhapTu_).
 // Theo lô: mỗi lần đọc tối đa KY_MS_TOI_DA, cất từng đơn vị vào CacheService (6 giờ), trả tiepTu;
 // đọc xong hết mới ghi file tổng (đọc đã lâu thì để lần gọi sau ghi).
 
@@ -148,30 +150,56 @@ function chuO_(v) {
  * dòng đó. Không đơn vị nào ghi số mà có chữ → "mã: chữ" mỗi đơn vị một dòng; chữ y như ô mẫu
  * (tên chỉ tiêu chép xuống, đơn vị không sửa) thì bỏ. boQua = ô chữ bị bỏ vì đơn vị khác ghi số.
  */
-function khoiTong_(mau, dsDv, cotNhap, dongNhap) {
+function khoiTong_(mau, dsDv, cotNhap, dongNhap, lienKet) {
   var gt = [], ct = [], boQua = 0;
+  var cotSo = lienKet ? cotCoSo_(mau, dsDv, cotNhap, dongNhap) : [];
   (mau.gt || []).forEach(function (dongGt, j) {
     var dong = mau.dongTieuDe + 1 + j;
     var hang = duCot_(dongGt, mau.soCot), cth = duCot_(mau.ct[j], mau.soCot);
     if (dongNhap.indexOf(dong) >= 0) {
       cotNhap.forEach(function (c) {
         if (cth[c - 1]) return;
-        var tong = 0, coSo = false, chu = [], chuMau = chuO_(hang[c - 1]).trim();
+        var tong = 0, coSo = false, chu = [], nguon = [], chuMau = chuO_(hang[c - 1]).trim();
         dsDv.forEach(function (d) {
           var i = d.anhXa[dong];
           if (i === undefined) return;
+          nguon.push({ fileId: d.fileId, dong: d.dongTieuDe + 1 + Number(i) });
           var v = docGiaTri_(duCot_(d.hang[i], mau.soCot)[c - 1]);
           if (typeof v === 'number') { tong += v; coSo = true; }
           else if (v !== '' && v !== null && v !== undefined && chuO_(v).trim() !== chuMau) chu.push(d.ma + ': ' + chuO_(v));
         });
         if (coSo) { hang[c - 1] = Math.round(tong * 1e9) / 1e9; boQua += chu.length; }
         else if (chu.length) hang[c - 1] = chu.join('\n');
+        if (cotSo.indexOf(c) >= 0 && nguon.length) cth[c - 1] = congThucLienKet_(nguon, c, lienKet.tenKy, lienKet.ngan);
       });
     }
     gt.push(hang);
     ct.push(cth);
   });
   return { gt: gt, ct: ct, boQua: boQua };
+}
+
+/** Cột nhập là cột số: có đơn vị ghi số ở ô nhập nào đó của cột (cột chữ giữ cách ghép "mã: chữ"). */
+function cotCoSo_(mau, dsDv, cotNhap, dongNhap) {
+  return cotNhap.filter(function (c) {
+    return dsDv.some(function (d) {
+      return dongNhap.some(function (dong) {
+        var i = d.anhXa[dong];
+        return i !== undefined && typeof docGiaTri_(duCot_(d.hang[i], mau.soCot)[c - 1]) === 'number';
+      });
+    });
+  });
+}
+
+/**
+ * Bảng Cộng, cài đặt "Công thức trỏ file đơn vị": ô tổng = cộng ô cùng chỗ ở tab kỳ từng file đơn vị.
+ * N() đổi ô trống / chữ thành 0. Viết R1C1 được vì địa chỉ nằm trong chuỗi. ngan: ';' (vùng vi) hoặc ','.
+ * @param {Array<{fileId, dong}>} nguon — dòng (số dòng Sheet) của ô ở từng file đơn vị
+ */
+function congThucLienKet_(nguon, cot, tenKy, ngan) {
+  return '=' + nguon.map(function (n) {
+    return 'N(IMPORTRANGE("' + n.fileId + '"' + ngan + '"\'' + tenKy + '\'!' + chuCot_(cot) + n.dong + '"))';
+  }).join('+');
 }
 
 /** Dòng mẫu của đơn vị không tìm thấy ở tab kỳ của nó + dòng đơn vị không khớp mẫu (bảng Cộng). */
@@ -227,7 +255,18 @@ function docDonViTongHop_(file, tenKy, mau, caiDat, ma) {
   Object.keys(khop.anhXa).map(function (k) { return khop.anhXa[k]; }).concat(khop.thua).forEach(function (i) {
     hang[i] = duCot_(gt[i], mau.soCot).map(luuGiaTri_);
   });
-  return { ma: ma, anhXa: khop.anhXa, thua: khop.thua, hang: hang };
+  return { ma: ma, dongTieuDe: dongTieuDe, anhXa: khop.anhXa, thua: khop.thua, hang: hang };
+}
+
+/**
+ * Cho file tổng đọc file đơn vị qua IMPORTRANGE — thay người bấm "Cho phép truy cập" (Google đòi
+ * cho từng cặp file, kể cả cùng chủ). Điểm gọi này Google không ghi trong tài liệu; gọi lại vô hại.
+ */
+function choPhepNhapTu_(idTong, idDv) {
+  var res = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + idTong +
+    '/externaldata/addimportrangepermissions?donorDocId=' + idDv,
+    { method: 'post', headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('file tổng chưa được phép đọc file này (mã ' + res.getResponseCode() + ')');
 }
 
 /** Dựng lại tab kỳ ở file tổng (chép tab mẫu), ghi khối dòng dữ liệu; chiGiaTri → mọi ô công thức của tab thành giá trị. */
@@ -290,6 +329,8 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
   var cache = CacheService.getScriptCache();
   var kq = { ok: true, tenKy: tenKy, laTong: caiDat.aggregateType === 'tong', tong: giao.length,
     daDoc: 0, thieuTab: 0, loi: [], tiepTu: null };
+  // Bảng Cộng giữ công thức: ô số = công thức cộng thẳng từ file đơn vị (IMPORTRANGE)
+  var lienKet = kq.laTong && caiDat.aggregateKeep !== TH_GIA_TRI;
 
   var bd = Number(batDau) || 0;
   for (var i = bd; i < giao.length; i++) {
@@ -297,6 +338,7 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
     var g = giao[i], du;
     try {
       du = docDonViTongHop_(SpreadsheetApp.openById(g.fileId), tenKy, mau, caiDat, g.unitCode);
+      if (lienKet && !du.thieu) choPhepNhapTu_(caiDat.templateFileId, g.fileId);
     } catch (err) {
       du = { ma: g.unitCode, loi: true };
       kq.loi.push(g.unitCode + ': ' + String(err.message || err));
@@ -318,7 +360,9 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
     var s = daCat[khoa[j]];
     if (!s) { kq.loi.push(g.unitCode + ': chưa đọc được (bộ đệm đã hết hạn) — bấm Tổng hợp lại'); return; }
     var du = JSON.parse(s);
-    if (!du.thieu && !du.loi) dsDv.push(du);
+    if (du.thieu || du.loi) return;
+    du.fileId = g.fileId;
+    dsDv.push(du);
   });
 
   var laTach = caiDat.sourceType === 'gopTach';
@@ -327,7 +371,8 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
   var ra, khoi;
   if (kq.laTong) {
     ra = mau.gt.map(function (r, j) { return { mau: mau.dongTieuDe + 1 + j, dv: -1 }; });
-    khoi = khoiTong_(mau, dsDv, cotNhap, dongNhap);
+    khoi = khoiTong_(mau, dsDv, cotNhap, dongNhap, lienKet
+      ? { tenKy: tenKy, ngan: nganCongThuc_(fileTong) } : null);
   } else {
     ra = keHoachGhep_(mau.cotA, mau.dongTieuDe, laTach, dsDv);
     khoi = khoiGhep_(ra, mau, dsDv, cotNhap, dongNhap);
@@ -335,6 +380,7 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
   ghiTabTong_(fileTong, mau, tenKy, ra, khoi, !kq.laTong, caiDat.aggregateKeep === TH_GIA_TRI);
   kq.xong = true;
   kq.chiGiaTri = caiDat.aggregateKeep === TH_GIA_TRI;
+  kq.lienKet = lienKet;
   kq.soDonVi = dsDv.length;
   kq.soDong = khoi.gt.length;
   kq.dongThem = ra.filter(function (r) { return r.moi; }).length;

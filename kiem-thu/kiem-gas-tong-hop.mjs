@@ -13,7 +13,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n' + doc('TongHop.js') +
-  '\n;this.ham = { luuGiaTri_, docGiaTri_, dongNhapMau_, khopDongDv_, keHoachGhep_, khoiGhep_, khoiTong_, demKhongKhop_ };',
+  '\n;this.ham = { luuGiaTri_, docGiaTri_, dongNhapMau_, khopDongDv_, keHoachGhep_, khoiGhep_, khoiTong_, demKhongKhop_, congThucLienKet_, chuanGiuTongHop_ };',
   sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
@@ -137,6 +137,28 @@ bai('Cộng: cột chữ là cột nhập (tên chỉ tiêu) — chữ y như m�
   const khoi = h.khoiTong_(mauTong, ds, [2, 3, 4], [2]);
   assert.deepEqual(sach(khoi.gt[0]), ['all', 'P3: Lúa mùa', 6, '']);
   assert.deepEqual(sach(h.khoiTong_(mauTong, ds.slice(0, 2), [2, 3], [2]).gt[0]), ['all', 'Lúa', 3, '']);
+});
+
+bai('Cộng, công thức trỏ file đơn vị: cột số thành =N(IMPORTRANGE)+…; cột chữ, ô công thức mẫu giữ nguyên', () => {
+  assert.equal(h.congThucLienKet_([{ fileId: 'F1', dong: 2 }, { fileId: 'F2', dong: 4 }], 3, '20.11.2026', ';'),
+    '=N(IMPORTRANGE("F1";"\'20.11.2026\'!C2"))+N(IMPORTRANGE("F2";"\'20.11.2026\'!C4"))');
+  // P2 có dòng tiêu đề ở dòng 3 (lệch 2 dòng so với P1) → địa chỉ theo tab của chính nó
+  const ds = [
+    { ma: 'P1', fileId: 'F1', dongTieuDe: 1, anhXa: { 2: 0, 3: 1 }, thua: [], hang: { 0: ['P1', 'Lúa', 1, 'a'], 1: ['P1', 'Ngô', '', ''] } },
+    { ma: 'P2', fileId: 'F2', dongTieuDe: 3, anhXa: { 2: 0 }, thua: [], hang: { 0: ['P2', 'Lúa', 2, ''] } }
+  ];
+  const khoi = h.khoiTong_(mauTong, ds, [2, 3, 4], [2, 3, 4], { tenKy: '20.11.2026', ngan: ';' });
+  assert.equal(khoi.gt[0][2], 3);   // giá trị tạm trước khi công thức tính
+  assert.equal(khoi.ct[0][2], '=N(IMPORTRANGE("F1";"\'20.11.2026\'!C2"))+N(IMPORTRANGE("F2";"\'20.11.2026\'!C4"))');
+  assert.equal(khoi.ct[1][2], '=N(IMPORTRANGE("F1";"\'20.11.2026\'!C3"))');   // Ngô: chỉ P1 có dòng
+  assert.equal(khoi.ct[2][2], 'SUM');                                          // ô công thức của mẫu
+  assert.equal(khoi.ct[0][1], '');                                             // cột chữ: không công thức
+  assert.equal(khoi.ct[0][3], '');
+  assert.equal(khoi.gt[0][3], 'P1: a');
+  // không cài → như cũ, không công thức
+  assert.equal(h.khoiTong_(mauTong, ds, [2, 3, 4], [2, 3, 4]).ct[0][2], '');
+  assert.deepEqual([h.chuanGiuTongHop_('congThuc'), h.chuanGiuTongHop_(' giaTri '), h.chuanGiuTongHop_('x')],
+    ['congThuc', 'giaTri', 'congThuc']);
 });
 
 bai('đếm dòng không khớp: dòng mẫu của đơn vị thiếu ở tab + dòng thừa ở bảng Cộng', () => {

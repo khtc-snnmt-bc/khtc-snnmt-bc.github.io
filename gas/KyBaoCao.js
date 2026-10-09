@@ -32,7 +32,8 @@ var TU_KHOA_TIEP = 'TU_KHOA_TIEP';   // Script Properties: chỗ dừng của l�
 // cập nhật = chép tab kỳ trước của chính file đơn vị (giữ số), thêm dòng mẫu mới
 var KY_NHAP_MOI = 'nhapMoi';
 var KY_CAP_NHAT = 'capNhat';
-// Tổng hợp (cài đặt bảng aggregateKeep — TongHop.js): tab kỳ file tổng giữ công thức mẫu, hay chỉ giá trị
+// Tổng hợp (cài đặt bảng aggregateKeep — TongHop.js): tab kỳ file tổng giữ công thức (bảng Cộng: ô số = công
+// thức cộng thẳng từ file đơn vị), hay chỉ giá trị
 var TH_CONG_THUC = 'congThuc';
 var TH_GIA_TRI = 'giaTri';
 
@@ -281,8 +282,13 @@ function docCaiDat_(tieuDe, dong) {
   caiDat.hiddenCols = String(caiDat.hiddenCols || '').trim();
   caiDat.periodMode = String(caiDat.periodMode || '').trim() === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   caiDat.shareType = chuanChiaSe_(caiDat.shareType);
-  caiDat.aggregateKeep = String(caiDat.aggregateKeep || '').trim() === TH_GIA_TRI ? TH_GIA_TRI : TH_CONG_THUC;
+  caiDat.aggregateKeep = chuanGiuTongHop_(caiDat.aggregateKeep);
   return caiDat;
+}
+
+/** Ô "Khi tổng hợp" của bảng → congThuc (mặc định) · giaTri. */
+function chuanGiuTongHop_(o) {
+  return String(o || '').trim() === TH_GIA_TRI ? TH_GIA_TRI : TH_CONG_THUC;
 }
 
 function laDung_(o) {

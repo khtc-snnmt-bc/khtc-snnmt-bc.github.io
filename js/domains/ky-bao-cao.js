@@ -130,7 +130,8 @@ var KY_BAO_CAO = (function () {
   function tomTatTongHop(kq) {
     if (!kq.tong) return 'Bảng chưa có file đơn vị nào để tổng hợp.';
     var chu = 'Đã tổng hợp kỳ ' + kq.tenKy + ' từ ' + (kq.soDonVi || 0) + '/' + kq.tong + ' đơn vị vào file tổng (' +
-      (kq.laTong ? 'cộng từng ô' : 'ghép ' + kq.soDong + ' dòng') + (kq.chiGiaTri ? ', chỉ giữ giá trị' : '') + ').';
+      (kq.laTong ? 'cộng từng ô' : 'ghép ' + kq.soDong + ' dòng') + (kq.chiGiaTri ? ', chỉ giữ giá trị' : '') +
+      (kq.lienKet ? ', ô số là công thức cộng thẳng từ file đơn vị' : '') + ').';
     if (kq.thieuTab) chu += ' ' + kq.thieuTab + ' file chưa có tab kỳ này.';
     if (kq.dongThem && kq.dongThem < kq.soDong) chu += ' Trong đó ' + kq.dongThem + ' dòng đơn vị tự thêm.';
     if (kq.khongKhop) chu += ' ' + kq.khongKhop + ' dòng của đơn vị không khớp bảng tổng (bảng tổng đã sửa sau khi tạo kỳ?) — chưa được tính.';

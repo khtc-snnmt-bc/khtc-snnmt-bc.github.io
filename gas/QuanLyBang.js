@@ -200,7 +200,7 @@ function kiemCaiDatSua_(cd, dsMaLinhVuc) {
   if (kq.hiddenCols && !hopLeDsCot_(kq.hiddenCols)) return { loi: 'Cột ẩn ở file đơn vị ghi chữ cột, ví dụ B, D:E' };
   kq.periodMode = cd.periodMode === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   kq.shareType = chuanChiaSe_(cd.shareType);
-  kq.aggregateKeep = cd.aggregateKeep === TH_GIA_TRI ? TH_GIA_TRI : TH_CONG_THUC;
+  kq.aggregateKeep = chuanGiuTongHop_(cd.aggregateKeep);
   return { caiDat: kq };
 }
 
