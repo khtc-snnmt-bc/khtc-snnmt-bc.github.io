@@ -4,7 +4,7 @@
 //            cách nhập dòng / tổng hợp, kiểu kỳ, cách đơn vị vào nhập, số đơn vị có file,
 //            câu báo kiểm mẫu / đủ file + tab kỳ / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 20:10
+// Phiên bản: 0.10.1 · Cập nhật: 10/10/2026 20:40
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -25,11 +25,11 @@ var QUAN_LY_BANG = (function () {
     { ma: 'gopTach', ten: 'Sở giao dòng sẵn' }
   ];
 
-  // Thiết kế 4.4. Cộng / Ghép cột: mọi đơn vị cùng các dòng (cột A = all) → luôn Sở giao dòng
+  // Thiết kế 4.4. Cộng / Chia theo xã: mọi đơn vị cùng các dòng (cột A = all) → luôn Sở giao dòng
   var CACH_TONG_HOP = [
     { ma: 'ghep', ten: 'Ghép dòng các đơn vị' },
     { ma: 'tong', ten: 'Cộng các đơn vị' },
-    { ma: 'cot', ten: 'Ghép cột các đơn vị' }
+    { ma: 'cot', ten: 'Tổng hợp chia theo xã, phường, đặc khu' }
   ];
 
   /** Cách tổng hợp mà mọi đơn vị nhận cùng các dòng */

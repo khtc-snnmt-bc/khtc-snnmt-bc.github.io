@@ -141,7 +141,9 @@ bai('cài đặt sửa trên app', () => {
   assert.equal(kq.caiDat.byUnitCols, '');                                // Ghép cột (b11)
   assert.equal(cdDung({ aggregateType: 'cot', byUnitCols: ' e:j ' }).byUnitCols, 'E:J');
   assert.equal(cdDung({ aggregateType: 'cot' }).sourceType, 'gopTach');
-  assert.ok(cdSai({ byUnitCols: 'E-J' }).includes('Cột ghép theo đơn vị'));
+  assert.ok(cdSai({ byUnitCols: 'E-J' }).includes('Cột chia theo xã'));
+  assert.deepEqual([kq.caiDat.cityTotal, cdDung({ cityTotal: true }).cityTotal, cdDung({ cityTotal: 'x' }).cityTotal], [false, true, false]);
+  assert.equal(sach(h.docCaiDat_(['tableCode', 'cityTotal'], ['a', 'TRUE'])).cityTotal, true);
 });
 
 const cd = (doi) => Object.assign({ sourceType: 'gopTach', inputCols: 'C:D', inputRows: '', lockedRows: '', noteTabs: [], dataRows: '' }, doi);
@@ -226,7 +228,7 @@ bai('cài đặt cho trang: chữ hoá, noteTabs nối lại', () => {
   assert.deepEqual(Object.keys(kq), ['a']);
   assert.deepEqual(kq.a, { templateFileId: 'ID', sourceType: 'docLap', inputCols: 'C:J', inputRows: '5', lockedRows: '',
     allowAddRows: true, noteTabs: 'X, Y', dataRows: '20', aggregateType: 'ghep', lockDay: '',
-    hiddenCols: '', periodMode: 'nhapMoi', shareType: 'moi', aggregateKeep: 'congThuc', byUnitCols: '' });
+    hiddenCols: '', periodMode: 'nhapMoi', shareType: 'moi', aggregateKeep: 'congThuc', byUnitCols: '', cityTotal: false });
 });
 
 bai('tải Excel: mã bảng, file .xlsx, cỡ file, cài đặt như Sửa', () => {

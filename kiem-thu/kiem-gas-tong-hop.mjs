@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-tong-hop.mjs
 // Vai trò  : Kiểm hàm thuần Tổng hợp kỳ phía GAS (khớp dòng đơn vị, bảng Ghép, bảng Cộng)
 // Chạy     : node app/kiem-thu/kiem-gas-tong-hop.mjs
-// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 20:10
+// Phiên bản: 0.4.0 · Cập nhật: 10/10/2026 20:40
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +13,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n' + doc('TongHop.js') +
-  '\n;this.ham = { luuGiaTri_, docGiaTri_, dongNhapMau_, khopDongDv_, keHoachGhep_, khoiGhep_, khoiTong_, demKhongKhop_, congThucLienKet_, chuanGiuTongHop_, bangTheoDonVi_, locChuTri_, cotChuTri_, cotToanChu_ };',
+  '\n;this.ham = { luuGiaTri_, docGiaTri_, dongNhapMau_, khopDongDv_, keHoachGhep_, khoiGhep_, khoiTong_, demKhongKhop_, congThucLienKet_, chuanGiuTongHop_, bangTheoDonVi_, locChuTri_, cotChuTri_, cotToanChu_, congThucTp_, dichCongThucTp_ };',
   sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
@@ -179,13 +179,33 @@ bai('bảng Ghép cột: mỗi đơn vị một cụm cột, không cộng; đơ
   assert.deepEqual(b.cotNhan, [2, 5]);
   assert.deepEqual(b.dau1, ['Chỉ tiêu', ' đơn vị chủ trì ', 'Xã 1', '', 'Xã 2', '']);
   assert.deepEqual(b.dau2, ['', '', '(1)', '(2)', '(1)', '(2)']);
-  assert.deepEqual(b.khoi, [{ tu: 3, so: 2 }, { tu: 5, so: 2 }]);
+  assert.deepEqual(b.khoi, [{ tu: 3, so: 2, tp: false }, { tu: 5, so: 2, tp: false }]);
   assert.deepEqual(b.gt, [['Lúa', 'TT', 1, 2, '', ''], ['Bò', 'CN', 5, 6, '', '']]);
   assert.equal(h.cotChuTri_(mau, b.cotNhan), 5);
   assert.equal(h.cotChuTri_(mau, [2]), 0);
   assert.deepEqual(sach(h.locChuTri_(b, 5, 'CN')), [['Bò', 'CN', 5, 6, '', '']]);
   assert.deepEqual(sach(h.locChuTri_(b, 5, 'BVMT')), []);
   assert.deepEqual(sach(h.locChuTri_(b, 9, 'CN')), []);
+  // cụm Toàn thành phố đứng trước các đơn vị, ô để trống (công thức ghi sau)
+  const t = sach(h.bangTheoDonVi_(mau, dsDv, [3, 4], true));
+  assert.deepEqual(t.dau1, ['Chỉ tiêu', ' đơn vị chủ trì ', 'Toàn thành phố', '', 'Xã 1', '', 'Xã 2', '']);
+  assert.deepEqual(t.khoi, [{ tu: 3, so: 2, tp: true }, { tu: 5, so: 2, tp: false }, { tu: 7, so: 2, tp: false }]);
+  assert.deepEqual(t.gt[1], ['Bò', 'CN', '', '', 5, 6, '', '']);
+});
+
+bai('Toàn thành phố: ô nhập = cộng các cụm đơn vị; công thức mẫu trong cụm giữ, trỏ ra ngoài cụm → trống', () => {
+  // mẫu: E (1) nhập · F (2) nhập · G % = F/K (K ngoài cụm); dòng 4 năng suất = R[-1]C*10/R[-2]C (dòng khoá)
+  const mau = { dongTieuDe: 2, gt: [['all'], ['all'], ['all']],
+    ct: [[], [], ['', '', '', '', '=IFERROR(R[-1]C*10/R[-2]C,"")', '', '=IFERROR(RC[-1]/RC[4]*100,"")']] };
+  const ct = sach(h.congThucTp_(mau, [5, 6, 7], [5, 6], [3, 4], 2, ','));
+  const cong = '=IF(COUNT(RC[3],RC[6])=0,"",SUM(RC[3],RC[6]))';
+  assert.deepEqual(ct[0], [cong, cong, '']);
+  assert.deepEqual(ct[2], ['=IFERROR(R[-1]C*10/R[-2]C,"")', '', '']);
+  assert.equal(h.dichCongThucTp_('=RC[1]+R[2]C[-1]', 6, [5, 6, 7]), '=RC[1]+R[2]C[-1]');
+  assert.equal(h.dichCongThucTp_('=RC[1]', 6, [5, 6, 8]), '', 'cột 7 không có trong cụm');
+  assert.equal(h.dichCongThucTp_('=R3C5', 5, [5, 6]), '', 'tham chiếu tuyệt đối');
+  assert.equal(h.dichCongThucTp_('=IFERROR(SUM(RC),"")', 5, [5]), '=IFERROR(SUM(RC),"")');
+  assert.deepEqual(sach(h.congThucTp_(mau, [5], [5], [3], 0, ','))[0], ['']);
 });
 
 bai('cột toàn chữ (đặt kiểu chữ trước khi ghi — "1.1.1" không thành ngày); cột có số / ngày giữ nguyên', () => {

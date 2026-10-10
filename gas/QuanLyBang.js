@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            bảng mới từ Excel tải lên, xoá bảng, kiểm bảng đủ file đơn vị + đủ tab kỳ
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 20:10
+// Phiên bản: 0.10.1 · Cập nhật: 10/10/2026 20:40
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -14,7 +14,7 @@
 // khung, quản trị điền dòng (mã đơn vị ở cột A) trong file tổng rồi Kiểm mẫu.
 // Cột A bảng Sở giao dòng có danh sách chọn: 'all' + mã đơn vị, để trống được.
 // Cách tổng hợp (thiết kế 4.4): 'ghep' ghép dòng các đơn vị · 'tong' cộng từng ô · 'cot' ghép cột
-// (mỗi đơn vị một cụm cột byUnitCols, b11) — Cộng và Ghép cột thì mọi đơn vị nhận cùng các dòng
+// = chia theo xã (mỗi đơn vị một cụm cột byUnitCols, b11) — Cộng và chia theo xã: mọi đơn vị cùng các dòng
 // (cột A = 'all'), luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
 // Sửa mẫu sau khi đã tạo kỳ thì tab kỳ đã sinh không đổi.
 
@@ -175,7 +175,8 @@ function kiemCaiDatSua_(cd) {
   kq.shareType = chuanChiaSe_(cd.shareType);
   kq.aggregateKeep = chuanGiuTongHop_(cd.aggregateKeep);
   kq.byUnitCols = String(cd.byUnitCols || '').trim().toUpperCase();
-  if (kq.byUnitCols && !hopLeDsCot_(kq.byUnitCols)) return { loi: 'Cột ghép theo đơn vị ghi chữ cột, ví dụ E:J' };
+  if (kq.byUnitCols && !hopLeDsCot_(kq.byUnitCols)) return { loi: 'Cột chia theo xã ghi chữ cột, ví dụ E:J' };
+  kq.cityTotal = cd.cityTotal === true;
   return { caiDat: kq };
 }
 
@@ -582,7 +583,7 @@ function caiDatChoTrang_(gtBang) {
       inputRows: chu(cd.inputRows), lockedRows: chu(cd.lockedRows), allowAddRows: cd.allowAddRows,
       noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType,
       lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode, shareType: cd.shareType,
-      aggregateKeep: cd.aggregateKeep, byUnitCols: chu(cd.byUnitCols)
+      aggregateKeep: cd.aggregateKeep, byUnitCols: chu(cd.byUnitCols), cityTotal: cd.cityTotal
     };
   }
   return kq;

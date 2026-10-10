@@ -3,7 +3,7 @@
 // Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
 //            câu báo tạo/khoá/xoá/tổng hợp kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.8.0 · Cập nhật: 10/10/2026 20:10
+// Phiên bản: 0.8.1 · Cập nhật: 10/10/2026 20:40
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -130,7 +130,8 @@ var KY_BAO_CAO = (function () {
   function tomTatTongHop(kq) {
     if (!kq.tong) return 'Bảng chưa có file đơn vị nào để tổng hợp.';
     var chu = 'Đã tổng hợp kỳ ' + kq.tenKy + ' từ ' + (kq.soDonVi || 0) + '/' + kq.tong + ' đơn vị vào file tổng (' +
-      (kq.laCot ? 'ghép cột, mỗi đơn vị một cụm cột' + (kq.soTab ? '; thêm ' + kq.soTab + ' tab theo đơn vị chủ trì' : '')
+      (kq.laCot ? 'chia theo xã, phường, đặc khu' + (kq.coTp ? ', có cộng toàn thành phố' : '') +
+          (kq.soTab ? '; thêm ' + kq.soTab + ' tab theo đơn vị chủ trì' : '')
         : kq.laTong ? 'cộng từng ô' : 'ghép ' + kq.soDong + ' dòng') + (kq.chiGiaTri ? ', chỉ giữ giá trị' : '') +
       (kq.lienKet ? ', ô số là công thức cộng thẳng từ file đơn vị' : '') + ').';
     if (kq.thieuTab) chu += ' ' + kq.thieuTab + ' file chưa có tab kỳ này.';

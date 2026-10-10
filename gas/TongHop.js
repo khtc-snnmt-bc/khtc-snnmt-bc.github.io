@@ -2,7 +2,7 @@
 // bcsnn · gas/TongHop.js
 // Vai trò  : Tổng hợp kỳ — gom số tab kỳ ở mọi file đơn vị về tab kỳ cùng tên ở file tổng
 // Lớp      : gas — gọi bởi: Code.js · gọi: KyBaoCao.js, DangNhap.js, PhanQuyen.js
-// Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 20:10
+// Phiên bản: 0.6.0 · Cập nhật: 10/10/2026 20:40
 // ============================================================
 // File tổng chỉ xem: số nhập ở file đơn vị, tổng hợp gom MỘT CHIỀU về file tổng (thiết kế 4.4).
 //   Cộng (aggregateType 'tong'): mỗi ô nhập của dòng mẫu = tổng số của các đơn vị có dòng đó
@@ -10,9 +10,10 @@
 //   Ghép ('ghep'): dòng mẫu mang mã đơn vị → điền ô nhập từ dòng tương ứng của đơn vị; dòng 'all'
 //     → mỗi đơn vị một dòng; dòng đơn vị tự thêm → chèn sau dòng cuối của đơn vị đó. Bảng tự
 //     nhập dòng: nối dòng có chữ của mọi đơn vị theo thứ tự tab File.
-//   Ghép cột ('cot', b11): dòng = dòng mẫu, mỗi đơn vị một cụm cột (byUnitCols, trống = inputCols),
-//     tiêu đề 2 dòng (tên đơn vị gộp ô · tên cột), chỉ giá trị. Mẫu có cột "Đơn vị chủ trì" → thêm tab
-//     mỗi đơn vị Quản lý báo cáo của bảng, chỉ dòng ghi mã của nó (ghi đè mỗi lần tổng hợp).
+//   Chia theo xã ('cot', b11): dòng = dòng mẫu, mỗi đơn vị một cụm cột (byUnitCols, trống = inputCols),
+//     tiêu đề 2 dòng (tên đơn vị gộp ô · tên cột), giá trị; cityTotal → cụm "Toàn thành phố" đứng đầu
+//     = công thức SUM các cụm đơn vị. Mẫu có cột "Đơn vị chủ trì" → thêm tab mỗi đơn vị Quản lý báo
+//     cáo của bảng, chỉ dòng ghi mã của nó (ghi đè mỗi lần tổng hợp).
 // Khớp dòng đơn vị ↔ dòng mẫu theo chữ ở cột khung (như kỳ Cập nhật — KyBaoCao.js cotKhung_).
 // Chỉ ghi ô nhập (cột nhập × dòng nhập, trừ dòng khoá); ô công thức giữ công thức của mẫu.
 // Dòng đơn vị tự thêm: chép GIÁ TRỊ (công thức file đơn vị có thể khác vùng → khác dấu ngăn);
@@ -27,6 +28,8 @@
 var TH_NHAN_CHU_TRI = 'Đơn vị chủ trì';
 var TH_MAU_KHOI = ['#DDEBF7', '#E2EFDA'];   // nền tiêu đề cụm cột đơn vị, xen kẽ
 var TH_MAU_NHAN = '#E7E6E6';
+var TH_MAU_TP = '#FFF2CC';
+var TH_TEN_TP = 'Toàn thành phố';
 var TH_CACHE_GIAY = 21600;
 var TH_CACHE_BYTE = 99000;   // CacheService: tối đa 100 KB mỗi khoá
 
@@ -219,24 +222,26 @@ function demKhongKhop_(cotA, dongTieuDe, laTach, laTong, dsDv) {
 }
 
 /**
- * Bảng Ghép cột: mỗi đơn vị một cụm cột (cột cotTrai của mẫu), không cộng. Dòng = dòng dữ liệu
+ * Bảng chia theo xã: mỗi đơn vị một cụm cột (cột cotTrai của mẫu), không cộng. Dòng = dòng dữ liệu
  * của mẫu; cột nhãn = cột khung trừ cột A. Đơn vị chưa đọc được (du null) → ô trống.
  * Tiêu đề: cột nhãn ghi ở dau1 (gộp dọc 2 dòng) · cụm đơn vị: tên ở dau1 (gộp ngang), tên cột ở dau2.
+ * coTp: thêm cụm "Toàn thành phố" đứng trước các đơn vị (ô để trống — công thức ghi sau, congThucTp_).
  * @param {Array<{ma, ten, du}>} dsDv — mọi đơn vị được giao, theo thứ tự danh mục
- * @returns {{dau1, dau2, gt: Array<Array>, cotNhan: Array<number>, khoi: Array<{tu, so}>}} tu: cột (từ 1) đầu cụm
+ * @returns {{dau1, dau2, gt: Array<Array>, cotNhan: Array<number>, khoi: Array<{tu, so, tp}>}} tu: cột (từ 1) đầu cụm
  */
-function bangTheoDonVi_(mau, dsDv, cotTrai) {
+function bangTheoDonVi_(mau, dsDv, cotTrai, coTp) {
   var cotNhan = mau.cotKhung.filter(function (c) { return c > 1 && cotTrai.indexOf(c) < 0; });
   var tdMau = mau.hienThi[mau.dongTieuDe - 1] || [];
   var dau1 = cotNhan.map(function (c) { return tdMau[c - 1] || ''; }), dau2 = cotNhan.map(function () { return ''; });
   var khoi = [];
-  dsDv.forEach(function (d) {
-    khoi.push({ tu: dau1.length + 1, so: cotTrai.length });
+  (coTp ? [{ ten: TH_TEN_TP, tp: true }] : []).concat(dsDv).forEach(function (d) {
+    khoi.push({ tu: dau1.length + 1, so: cotTrai.length, tp: !!d.tp });
     cotTrai.forEach(function (c, k) { dau1.push(k ? '' : d.ten); dau2.push(tdMau[c - 1] || ''); });
   });
   var gt = mau.gt.map(function (dongGt, j) {
     var dong = mau.dongTieuDe + 1 + j;
     var hang = cotNhan.map(function (c) { return dongGt[c - 1] === undefined ? '' : dongGt[c - 1]; });
+    if (coTp) cotTrai.forEach(function () { hang.push(''); });
     dsDv.forEach(function (d) {
       var i = d.du ? d.du.anhXa[dong] : undefined;
       var goc = i === undefined ? null : duCot_(d.du.hang[i], mau.soCot);
@@ -245,6 +250,41 @@ function bangTheoDonVi_(mau, dsDv, cotTrai) {
     return hang;
   });
   return { dau1: dau1, dau2: dau2, gt: gt, cotNhan: cotNhan, khoi: khoi };
+}
+
+/**
+ * Công thức R1C1 của ô mẫu (cột mẫu c) dùng lại được ở cụm Toàn thành phố → chính nó, không thì ''.
+ * Dùng được khi mọi tham chiếu đều tương đối và trỏ vào cột cùng cụm, đúng độ lệch (VD năng suất
+ * = sản lượng × 10 / diện tích cùng cột). Trỏ ra ngoài cụm (VD % so với cột K ẩn) hoặc tuyệt đối → ''.
+ */
+function dichCongThucTp_(f, c, cotTrai) {
+  var viTri = cotTrai.indexOf(c), dung = true;
+  String(f).replace(/(^|[^A-Za-z0-9_])R(\[-?\d+\]|\d+)?C(\[-?\d+\]|\d+)?(?![A-Za-z0-9_(])/g, function (x, truoc, r, cc) {
+    if ((r && r.charAt(0) !== '[') || (cc && cc.charAt(0) !== '[')) { dung = false; return x; }
+    var lech = cc ? Number(cc.slice(1, -1)) : 0;
+    if (cotTrai.indexOf(c + lech) - viTri !== lech || cotTrai.indexOf(c + lech) < 0) dung = false;
+    return x;
+  });
+  return dung ? f : '';
+}
+
+/**
+ * Cụm Toàn thành phố: công thức R1C1 (dòng dữ liệu × cột cotTrai). Ô nhập = cộng ô cùng chỗ của mọi
+ * đơn vị (cụm thứ i cách i × số cột), chưa đơn vị nào ghi số thì để trống; ô công thức của mẫu →
+ * dichCongThucTp_; còn lại ''. ngan: ';' (vùng vi) hoặc ','.
+ */
+function congThucTp_(mau, cotTrai, cotNhap, dongNhap, soDv, ngan) {
+  var thamChieu = [];
+  for (var i = 1; i <= soDv; i++) thamChieu.push('RC[' + i * cotTrai.length + ']');
+  var ds = thamChieu.join(ngan);
+  var cong = soDv ? '=IF(COUNT(' + ds + ')=0' + ngan + '""' + ngan + 'SUM(' + ds + '))' : '';
+  return mau.gt.map(function (r, j) {
+    var dong = mau.dongTieuDe + 1 + j, ct = mau.ct[j] || [];
+    return cotTrai.map(function (c) {
+      if (ct[c - 1]) return dichCongThucTp_(ct[c - 1], c, cotTrai);
+      return dongNhap.indexOf(dong) >= 0 && cotNhap.indexOf(c) >= 0 ? cong : '';
+    });
+  });
 }
 
 /** Cột nhãn (số cột mẫu) có tiêu đề "Đơn vị chủ trì" → 0 nếu mẫu không có. */
@@ -374,11 +414,12 @@ function dungTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
 }
 
 /**
- * Ghi đè tab Ghép cột: dòng 1 tiêu đề, dòng 2 tên đơn vị (gộp ngang mỗi cụm, nền xen kẽ, kẻ khung
- * cụm tới dòng cuối), dòng 3 tên cột, dữ liệu từ dòng 4; cột nhãn gộp dọc dòng 2–3. Chỉ giá trị —
- * xem trên điện thoại / ứng dụng như trên máy tính.
+ * Ghi đè tab chia theo xã: dòng 1 tiêu đề, dòng 2 tên đơn vị (gộp ngang mỗi cụm, nền xen kẽ, kẻ khung
+ * cụm tới dòng cuối), dòng 3 tên cột, dữ liệu từ dòng 4; cột nhãn gộp dọc dòng 2–3. Giá trị (xem
+ * trên điện thoại / ứng dụng như trên máy tính); cụm Toàn thành phố: chữ đậm, ctTp = công thức R1C1
+ * (congThucTp_ — chỉ tab kỳ; tab chi cục đã có sẵn giá trị trong dsDong).
  */
-function ghiTabCot_(tab, mau, tieuDe, bang, dsDong) {
+function ghiTabCot_(tab, mau, tieuDe, bang, dsDong, ctTp) {
   tab.setFrozenRows(0);
   tab.setFrozenColumns(0);
   tab.getRange(1, 1, tab.getMaxRows(), tab.getMaxColumns()).breakApart();
@@ -396,10 +437,12 @@ function ghiTabCot_(tab, mau, tieuDe, bang, dsDong) {
   });
   bang.khoi.forEach(function (kh) { if (kh.so > 1) tab.getRange(2, kh.tu, 1, kh.so).merge(); });
   var a1 = function (kh, den) { return chuCot_(kh.tu) + '2:' + chuCot_(kh.tu + kh.so - 1) + den; };
+  var khoiDv = bang.khoi.filter(function (kh) { return !kh.tp; }), tp = bang.khoi.filter(function (kh) { return kh.tp; })[0];
   TH_MAU_KHOI.forEach(function (mauNen, x) {
-    var ds = bang.khoi.filter(function (kh, i) { return i % 2 === x; }).map(function (kh) { return a1(kh, 3); });
+    var ds = khoiDv.filter(function (kh, i) { return i % 2 === x; }).map(function (kh) { return a1(kh, 3); });
     if (ds.length) tab.getRangeList(ds).setBackground(mauNen);
   });
+  if (tp) tab.getRange(a1(tp, 3)).setBackground(TH_MAU_TP);
   if (bang.khoi.length) {
     tab.getRangeList(bang.khoi.map(function (kh) { return a1(kh, soDong); }))
       .setBorder(true, true, true, true, null, null, '#666666', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
@@ -410,6 +453,19 @@ function ghiTabCot_(tab, mau, tieuDe, bang, dsDong) {
   });
   if (dsDong.length) tab.getRange(4, 1, dsDong.length, soCot).setValues(dsDong).setVerticalAlignment('top');
   if (soNhan) tab.getRange(4, 1, Math.max(dsDong.length, 1), soNhan).setWrap(true);
+  if (tp && dsDong.length) {
+    tab.getRange(4, tp.tu, dsDong.length, tp.so).setFontWeight('bold');
+    // Ghi '' bằng setFormulasR1C1 thành #ERROR! → mỗi cột chỉ ghi từng đoạn ô có công thức
+    for (var k = 0; ctTp && k < tp.so; k++) {
+      for (var a = 0; a < ctTp.length; ) {
+        if (!ctTp[a][k]) { a++; continue; }
+        var b = a;
+        while (b + 1 < ctTp.length && ctTp[b + 1][k]) b++;
+        tab.getRange(4 + a, tp.tu + k, b - a + 1, 1).setFormulasR1C1(ctTp.slice(a, b + 1).map(function (r) { return [r[k]]; }));
+        a = b + 1;
+      }
+    }
+  }
   tab.setFrozenRows(3);
   if (soNhan < soCot) tab.setFrozenColumns(soNhan);
   return tab;
@@ -426,14 +482,15 @@ function tabKyCot_(fileTong, mau, tenKy) {
 }
 
 /**
- * Bảng Ghép cột: dựng tab kỳ (mỗi đơn vị một cụm cột) + tab của từng đơn vị Quản lý báo cáo quản
- * lý bảng (chỉ dòng có cột "Đơn vị chủ trì" = mã của nó; tên tab = mã đơn vị; mẫu không có cột
- * này thì thôi).
+ * Bảng chia theo xã: dựng tab kỳ (cụm Toàn thành phố nếu cài cityTotal, rồi mỗi đơn vị một cụm cột)
+ * + tab của từng đơn vị Quản lý báo cáo quản lý bảng (chỉ dòng có cột "Đơn vị chủ trì" = mã của nó;
+ * tên tab = mã đơn vị; mẫu không có cột này thì thôi). Tab chi cục chép giá trị Toàn thành phố đã
+ * tính ở tab kỳ (công thức tham chiếu dòng khác, lọc dòng thì sai).
  */
-function ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy) {
+function ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy, cotNhap, dongNhap) {
   var cotTrai = (docDanhSachCot_(String(caiDat.byUnitCols || '').trim() || String(caiDat.inputCols || '')) || [])
     .filter(function (c) { return c > 1 && c <= mau.soCot; });
-  if (!cotTrai.length) throw new Error('Chưa khai cột ghép theo đơn vị');
+  if (!cotTrai.length) throw new Error('Chưa khai cột chia theo xã');
   var dsDvTab = docTabQuanLy_(ss, 'Đơn vị'), ten = {}, thuTu = {};
   dsDvTab.slice(1).forEach(function (r, i) { ten[String(r[0]).trim()] = String(r[1] || r[0]).trim(); thuTu[String(r[0]).trim()] = i; });
   var khoa = function (g) { return khoaCacheTongHop_(caiDat.templateFileId, tenKy, g.unitCode); };
@@ -442,10 +499,19 @@ function ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy) {
     var s = daCat[khoa(g)], du = s ? JSON.parse(s) : null;
     return { ma: g.unitCode, ten: ten[g.unitCode] || g.unitCode, du: du && !du.thieu && !du.loi ? du : null };
   });
-  var bang = bangTheoDonVi_(mau, dsDv, cotTrai);
+  var coTp = caiDat.cityTotal === true;
+  var bang = bangTheoDonVi_(mau, dsDv, cotTrai, coTp);
   var tenBang = String(caiDat.tableName || caiDat.tableCode);
-  ghiTabCot_(tabKyCot_(fileTong, mau, tenKy), mau, tenBang + ' — kỳ ' + tenKy, bang, bang.gt);
+  var ctTp = coTp ? congThucTp_(mau, cotTrai, cotNhap, dongNhap, dsDv.length, nganCongThuc_(fileTong)) : null;
+  var tabKy = ghiTabCot_(tabKyCot_(fileTong, mau, tenKy), mau, tenBang + ' — kỳ ' + tenKy, bang, bang.gt, ctTp);
   var cotChuTri = cotChuTri_(mau, bang.cotNhan);
+  if (coTp && cotChuTri && bang.gt.length) {
+    SpreadsheetApp.flush();
+    var tu = bang.cotNhan.length + 1;
+    tabKy.getRange(4, tu, bang.gt.length, cotTrai.length).getValues().forEach(function (r, j) {
+      r.forEach(function (v, k) { bang.gt[j][tu - 1 + k] = v; });
+    });
+  }
   var soTab = 0;
   if (cotChuTri) {
     phamViQuanLy_(dsDvTab).forEach(function (pv) {
@@ -457,7 +523,7 @@ function ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy) {
       soTab++;
     });
   }
-  return { soDonVi: dsDv.length, soTab: soTab };
+  return { soDonVi: dsDv.length, soTab: soTab, coTp: coTp };
 }
 
 /**
@@ -518,8 +584,9 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
   var cotNhap = (docDanhSachCot_(caiDat.inputCols) || []).filter(function (c) { return c > 1 && c <= mau.soCot; });
   var ra = [], khoi = { gt: mau.gt, boQua: 0 };
   if (kq.laCot) {
-    var cot = ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy);
+    var cot = ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy, cotNhap, dongNhap);
     kq.soTab = cot.soTab;
+    kq.coTp = cot.coTp;
   } else if (kq.laTong) {
     ra = mau.gt.map(function (r, j) { return { mau: mau.dongTieuDe + 1 + j, dv: -1 }; });
     khoi = khoiTong_(mau, dsDv, cotNhap, dongNhap, lienKet

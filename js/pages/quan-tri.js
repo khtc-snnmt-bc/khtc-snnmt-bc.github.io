@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.23.0 · Cập nhật: 10/10/2026 20:10
+// Phiên bản: 0.24.0 · Cập nhật: 10/10/2026 20:40
 // ============================================================
 // Quản trị đúng lĩnh vực vừa vào (mỗi lĩnh vực một Sheet quản lý — b10b); đơn vị quản lý báo cáo
 // theo vai trò của đơn vị trong lĩnh vực; Quản lý báo cáo tích bảng quản lý ở mục Tài khoản (trống = mọi bảng).
@@ -695,7 +695,7 @@ var PAGE_QUAN_TRI = (function () {
 
   /**
    * Cách tổng hợp · Cách nhập dòng · Cho thêm dòng (chung bảng mới / bảng đã có).
-   * Cộng / Ghép cột: luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
+   * Cộng / Chia theo xã: luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
    * khiDoiTong (không bắt buộc): báo cách tổng hợp đang chọn.
    */
   function vePhanLoai(khung, cd, khiDoiCach, khiDoiTong) {
@@ -865,16 +865,20 @@ var PAGE_QUAN_TRI = (function () {
     var oChuThich = oNhap(cd.noteTabs);
     var hangSoDong = dong('Số dòng sẵn', oSoDong);
     var oCotDv = oNhap(cd.byUnitCols, { placeholder: 'Như cột được nhập' });
-    var hangCotDv = dong('Cột ghép theo đơn vị', oCotDv);
+    var hangCotDv = dong('Cột chia theo xã', oCotDv);
+    var tichTp = oTich(cd.cityTotal);
+    var hangTp = dong('Cộng toàn thành phố', tichTp.el);
     var hangGiuTh;
     var phanLoai = vePhanLoai(khung, { aggregateType: cd.aggregateType, sourceType: cd.sourceType,
       allowAddRows: cd.allowAddRows }, function (cach) { DOM.batTat(hangSoDong, 'an', cach !== 'docLap'); },
     function (tong) {
-      // Ghép cột: chỉ giá trị, mỗi đơn vị một cụm cột
+      // Chia theo xã: mỗi đơn vị một cụm cột, giá trị (không có "Khi tổng hợp")
       DOM.batTat(hangCotDv, 'an', tong !== 'cot');
+      DOM.batTat(hangTp, 'an', tong !== 'cot');
       DOM.batTat(hangGiuTh, 'an', tong === 'cot');
     });
     khung.appendChild(hangCotDv);
+    khung.appendChild(hangTp);
     khung.appendChild(dong('Cột được nhập', oCot));
     khung.appendChild(dong('Dòng được nhập', oDongNhap));
     khung.appendChild(dong('Dòng khoá', oDongKhoa));
@@ -923,7 +927,7 @@ var PAGE_QUAN_TRI = (function () {
         tableName: oTen.value.trim(), inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(),
         lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim(), lockDay: oNgayKhoa.value.trim(),
         hiddenCols: oCotAn.value.trim(), periodMode: oKieuKy.value, shareType: oChiaSe.value,
-        aggregateKeep: oGiuTh.value, byUnitCols: oCotDv.value.trim()
+        aggregateKeep: oGiuTh.value, byUnitCols: oCotDv.value.trim(), cityTotal: tichTp.o.checked
       });
       caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {
