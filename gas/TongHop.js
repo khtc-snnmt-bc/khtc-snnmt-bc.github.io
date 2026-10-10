@@ -2,7 +2,7 @@
 // bcsnn · gas/TongHop.js
 // Vai trò  : Tổng hợp kỳ — gom số tab kỳ ở mọi file đơn vị về tab kỳ cùng tên ở file tổng
 // Lớp      : gas — gọi bởi: Code.js · gọi: KyBaoCao.js, DangNhap.js, PhanQuyen.js
-// Phiên bản: 0.6.0 · Cập nhật: 10/10/2026 20:40
+// Phiên bản: 0.7.0 · Cập nhật: 10/10/2026 21:10
 // ============================================================
 // File tổng chỉ xem: số nhập ở file đơn vị, tổng hợp gom MỘT CHIỀU về file tổng (thiết kế 4.4).
 //   Cộng (aggregateType 'tong'): mỗi ô nhập của dòng mẫu = tổng số của các đơn vị có dòng đó
@@ -12,7 +12,8 @@
 //     nhập dòng: nối dòng có chữ của mọi đơn vị theo thứ tự tab File.
 //   Chia theo xã ('cot', b11): dòng = dòng mẫu, mỗi đơn vị một cụm cột (byUnitCols, trống = inputCols),
 //     tiêu đề 2 dòng (tên đơn vị gộp ô · tên cột), giá trị; cityTotal → cụm "Toàn thành phố" đứng đầu
-//     = công thức SUM các cụm đơn vị. Mẫu có cột "Đơn vị chủ trì" → thêm tab mỗi đơn vị Quản lý báo
+//     = công thức SUM các cụm đơn vị; cụm này có thêm cột nhập ngoài cụm (VD K:M — GAS cộng sẵn) để
+//     công thức % của mẫu tính được. Mẫu có cột "Đơn vị chủ trì" → thêm tab mỗi đơn vị Quản lý báo
 //     cáo của bảng, chỉ dòng ghi mã của nó (ghi đè mỗi lần tổng hợp).
 // Khớp dòng đơn vị ↔ dòng mẫu theo chữ ở cột khung (như kỳ Cập nhật — KyBaoCao.js cotKhung_).
 // Chỉ ghi ô nhập (cột nhập × dòng nhập, trừ dòng khoá); ô công thức giữ công thức của mẫu.
@@ -225,31 +226,55 @@ function demKhongKhop_(cotA, dongTieuDe, laTach, laTong, dsDv) {
  * Bảng chia theo xã: mỗi đơn vị một cụm cột (cột cotTrai của mẫu), không cộng. Dòng = dòng dữ liệu
  * của mẫu; cột nhãn = cột khung trừ cột A. Đơn vị chưa đọc được (du null) → ô trống.
  * Tiêu đề: cột nhãn ghi ở dau1 (gộp dọc 2 dòng) · cụm đơn vị: tên ở dau1 (gộp ngang), tên cột ở dau2.
- * coTp: thêm cụm "Toàn thành phố" đứng trước các đơn vị (ô để trống — công thức ghi sau, congThucTp_).
+ * cotTp (mảng rỗng = không có): cột của cụm "Toàn thành phố" đứng trước các đơn vị. Cột có trong
+ * cotTrai để trống (công thức ghi sau, congThucTp_); cột ngoài cotTrai = GAS cộng số các đơn vị
+ * (ô không công thức ở mẫu; không đơn vị nào có số → trống).
  * @param {Array<{ma, ten, du}>} dsDv — mọi đơn vị được giao, theo thứ tự danh mục
  * @returns {{dau1, dau2, gt: Array<Array>, cotNhan: Array<number>, khoi: Array<{tu, so, tp}>}} tu: cột (từ 1) đầu cụm
  */
-function bangTheoDonVi_(mau, dsDv, cotTrai, coTp) {
-  var cotNhan = mau.cotKhung.filter(function (c) { return c > 1 && cotTrai.indexOf(c) < 0; });
+function bangTheoDonVi_(mau, dsDv, cotTrai, cotTp) {
+  cotTp = cotTp || [];
+  var cotNhan = mau.cotKhung.filter(function (c) { return c > 1 && cotTrai.indexOf(c) < 0 && cotTp.indexOf(c) < 0; });
   var tdMau = mau.hienThi[mau.dongTieuDe - 1] || [];
   var dau1 = cotNhan.map(function (c) { return tdMau[c - 1] || ''; }), dau2 = cotNhan.map(function () { return ''; });
   var khoi = [];
-  (coTp ? [{ ten: TH_TEN_TP, tp: true }] : []).concat(dsDv).forEach(function (d) {
-    khoi.push({ tu: dau1.length + 1, so: cotTrai.length, tp: !!d.tp });
-    cotTrai.forEach(function (c, k) { dau1.push(k ? '' : d.ten); dau2.push(tdMau[c - 1] || ''); });
+  (cotTp.length ? [{ ten: TH_TEN_TP, tp: true }] : []).concat(dsDv).forEach(function (d) {
+    var cot = d.tp ? cotTp : cotTrai;
+    khoi.push({ tu: dau1.length + 1, so: cot.length, tp: !!d.tp });
+    cot.forEach(function (c, k) { dau1.push(k ? '' : d.ten); dau2.push(tdMau[c - 1] || ''); });
   });
   var gt = mau.gt.map(function (dongGt, j) {
-    var dong = mau.dongTieuDe + 1 + j;
+    var dong = mau.dongTieuDe + 1 + j, ct = (mau.ct && mau.ct[j]) || [];
     var hang = cotNhan.map(function (c) { return dongGt[c - 1] === undefined ? '' : dongGt[c - 1]; });
-    if (coTp) cotTrai.forEach(function () { hang.push(''); });
-    dsDv.forEach(function (d) {
+    var goc = dsDv.map(function (d) {
       var i = d.du ? d.du.anhXa[dong] : undefined;
-      var goc = i === undefined ? null : duCot_(d.du.hang[i], mau.soCot);
-      cotTrai.forEach(function (c) { hang.push(goc ? docGiaTri_(goc[c - 1]) : ''); });
+      return i === undefined ? null : duCot_(d.du.hang[i], mau.soCot);
+    });
+    cotTp.forEach(function (c) {
+      var tong = '';
+      if (cotTrai.indexOf(c) < 0 && !ct[c - 1]) {
+        goc.forEach(function (g) {
+          var v = g ? docGiaTri_(g[c - 1]) : '';
+          if (typeof v === 'number') tong = (tong === '' ? 0 : tong) + v;
+        });
+      }
+      hang.push(tong === '' ? '' : Math.round(tong * 1e9) / 1e9);   // bỏ đuôi 0,1 + 0,2 = 0,30000000000000004
+    });
+    goc.forEach(function (g) {
+      cotTrai.forEach(function (c) { hang.push(g ? docGiaTri_(g[c - 1]) : ''); });
     });
     return hang;
   });
   return { dau1: dau1, dau2: dau2, gt: gt, cotNhan: cotNhan, khoi: khoi };
+}
+
+/**
+ * Cột cụm Toàn thành phố = cột chia theo xã + cột nhập ngoài đó (VD byUnitCols E:J, inputCols
+ * E:G, K:M → E:M), tăng dần — công thức % của mẫu trỏ sang K:M mới tính được.
+ */
+function cotTp_(cotTrai, cotNhap) {
+  return cotTrai.concat(cotNhap.filter(function (c) { return cotTrai.indexOf(c) < 0; }))
+    .sort(function (a, b) { return a - b; });
 }
 
 /**
@@ -269,20 +294,25 @@ function dichCongThucTp_(f, c, cotTrai) {
 }
 
 /**
- * Cụm Toàn thành phố: công thức R1C1 (dòng dữ liệu × cột cotTrai). Ô nhập = cộng ô cùng chỗ của mọi
- * đơn vị (cụm thứ i cách i × số cột), chưa đơn vị nào ghi số thì để trống; ô công thức của mẫu →
- * dichCongThucTp_; còn lại ''. ngan: ';' (vùng vi) hoặc ','.
+ * Cụm Toàn thành phố: công thức R1C1 (dòng dữ liệu × cột cotTp). Ô nhập có trong cotTrai = cộng ô
+ * cùng chỗ của mọi đơn vị (cụm Toàn thành phố rộng cotTp, mỗi cụm đơn vị rộng cotTrai), chưa đơn vị
+ * nào ghi số thì để trống; ô công thức của mẫu → dichCongThucTp_ (trong cotTp); còn lại '' (cột ngoài
+ * cotTrai đã có giá trị cộng sẵn — bangTheoDonVi_). ngan: ';' (vùng vi) hoặc ','.
  */
-function congThucTp_(mau, cotTrai, cotNhap, dongNhap, soDv, ngan) {
-  var thamChieu = [];
-  for (var i = 1; i <= soDv; i++) thamChieu.push('RC[' + i * cotTrai.length + ']');
-  var ds = thamChieu.join(ngan);
-  var cong = soDv ? '=IF(COUNT(' + ds + ')=0' + ngan + '""' + ngan + 'SUM(' + ds + '))' : '';
+function congThucTp_(mau, cotTrai, cotTp, cotNhap, dongNhap, soDv, ngan) {
+  var cong = cotTp.map(function (c, k) {
+    var m = cotTrai.indexOf(c);
+    if (m < 0 || !soDv) return '';
+    var thamChieu = [];
+    for (var i = 0; i < soDv; i++) thamChieu.push('RC[' + (cotTp.length - k + i * cotTrai.length + m) + ']');
+    var ds = thamChieu.join(ngan);
+    return '=IF(COUNT(' + ds + ')=0' + ngan + '""' + ngan + 'SUM(' + ds + '))';
+  });
   return mau.gt.map(function (r, j) {
     var dong = mau.dongTieuDe + 1 + j, ct = mau.ct[j] || [];
-    return cotTrai.map(function (c) {
-      if (ct[c - 1]) return dichCongThucTp_(ct[c - 1], c, cotTrai);
-      return dongNhap.indexOf(dong) >= 0 && cotNhap.indexOf(c) >= 0 ? cong : '';
+    return cotTp.map(function (c, k) {
+      if (ct[c - 1]) return dichCongThucTp_(ct[c - 1], c, cotTp);
+      return dongNhap.indexOf(dong) >= 0 && cotNhap.indexOf(c) >= 0 ? cong[k] : '';
     });
   });
 }
@@ -500,15 +530,16 @@ function ghiGhepCot_(ss, fileTong, mau, caiDat, giao, tenKy, cotNhap, dongNhap) 
     return { ma: g.unitCode, ten: ten[g.unitCode] || g.unitCode, du: du && !du.thieu && !du.loi ? du : null };
   });
   var coTp = caiDat.cityTotal === true;
-  var bang = bangTheoDonVi_(mau, dsDv, cotTrai, coTp);
+  var cotTp = coTp ? cotTp_(cotTrai, cotNhap) : [];
+  var bang = bangTheoDonVi_(mau, dsDv, cotTrai, cotTp);
   var tenBang = String(caiDat.tableName || caiDat.tableCode);
-  var ctTp = coTp ? congThucTp_(mau, cotTrai, cotNhap, dongNhap, dsDv.length, nganCongThuc_(fileTong)) : null;
+  var ctTp = coTp ? congThucTp_(mau, cotTrai, cotTp, cotNhap, dongNhap, dsDv.length, nganCongThuc_(fileTong)) : null;
   var tabKy = ghiTabCot_(tabKyCot_(fileTong, mau, tenKy), mau, tenBang + ' — kỳ ' + tenKy, bang, bang.gt, ctTp);
   var cotChuTri = cotChuTri_(mau, bang.cotNhan);
   if (coTp && cotChuTri && bang.gt.length) {
     SpreadsheetApp.flush();
     var tu = bang.cotNhan.length + 1;
-    tabKy.getRange(4, tu, bang.gt.length, cotTrai.length).getValues().forEach(function (r, j) {
+    tabKy.getRange(4, tu, bang.gt.length, cotTp.length).getValues().forEach(function (r, j) {
       r.forEach(function (v, k) { bang.gt[j][tu - 1 + k] = v; });
     });
   }

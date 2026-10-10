@@ -3,7 +3,7 @@
 // Vai trò  : URL iframe, file của bảng ở sidebar; danh sách kỳ, ngày tự khoá gợi ý,
 //            câu báo tạo/khoá/xoá/tổng hợp kỳ (trang quản trị)
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.8.1 · Cập nhật: 10/10/2026 20:40
+// Phiên bản: 0.8.2 · Cập nhật: 10/10/2026 21:20
 // ============================================================
 
 var KY_BAO_CAO = (function () {
@@ -107,7 +107,9 @@ var KY_BAO_CAO = (function () {
     var chu = 'Đã tạo kỳ ' + kq.tenKy + ' cho ' + (kq.daTao + kq.daCo) + '/' + kq.tong + ' đơn vị';
     if (kq.fileMoi) chu += ' (tạo mới ' + kq.fileMoi + ' file)';
     if (kq.dongThem) chu += ', thêm ' + kq.dongThem + ' dòng mới từ bảng tổng';
-    return chu + '.' + phanLoi(kq);
+    chu += '.';
+    if (kq.hetHanMuc) chu += ' Google chỉ cho tạo 250 file mỗi ngày, hôm nay đã hết — ngày mai bấm Tạo kỳ lại để tạo tiếp.';
+    return chu + phanLoi(kq);
   }
 
   /** Câu báo sau khi khoá / mở khoá kỳ. */

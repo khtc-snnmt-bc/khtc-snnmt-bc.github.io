@@ -93,6 +93,8 @@ bai('gộp lô + câu báo tạo / khoá kỳ', () => {
   assert.equal(kq.tiepTu, null);
   assert.equal(KY.tomTatTaoKy(kq), 'Đã tạo kỳ 10.11.2026 cho 2/3 đơn vị (tạo mới 1 file). Lỗi: A: x');
   assert.equal(KY.tomTatTaoKy({ tenKy: '10.11.2026', tong: 0, loi: [] }), 'Đã ghi kỳ 10.11.2026. Bảng chưa giao cho đơn vị nào.');
+  assert.match(KY.tomTatTaoKy({ tenKy: '10.11.2026', tong: 168, daTao: 82, daCo: 0, fileMoi: 82, hetHanMuc: true, loi: [] }),
+    /cho 82\/168 đơn vị \(tạo mới 82 file\)\. Google chỉ cho tạo 250 file mỗi ngày.*ngày mai bấm Tạo kỳ lại/);
   assert.equal(KY.tomTatKhoaKy({ tenKy: '10.11.2026', khoa: true, tong: 2, daLam: 1, khongCoTab: 1, loi: [] }),
     'Đã khoá kỳ 10.11.2026 ở 1/2 file. 1 file chưa có tab kỳ này.');
 });

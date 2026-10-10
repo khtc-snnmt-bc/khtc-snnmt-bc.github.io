@@ -227,4 +227,34 @@ bai('bangCongKhaiCuaDonVi_: vào không cần Gmail chỉ thấy bảng công kh
   assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), '')), []);
 });
 
+bai('Tạo kỳ hết hạn mức 250 file/ngày: dừng ngay, báo hetHanMuc, file đã tạo vẫn được chia quyền', () => {
+  assert.equal(sandbox.laLoiHanMuc_('Service invoked too many times for one day: spreadsheets create.'), true);
+  assert.equal(sandbox.laLoiHanMuc_('Dịch vụ được gọi quá nhiều lần trong một ngày: spreadsheets create.'), true);
+  assert.equal(sandbox.laLoiHanMuc_('Không tìm thấy tab'), false);
+  // giả Google: A đã có file + tab kỳ · B tạo được · C hết hạn mức · D không được thử
+  const daThu = [], chiaQuyen = [];
+  const file = (id, coTab) => ({ getId: () => id, getSheets: () => [{ getName: () => 'Trang tính1' }],
+    getSheetByName: () => (coTab ? {} : null), deleteSheet() {} });
+  Object.assign(sandbox, {
+    caiDatBang_: () => ({ tableCode: 'bcxa', templateFileId: 'T', sourceType: '', periodMode: 'nhapMoi' }),
+    tabKyQuanLy_: () => ({ getDataRange: () => ({ getValues: () => [['h'], ['bcxa', '10.11.2026', false, '', '']] }) }),
+    docTabQuanLy_: () => [],
+    giaoCuaBangKy_: () => [{ unitCode: 'A', fileId: 'fA', dong: 2 }, { unitCode: 'B', dong: 3 }, { unitCode: 'C', dong: 4 }, { unitCode: 'D', dong: 5 }],
+    SpreadsheetApp: { openById: (id) => (id === 'T' ? { getSheets: () => [{}] } : file(id, true)), flush() {} },
+    taoFileChoDonVi_: (cd, ma) => {
+      daThu.push(ma);
+      if (ma === 'B') return file('fB', false);
+      throw new Error('Service invoked too many times for one day: spreadsheets create.');
+    },
+    taoTabKy_() {}, chepTabChuThich_() {}, anTabDaKhoa_() {}, kiemMauBang_: () => ({ kiem: [] }), taoTabKyTong_: () => 'tab',
+    dongBoQuyen_: (ss, pv) => { chiaQuyen.push(...pv.fileIds); return { loi: [] }; },
+  });
+  const ss = { getSheetByName: () => ({ getRange: () => ({ setValues() {} }) }) };
+  const kq = sandbox.taoKy_(ss, 'bcxa', '10.11.2026', 0);
+  assert.deepEqual(daThu, ['B', 'C'], 'hết hạn mức ở C thì không thử D');
+  assert.equal(kq.hetHanMuc, true);
+  assert.deepEqual([kq.daCo, kq.daTao, kq.fileMoi, kq.loi.length, kq.tiepTu], [1, 1, 1, 0, null]);
+  assert.deepEqual(chiaQuyen, ['fB']);
+});
+
 console.log('kiem-gas-ky: ' + soBai + ' bài ĐẠT');
