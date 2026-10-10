@@ -1,10 +1,10 @@
 // ============================================================
 // bcsnn · js/domains/quan-ly-bang.js
 // Vai trò  : Nghiệp vụ thuần mục Quản lý bảng: kiểu cột, chữ cột, mã bảng từ tên,
-//            cách nhập dòng / tổng hợp, kiểu kỳ, cách đơn vị vào nhập, nhãn lĩnh vực, số đơn vị có file,
+//            cách nhập dòng / tổng hợp, kiểu kỳ, cách đơn vị vào nhập, số đơn vị có file,
 //            câu báo kiểm mẫu / đủ file + tab kỳ / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.8.0 · Cập nhật: 09/10/2026 13:05
+// Phiên bản: 0.9.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -64,29 +64,9 @@ var QUAN_LY_BANG = (function () {
     return BO_DAU.boDau(ten || '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40).replace(/_+$/, '');
   }
 
-  /** Lĩnh vực cho ô chọn, xếp theo tên: [{giaTri, nhan: 'Tên (MÃ)'}] */
-  function luaChonLinhVuc(linhVuc) {
-    return (linhVuc || []).slice().sort(function (a, b) { return a.groupName.localeCompare(b.groupName, 'vi'); })
-      .map(function (l) {
-        return { giaTri: l.groupCode, nhan: l.groupName === l.groupCode ? l.groupCode : l.groupName + ' (' + l.groupCode + ')' };
-      });
-  }
-
-  /** Tên lĩnh vực theo mã (chưa có trong danh mục thì trả mã) */
-  function tenLinhVuc(linhVuc, ma) {
-    var l = (linhVuc || []).filter(function (x) { return x.groupCode === ma; })[0];
-    return l ? l.groupName : (ma || '');
-  }
-
   /** Số đơn vị đã có file nhập liệu của bảng (giao: [{unitCode, tableCode, coFile}]) */
   function soDonViCoFile(giao, tableCode) {
     return (giao || []).filter(function (g) { return g.tableCode === tableCode && g.coFile; }).length;
-  }
-
-  /** 'Tài chính' → 'TC' (chữ đầu mỗi từ, in hoa không dấu) — gợi ý mã lĩnh vực */
-  function maLinhVucTuTen(ten) {
-    return BO_DAU.boDau(ten || '').split(/[^a-z0-9]+/).filter(Boolean)
-      .map(function (t) { return t.charAt(0); }).join('').toUpperCase().slice(0, 15);
   }
 
   /** Ô phụ của kiểu cột: công thức / các lựa chọn / không có */
@@ -196,7 +176,7 @@ var QUAN_LY_BANG = (function () {
   return {
     tenBangTuExcel: tenBangTuExcel, baoTaoTuExcel: baoTaoTuExcel,
     KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, KIEU_KY: KIEU_KY, GIU_KHI_TONG_HOP: GIU_KHI_TONG_HOP, CACH_CHIA_SE: CACH_CHIA_SE, DONG_DAU: DONG_DAU,
-    chuCot: chuCot, maTuTen: maTuTen, luaChonLinhVuc: luaChonLinhVuc, maLinhVucTuTen: maLinhVucTuTen,
-    oPhu: oPhu, tomTatKiem: tomTatKiem, tomTatDuFile: tomTatDuFile, tenLinhVuc: tenLinhVuc, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
+    chuCot: chuCot, maTuTen: maTuTen,
+    oPhu: oPhu, tomTatKiem: tomTatKiem, tomTatDuFile: tomTatDuFile, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
   };
 })();

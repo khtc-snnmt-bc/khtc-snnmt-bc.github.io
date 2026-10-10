@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-phan-quyen.mjs
 // Vai trò  : Kiểm domains trang quản trị (phan-quyen.js, ky-bao-cao.js, quan-ly-bang.js: tên bảng từ Excel)
 // Chạy     : node app/kiem-thu/kiem-phan-quyen.mjs
-// Phiên bản: 0.5.0 · Cập nhật: 09/10/2026 12:30
+// Phiên bản: 0.6.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -53,17 +53,6 @@ bai('giaoCuaBang / thayGiao: bỏ quyền đơn vị đã có file thì giữ d�
   const chia = sach(PQ.chiaDonViBang(dv, ['B']));
   assert.deepEqual(chia.trong.map((d) => d.unitCode), ['B']);
   assert.deepEqual(chia.themDuoc.map((d) => d.unitCode), ['A']);   // nhóm Quản trị không thêm vào bảng
-});
-
-bai('quanLyMacDinh: đã lưu → giữ; cùng lĩnh vực → theo; còn lại → mã mở đầu bằng lĩnh vực', () => {
-  const dv = [{ unitCode: 'BTTDC.SNNMT' }, { unitCode: 'KHTC.SNNMT' }, { unitCode: 'BTTDCX' }];
-  const a = { tableCode: 'a', group: 'BTTDC', managerUnits: [] };
-  const b = { tableCode: 'b', group: 'BTTDC', managerUnits: ['KHTC.SNNMT', 'BTTDC.SNNMT'] };
-  assert.deepEqual(sach(PQ.quanLyMacDinh(a, [a], dv)), ['BTTDC.SNNMT']);
-  assert.deepEqual(sach(PQ.quanLyMacDinh(a, [a, b], dv)), ['KHTC.SNNMT', 'BTTDC.SNNMT']);
-  assert.deepEqual(sach(PQ.quanLyMacDinh(b, [a, b], dv)), ['KHTC.SNNMT', 'BTTDC.SNNMT']);
-  assert.deepEqual(sach(PQ.quanLyMacDinh({ group: 'KHAC', managerUnits: [] }, [], dv)), []);
-  assert.deepEqual(sach(PQ.quanLyMacDinh({ group: '', managerUnits: [] }, [], dv)), []);
 });
 
 bai('tomTatLuu', () => {

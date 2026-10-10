@@ -1,18 +1,18 @@
 // ============================================================
 // bcsnn · gas/PhanQuyen.js
-// Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng, đơn vị quản lý) và
-//            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý
-// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_, docLinhVuc_)
-// Phiên bản: 0.8.0 · Cập nhật: 08/10/2026 22:33
+// Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng) và
+//            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý của lĩnh vực
+// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_), Code.js (layQuanLyId_)
+// Phiên bản: 0.9.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị theo cột access tab File (sua → SỬA, xem → XEM,
-//   khong → không chia; ô trống = sua) + Gmail của đơn vị quản lý bảng → SỬA.
+//   khong → không chia; ô trống = sua) + Gmail của đơn vị quản lý → SỬA.
 //   Bỏ quyền đơn vị đã có file thì giữ dòng (access = khong), không mất file.
-// - File tổng (templateFileId): Gmail của đơn vị quản lý bảng → chỉ XEM
+// - File tổng (templateFileId): Gmail của đơn vị quản lý → chỉ XEM
 //   (số chỉ nhập ở file đơn vị — chủ dự án chốt 06/10/2026, không đồng bộ 2 chiều).
-// - Đơn vị nhóm Quản trị (tab Đơn vị, vai trò Quản trị / Quản lý báo cáo) mặc
-//   định là đơn vị quản lý của MỌI bảng: thấy tất cả, sửa mọi file đơn vị.
+// - Đơn vị quản lý = đơn vị nhóm Quản trị của lĩnh vực (tab Đơn vị, vai trò Quản trị /
+//   Quản lý báo cáo): quản lý MỌI bảng của lĩnh vực, không đặt theo từng bảng (b10b).
 // - Bảng công khai (shareType = congKhai): file đơn vị được nhập (sua) thêm quyền
 //   "Bất kỳ ai có link đều sửa được" khi bảng còn kỳ đang mở; hết kỳ mở → tắt
 //   (KIEN-TRUC.md mục 4, so-tay/chia-se-cong-khai.md). File khác không bao giờ công khai.
@@ -23,7 +23,6 @@ var VAI_TRO_HOP_LE = ['Nhập liệu', 'Quản lý báo cáo', 'Quản trị'];
 var VAI_TRO_DON_VI_TOAN_QUYEN = ['Quản trị', 'Quản lý báo cáo'];
 var QUYEN_SUA = 'writer';
 var QUYEN_XEM = 'reader';
-var COT_DON_VI_QUAN_LY = 'managerUnits';   // một bảng có thể nhiều đơn vị quản lý: "A, B"
 var COT_QUYEN_DON_VI = 'access';           // cột E tab File
 var QUYEN_DON_VI = ['sua', 'xem', 'khong'];
 var CHIA_SE_MOI = 'moi';                   // cột shareType tab Bảng: mời theo Gmail
@@ -54,13 +53,13 @@ function chuanChiaSe_(o) {
   return String(o === undefined || o === null ? '' : o).trim() === CHIA_SE_CONG_KHAI ? CHIA_SE_CONG_KHAI : CHIA_SE_MOI;
 }
 
-/** Tab Bảng → [{tableCode, tableName, group, templateFileId, managerUnits: [], shareType}] (đọc cột theo tên). */
+/** Tab Bảng → [{tableCode, tableName, templateFileId, shareType}] (đọc cột theo tên). */
 function docBangQuanLy_(dsBang) {
   if (!dsBang || !dsBang.length) return [];
   var td = dsBang[0];
   var cot = function (ten, macDinh) { var i = chiSoCot_(td, ten); return i < 0 ? macDinh : i; };
-  var cMa = cot('tableCode', 0), cTen = cot('tableName', 1), cNhom = cot('group', 2);
-  var cMau = cot('templateFileId', -1), cQl = cot(COT_DON_VI_QUAN_LY, -1), cChiaSe = cot('shareType', -1);
+  var cMa = cot('tableCode', 0), cTen = cot('tableName', 1);
+  var cMau = cot('templateFileId', -1), cChiaSe = cot('shareType', -1);
   var kq = [];
   for (var i = 1; i < dsBang.length; i++) {
     var r = dsBang[i];
@@ -69,9 +68,7 @@ function docBangQuanLy_(dsBang) {
     kq.push({
       tableCode: ma,
       tableName: String(r[cTen] || ma).trim(),
-      group: String(r[cNhom] || '').trim(),
       templateFileId: cMau < 0 ? '' : String(r[cMau] || '').trim(),
-      managerUnits: cQl < 0 ? [] : tachDsMa_(r[cQl]),
       shareType: chuanChiaSe_(cChiaSe < 0 ? '' : r[cChiaSe])
     });
   }
@@ -88,13 +85,11 @@ function donViToanQuyen_(dsDonVi) {
   return kq;
 }
 
-/** Bảng (docBangQuanLy_) thêm các đơn vị toàn quyền vào managerUnits — bản mới, không sửa bản gốc. */
+/** Bảng (docBangQuanLy_) kèm managerUnits = các đơn vị toàn quyền của lĩnh vực — bản mới, không sửa bản gốc. */
 function themToanQuyen_(bang, dsMa) {
   return bang.map(function (b) {
-    var ql = b.managerUnits.slice();
-    dsMa.forEach(function (m) { if (ql.indexOf(m) < 0) ql.push(m); });
-    return { tableCode: b.tableCode, tableName: b.tableName, group: b.group,
-      templateFileId: b.templateFileId, managerUnits: ql, shareType: b.shareType };
+    return { tableCode: b.tableCode, tableName: b.tableName,
+      templateFileId: b.templateFileId, managerUnits: dsMa.slice(), shareType: b.shareType };
   });
 }
 
@@ -357,14 +352,16 @@ function ghiTabFile_(tab, dong) {
 
 // ---------- Action quản trị (mọi action kiểm phiên trước) ----------
 
+/** Kiểm phiên (đúng lĩnh vực) rồi chạy viec(ss của Sheet quản lý lĩnh vực đó, phiên) dưới khoá. */
 function quanTriChay_(token, viec) {
-  if (!docPhienQuanTri_(token)) return { ok: false, hetPhien: true, loi: 'Phiên quản trị đã hết hạn' };
-  var id = layQuanLyId_();
+  var phien = docPhienQuanTri_(token);
+  if (!phien) return { ok: false, hetPhien: true, loi: 'Phiên quản trị đã hết hạn' };
+  var id = layQuanLyId_(phien.linhVuc);
   if (!id) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
   var khoa = LockService.getScriptLock();
   try {
     khoa.waitLock(30000);
-    return viec(SpreadsheetApp.openById(id), docPhienQuanTri_(token));
+    return viec(SpreadsheetApp.openById(id), phien);
   } catch (err) {
     return { ok: false, loi: 'Lỗi máy chủ: ' + String(err.message || err) };
   } finally {
@@ -385,14 +382,12 @@ function xuLyQtLayDuLieu_(token) {
         return { email: chuanHoaEmail_(r[0]), unitCode: String(r[1]).trim(), role: String(r[2] || 'Nhập liệu').trim() };
       }),
       bang: docBangQuanLy_(gtBang).map(function (b) {
-        return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, managerUnits: b.managerUnits,
-          caiDat: caiDat[b.tableCode] };
+        return { tableCode: b.tableCode, tableName: b.tableName, caiDat: caiDat[b.tableCode] };
       }),
       giao: docFileQuanLy_(docTabQuanLy_(ss, 'File')).map(function (f) {
         return { unitCode: f.unitCode, tableCode: f.tableCode, coFile: !!f.fileId, access: f.access };
       }),
-      ky: docKyQuanLy_(docTabQuanLy_(ss, TAB_KY)),
-      linhVuc: docLinhVuc_(docTabQuanLy_(ss, TAB_LINH_VUC), gtBang)
+      ky: docKyQuanLy_(docTabQuanLy_(ss, TAB_KY))
     };
   });
 }
@@ -415,23 +410,13 @@ function xuLyQtLuuTaiKhoan_(token, unitCode, ds) {
 }
 
 /** quyenDv: { unitCode: 'sua'|'xem'|'khong' } — đơn vị không có trong đó = khong. */
-function xuLyQtLuuPhanQuyen_(token, tableCode, managerUnits, quyenDv) {
+function xuLyQtLuuPhanQuyen_(token, tableCode, quyenDv) {
   return quanTriChay_(token, function (ss) {
-    if (!Array.isArray(managerUnits)) return { ok: false, loi: 'Danh sách đơn vị quản lý không hợp lệ' };
-    var tc = String(tableCode || '').trim(), ql = tachDsMa_(managerUnits.join(',')).join(', ');
-    var tabBang = ss.getSheetByName('Bảng');
-    var gtBang = tabBang.getDataRange().getValues();
-    var dongBang = gtBang.map(function (r) { return String(r[chiSoCot_(gtBang[0], 'tableCode')]).trim(); }).indexOf(tc);
-    if (!tc || dongBang < 1) return { ok: false, loi: 'Không tìm thấy bảng ' + tc };
+    var tc = String(tableCode || '').trim();
+    var coBang = docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).some(function (b) { return b.tableCode === tc; });
+    if (!tc || !coBang) return { ok: false, loi: 'Không tìm thấy bảng ' + tc };
     var kiem = kiemQuyenGiao_(quyenDv);
     if (kiem.loi) return { ok: false, loi: kiem.loi };
-
-    var cotQl = chiSoCot_(gtBang[0], COT_DON_VI_QUAN_LY);
-    if (cotQl < 0) {
-      cotQl = gtBang[0].length;
-      tabBang.getRange(1, cotQl + 1).setValue(COT_DON_VI_QUAN_LY).setFontWeight('bold');
-    }
-    tabBang.getRange(dongBang + 1, cotQl + 1).setNumberFormat('@').setValue(ql);
 
     var tabFile = ss.getSheetByName('File');
     ghiTabFile_(tabFile, capNhatGiao_(tabFile.getDataRange().getValues(), tc, kiem.quyen).dong);

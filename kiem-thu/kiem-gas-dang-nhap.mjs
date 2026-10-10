@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-dang-nhap.mjs
 // Vai trò  : Kiểm thử các hàm thuần xử lý đăng nhập phía GAS bằng Node.js
 // Chạy     : node app/kiem-thu/kiem-gas-dang-nhap.mjs
-// Phiên bản: 0.2.1 · Cập nhật: 08/10/2026 09:16
+// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +13,7 @@ const doc = (f) => readFileSync(new URL('../gas/' + f, import.meta.url), 'utf8')
 const ma = doc('DangNhap.js') + '\n' + doc('PhanQuyen.js');
 const sandbox = {};
 vm.createContext(sandbox);
-vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_, chonDonViTheoEmail_, linhVucTheoDonVi_ };', sandbox);
+vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_, chonDonViTheoEmail_, danhSachBangDangNhap_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -23,18 +23,20 @@ function bai(ten, fn) {
   soBai++;
 }
 
-bai('b10: lĩnh vực của đơn vị — được giao bảng (trừ "khong") hoặc quản lý bảng', () => {
-  const bang = [['tableCode', 'tableName', 'group', 'managerUnits'],
-    ['a', 'A', 'BTTDC', 'BTTDC.SNNMT'], ['b', 'B', 'NHIEMVU', ''], ['c', 'C', 'BTTDC', '']];
+bai('b10b: quản lý theo vai trò đơn vị trong lĩnh vực — mọi bảng, không theo từng bảng', () => {
+  // Cột managerUnits cũ còn sót trong tab Bảng thì bỏ qua
+  const bang = [['tableCode', 'tableName', 'group', 'templateFileId', 'managerUnits'],
+    ['a', 'A', '', 'TONG_A', 'X'], ['b', 'B', '', 'TONG_B', '']];
   const file = [['unitCode', 'tableCode', 'fileId', 'createdAt', 'access'],
-    ['X', 'a', '', '', 'sua'], ['X', 'b', '', '', 'xem'], ['Y', 'b', '', '', 'khong'], ['Z', 'c', '', '', '']];
-  const kq = sach(h.linhVucTheoDonVi_(bang, file));
-  assert.deepEqual(kq.giao['BTTDC.SNNMT'], ['BTTDC']);
-  assert.deepEqual(kq.quanLy['BTTDC.SNNMT'], ['BTTDC']);
-  assert.deepEqual(kq.giao.X, ['BTTDC', 'NHIEMVU']);
-  assert.equal(kq.quanLy.X, undefined);
-  assert.equal(kq.giao.Y, undefined);
-  assert.deepEqual(kq.giao.Z, ['BTTDC']);
+    ['X', 'a', 'F_XA', '', 'sua'], ['X', 'b', 'F_XB', '', 'khong'], ['Y', 'b', 'F_YB', '', '']];
+  const dv = [['unitCode', 'unitName', 'region', 'role'],
+    ['QL', 'Phòng quản lý', '', 'Quản lý báo cáo'], ['X', 'Đơn vị X', '', 'Đơn vị báo cáo'], ['Y', 'Đơn vị Y', '', 'Đơn vị báo cáo']];
+  const ql = sach(h.danhSachBangDangNhap_(bang, file, dv, 'QL'));
+  assert.deepEqual(ql.map((b) => b.tableCode + ':' + b.fileId), ['a:TONG_A', 'b:TONG_B']);
+  assert.deepEqual(ql[1].donVi.map((d) => d.unitCode), ['X', 'Y']);
+  assert.equal(ql[0].group, undefined);
+  // X chỉ thấy bảng được giao (a), không thành đơn vị quản lý dù cột managerUnits cũ ghi X
+  assert.deepEqual(sach(h.danhSachBangDangNhap_(bang, file, dv, 'X')).map((b) => b.tableCode + ':' + b.fileId), ['a:F_XA']);
 });
 
 // Dữ liệu mẫu giả lập Sheet Quản lý
@@ -100,14 +102,12 @@ bai('Ghép danh sách bảng theo đơn vị', () => {
   assert.deepEqual(sach(ds[0]), {
     tableCode: 'bttdc_duan',
     tableName: 'Tiến độ BTTĐC các dự án',
-    group: 'BTTDC',
     periodType: 'thang',
     fileId: 'id_file_duan_binhthoi'
   });
   assert.deepEqual(sach(ds[1]), {
     tableCode: 'bttdc_khokhan',
     tableName: 'Khó khăn – Kiến nghị',
-    group: 'BTTDC',
     periodType: 'thang',
     fileId: 'id_file_khokhan_binhthoi'
   });

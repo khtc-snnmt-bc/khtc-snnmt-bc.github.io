@@ -3,7 +3,7 @@
 // Vai trò  : Kiểm hàm thuần Kỳ báo cáo phía GAS (tên kỳ, sổ kỳ, giao của bảng, kế hoạch khoá, tự khoá, kỳ cập nhật,
 //            bảng công khai)
 // Chạy     : node app/kiem-thu/kiem-gas-ky.mjs
-// Phiên bản: 0.5.0 · Cập nhật: 08/10/2026 22:33
+// Phiên bản: 0.5.1 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -14,7 +14,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n;this.ham = { chuanHoaTenKy_, docKyQuanLy_, dongKy_, giaoCuaBangKy_, docCaiDat_, keHoachKhoa_,' +
-  ' fileTrongPhamVi_, docBangQuanLy_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_,' +
+  ' fileTrongPhamVi_, docBangQuanLy_, themToanQuyen_, docFileQuanLy_, ngayKhoaThang_, hanKhoaMacDinh_, kyDenHan_, docHanKhoaGui_,' +
   ' loiKhongCoDong_, kyTruoc_, cotAn_, cotKhung_, dauDong_, ghepDongCapNhat_,' +
   ' bangCoKyMo_, laCongKhai_, fileCongKhai_, chenhLechCongKhai_, bangCongKhaiCuaDonVi_ };', sandbox);
 const h = sandbox.ham;
@@ -97,8 +97,8 @@ bai('kế hoạch khoá: không thêm dòng → bảo vệ cả tab, chừa ô n
 });
 
 bai('soát quyền theo danh sách file mới tạo', () => {
-  const bang = h.docBangQuanLy_([['tableCode', 'tableName', 'group', 'templateFileId', 'managerUnits'],
-    ['duan', 'Dự án', 'BTTDC', 'TONG', 'QL']]);
+  const bang = h.themToanQuyen_(h.docBangQuanLy_([['tableCode', 'tableName', 'templateFileId'],
+    ['duan', 'Dự án', 'TONG']]), ['QL']);
   const file = h.docFileQuanLy_([['unitCode', 'tableCode', 'fileId'], ['A', 'duan', 'F_A'], ['B', 'duan', 'F_B']]);
   assert.deepEqual(sach(h.fileTrongPhamVi_(bang, file, { fileIds: ['F_B'] })), ['F_B']);
   assert.deepEqual(sach(h.fileTrongPhamVi_(bang, file, { fileIds: ['F_B'], unitCodes: ['A'] })), ['F_B', 'F_A']);
@@ -220,7 +220,7 @@ bai('chenhLechCongKhai_: thêm / đổi / gỡ quyền "bất kỳ ai"', () => {
 
 bai('bangCongKhaiCuaDonVi_: vào không cần Gmail chỉ thấy bảng công khai đang mở', () => {
   assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), 'A')),
-    [{ tableCode: 'ck', tableName: 'Công khai', group: 'TC', fileId: 'F_A_CK' }]);
+    [{ tableCode: 'ck', tableName: 'Công khai', fileId: 'F_A_CK' }]);
   assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(true), 'A')), []);
   assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), 'B')), []);   // chỉ xem
   assert.deepEqual(sach(h.bangCongKhaiCuaDonVi_(bangCK, fileCK, kyCK(false), 'C')), []);   // chưa có file

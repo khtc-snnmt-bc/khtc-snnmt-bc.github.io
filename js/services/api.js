@@ -2,14 +2,22 @@
 // bcsnn · js/services/api.js
 // Vai trò  : Gọi API GAS — file DUY NHẤT chạy fetch; xin mã Google (thư viện GIS)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.16.0 · Cập nhật: 09/10/2026 12:30
+// Phiên bản: 0.17.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // GAS chuyển hướng 302 → fetch tự theo; Content-Type text/plain tránh
 // preflight CORS. Lần gọi đầu ~3–10 s, sau đó ~2 s. Thỉnh thoảng GAS trả
 // HTML thay vì JSON, hoặc chậm quá thời gian chờ → thử lại (so-tay/khoa-ky.md mục K3).
+// Mọi yêu cầu gửi kèm mã lĩnh vực của trang (datLinhVuc) — GAS mở Sheet quản lý của lĩnh vực đó.
 
 var API = (function () {
   'use strict';
+
+  var linhVuc = '';
+
+  /** Trang gọi một lần lúc mở: mã lĩnh vực (CAU_HINH.LINH_VUC[..].ma) gửi kèm mọi yêu cầu. */
+  function datLinhVuc(ma) {
+    linhVuc = ma || '';
+  }
 
   /**
    * Gửi POST tới GAS, trả Promise<object>.
@@ -23,7 +31,7 @@ var API = (function () {
     var url = CAU_HINH.layGasUrl();
     if (!url) return Promise.reject(new Error('Chưa cấu hình URL web app GAS. Vui lòng cài đặt URL GAS trước.'));
 
-    var body = Object.assign({ action: action }, duLieu || {});
+    var body = Object.assign({ action: action, linhVuc: linhVuc }, duLieu || {});
     var soLanThu = 0;
     var soLanMax = (CAU_HINH.GAS_THU_LAI || 0) + 1;
 
@@ -76,7 +84,7 @@ var API = (function () {
    * Đăng nhập: gửi Gmail + mã đơn vị → GAS kiểm → trả danh sách bảng.
    * @param {string} email
    * @param {string} unitCode
-   * @returns {Promise<object>} { ok, tables: [{tableCode, tableName, group, fileId}], unitName, role }
+   * @returns {Promise<object>} { ok, tables: [{tableCode, tableName, fileId}], unitName, role }
    */
   function dangNhap(email, unitCode) {
     return goi('dangNhap', { email: email, unitCode: unitCode });
@@ -177,9 +185,9 @@ var API = (function () {
     return goi('qtLuuTaiKhoan', { token: token, unitCode: unitCode, ds: ds }, CHO_LUU);
   }
 
-  /** Đơn vị quản lý + quyền từng đơn vị { unitCode: 'sua'|'xem'|'khong' } của một bảng; GAS tự chia sẻ / gỡ quyền file. */
-  function qtLuuPhanQuyen(token, tableCode, managerUnits, units) {
-    return goi('qtLuuPhanQuyen', { token: token, tableCode: tableCode, managerUnits: managerUnits, units: units }, CHO_LUU);
+  /** Quyền từng đơn vị { unitCode: 'sua'|'xem'|'khong' } của một bảng; GAS tự chia sẻ / gỡ quyền file. */
+  function qtLuuPhanQuyen(token, tableCode, units) {
+    return goi('qtLuuPhanQuyen', { token: token, tableCode: tableCode, units: units }, CHO_LUU);
   }
 
   /**
@@ -256,11 +264,6 @@ var API = (function () {
     return goi('qtKiemMau', { token: token, tableCode: tableCode }, CHO_LUU);
   }
 
-  /** Thêm lĩnh vực (mã + tên) vào danh mục; GAS trả danh mục mới. */
-  function qtThemLinhVuc(token, groupCode, groupName) {
-    return goi('qtThemLinhVuc', { token: token, groupCode: groupCode, groupName: groupName }, CHO_LUU);
-  }
-
   /** Thêm đơn vị vào tab Đơn vị; GAS kiểm mã trùng / không hợp lệ. */
   function qtThemDonVi(token, unitCode, unitName, region, role) {
     return goi('qtThemDonVi', { token: token, unitCode: unitCode, unitName: unitName, region: region, role: role }, CHO_LUU);
@@ -283,10 +286,10 @@ var API = (function () {
 
   return {
     goi: goi,
+    datLinhVuc: datLinhVuc,
     qtGiaoTheoMau: qtGiaoTheoMau,
     qtDonViBang: qtDonViBang,
     qtThemDongDonVi: qtThemDongDonVi,
-    qtThemLinhVuc: qtThemLinhVuc,
     qtThemDonVi: qtThemDonVi,
     qtTaoBang: qtTaoBang,
     qtTaiMau: qtTaiMau,

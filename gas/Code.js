@@ -2,17 +2,22 @@
 // bcsnn · gas/Code.js
 // Vai trò  : Cửa vào web app GAS — doPost định tuyến theo action, luôn trả JSON
 // Lớp      : gas — gọi: DangNhap.js, QuanTri.js, PhanQuyen.js, KyBaoCao.js, TongHop.js, QuanLyBang.js, DonVi.js, XacMinhGoogle.js, VeDangNhap.js
-// Phiên bản: 0.14.1 · Cập nhật: 10/10/2026 14:10
+// Phiên bản: 0.15.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // Nguồn GAS DUY NHẤT là thư mục app/gas/ (repo Public) → KHÔNG ghi ID file,
-// Gmail, mật khẩu ở đây. ID Sheet quản lý nằm ở Script Properties (QUAN_LY_ID).
+// Gmail, mật khẩu ở đây. Mỗi lĩnh vực một Sheet quản lý, ID ở Script Properties
+// QUAN_LY_ID_<mã lĩnh vực> (b10b). Mọi yêu cầu gửi kèm linhVuc; lĩnh vực độc lập hoàn toàn.
 // Mã dựng dữ liệu thử (B04.js) nằm ngoài app/, đẩy kèm khi clasp push;
 // có mặt trên máy chủ thì nhận các action b04_/b05_.
 
-/** ID Sheet quản lý trong Script Properties (tên cũ B04_QUAN_LY vẫn đọc). */
-function layQuanLyId_() {
-  var p = PropertiesService.getScriptProperties();
-  return p.getProperty('QUAN_LY_ID') || p.getProperty('B04_QUAN_LY');
+var DS_LINH_VUC = ['BTTDC', 'NHIEMVU', 'BCXA'];
+var LINH_VUC_YC_ = '';   // lĩnh vực của yêu cầu đang chạy (doPost đặt) — phiên quản trị phải cùng lĩnh vực
+
+/** ID Sheet quản lý của một lĩnh vực ('' nếu mã lạ / chưa cấu hình). */
+function layQuanLyId_(linhVuc) {
+  var lv = String(linhVuc || '').trim();
+  if (DS_LINH_VUC.indexOf(lv) < 0) return '';
+  return PropertiesService.getScriptProperties().getProperty('QUAN_LY_ID_' + lv) || '';
 }
 
 function doPost(e) {
@@ -25,9 +30,10 @@ function doPost(e) {
   var action = String(yc.action || '');
   if (/^b0[45]_/.test(action) && typeof b04XuLy_ === 'function') return traJson_(b04XuLy_(yc));
 
-  var id = layQuanLyId_();
+  LINH_VUC_YC_ = String(yc.linhVuc || '').trim();
+  var id = layQuanLyId_(LINH_VUC_YC_);
   switch (action) {
-    case 'layDonVi': return traJson_(xuLyLayDonVi_(id, true));
+    case 'layDonVi': return traJson_(xuLyLayDonVi_(id));
     case 'layTaiKhoan': return traJson_(xuLyLayTaiKhoan_(id, yc.unitCode));
     case 'timDonViTheoEmail': return traJson_(xuLyTimDonViTheoEmail_(id, yc.email));
     case 'dangNhap': return traJson_(xuLyDangNhap_(id, yc.email, yc.unitCode));
@@ -40,7 +46,7 @@ function doPost(e) {
     case 'quanTriDangXuat': return traJson_(xuLyQuanTriDangXuat_(yc.token));
     case 'qtLayDuLieu': return traJson_(xuLyQtLayDuLieu_(yc.token));
     case 'qtLuuTaiKhoan': return traJson_(xuLyQtLuuTaiKhoan_(yc.token, yc.unitCode, yc.ds));
-    case 'qtLuuPhanQuyen': return traJson_(xuLyQtLuuPhanQuyen_(yc.token, yc.tableCode, yc.managerUnits, yc.units));
+    case 'qtLuuPhanQuyen': return traJson_(xuLyQtLuuPhanQuyen_(yc.token, yc.tableCode, yc.units));
     case 'qtTaoKy': return traJson_(xuLyQtTaoKy_(yc.token, yc.tableCode, yc.ngay, yc.batDau, yc.hanKhoa));
     case 'qtKhoaKy': return traJson_(xuLyQtKhoaKy_(yc.token, yc.tableCode, yc.tenKy, yc.khoa, yc.batDau));
     case 'qtXoaKy': return traJson_(xuLyQtXoaKy_(yc.token, yc.tableCode, yc.tenKy, yc.batDau));
@@ -55,7 +61,6 @@ function doPost(e) {
     case 'qtGiaoTheoMau': return traJson_(xuLyQtGiaoTheoMau_(yc.token, yc.tableCode));
     case 'qtDonViBang': return traJson_(xuLyQtDonViBang_(yc.token, yc.tableCode));
     case 'qtThemDongDonVi': return traJson_(xuLyQtThemDongDonVi_(yc.token, yc.tableCode, yc.unitCode));
-    case 'qtThemLinhVuc': return traJson_(xuLyQtThemLinhVuc_(yc.token, yc.groupCode, yc.groupName));
     case 'qtThemDonVi': return traJson_(xuLyQtThemDonVi_(yc.token, yc.unitCode, yc.unitName, yc.region, yc.role));
   }
   return traJson_({ ok: false, loi: 'Không rõ action' });

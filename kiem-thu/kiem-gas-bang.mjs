@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
-// Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, lĩnh vực, mã all, đủ file / tab kỳ)
+// Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, mã all, đủ file / tab kỳ)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.4.2 · Cập nhật: 09/10/2026 13:05
+// Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +13,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(['DangNhap.js', 'QuanTri.js', 'PhanQuyen.js', 'KyBaoCao.js', 'QuanLyBang.js'].map(doc).join('\n') +
   '\n;this.ham = { cotNhapTuKhai_, kiemKhaiBangMoi_, kiemCaiDatSua_, kiemMau_, dongBangMoi_, caiDatChoTrang_, docCaiDat_,' +
-  ' docLinhVuc_, kiemLinhVucMoi_, dongGiuLai_, maTrongMau_, kiemKhaiTaiMau_, loiChoExcel_,' +
+  ' dongGiuLai_, maTrongMau_, kiemKhaiTaiMau_, loiChoExcel_,' +
   ' donViPhanQuyen_, dongCuoiCoMa_, kiemDuFile_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
@@ -57,10 +57,8 @@ bai('cột nhập suy từ kiểu cột (cột A là mã đơn vị)', () => {
   assert.equal(h.cotNhapTuKhai_(k('congThuc')), '');
 });
 
-const LV = ['BTTDC', 'TC'];
-
 const khai = {
-  tableCode: 'giai_ngan', tableName: ' Tiến độ giải ngân ', group: 'TC', sourceType: 'docLap',
+  tableCode: 'giai_ngan', tableName: ' Tiến độ giải ngân ', sourceType: 'docLap',
   allowAddRows: true, dataRows: '',
   cot: [
     { ten: 'Tên dự án', kieu: 'chu' },
@@ -72,11 +70,12 @@ const khai = {
 };
 
 bai('khai bảng mới hợp lệ → chuẩn hoá', () => {
-  const kq = sach(h.kiemKhaiBangMoi_(khai, ['bttdc_duan'], LV));
+  const kq = sach(h.kiemKhaiBangMoi_(khai, ['bttdc_duan']));
   assert.equal(kq.loi, undefined);
   assert.equal(kq.bang.aggregateType, 'ghep');
   assert.equal(kq.bang.sourceType, 'docLap');
-  const tong = sach(h.kiemKhaiBangMoi_(Object.assign({}, khai, { aggregateType: 'tong' }), [], LV));
+  assert.equal(kq.bang.group, undefined, 'b10b: bảng không còn lĩnh vực — lĩnh vực là cả Sheet quản lý');
+  const tong = sach(h.kiemKhaiBangMoi_(Object.assign({}, khai, { aggregateType: 'tong' }), []));
   assert.equal(tong.bang.sourceType, 'gopTach', 'bảng tổng luôn Sở giao dòng');
   assert.equal(tong.bang.allowAddRows, false, 'bảng tổng không cho thêm dòng');
   assert.equal(kq.bang.allowAddRows, true);
@@ -89,15 +88,13 @@ bai('khai bảng mới hợp lệ → chuẩn hoá', () => {
 
 bai('khai bảng mới sai → báo đúng chỗ', () => {
   const sai = (doi, chua) => {
-    const kq = h.kiemKhaiBangMoi_(Object.assign({}, khai, doi), ['giai_ngan_cu', 'Bttdc'], LV);
+    const kq = h.kiemKhaiBangMoi_(Object.assign({}, khai, doi), ['giai_ngan_cu', 'Bttdc']);
     assert.ok(kq.loi && kq.loi.includes(chua), JSON.stringify(doi) + ' → ' + kq.loi);
   };
   sai({ tableCode: 'Giải ngân' }, 'Mã bảng');
   sai({ tableCode: 'bttdc' }, 'đã có');
   sai({ tableName: '  ' }, 'tên bảng');
   sai({ sourceType: 'x' }, 'Cách nhập dòng');
-  sai({ group: '' }, 'Chưa chọn lĩnh vực');
-  sai({ group: 'Tài chính' }, 'chưa có trong danh mục');
   sai({ aggregateType: 'cong' }, 'Cách tổng hợp');
   sai({ dataRows: '0' }, 'Số dòng sẵn');
   sai({ dataRows: '2.5' }, 'Số dòng sẵn');
@@ -110,20 +107,20 @@ bai('khai bảng mới sai → báo đúng chỗ', () => {
 
 bai('cài đặt sửa trên app', () => {
   const kq = sach(h.kiemCaiDatSua_({ tableName: 'X', group: 'BTTDC', sourceType: 'gopTach', inputCols: 'c:j, l', inputRows: '5:20',
-    lockedRows: '', allowAddRows: false, noteTabs: 'Chú thích, ', dataRows: '' }, LV));
+    lockedRows: '', allowAddRows: false, noteTabs: 'Chú thích, ', dataRows: '' }));
+  assert.equal(kq.caiDat.group, undefined, 'b10b: không ghi lĩnh vực vào tab Bảng');
   assert.equal(kq.caiDat.aggregateType, 'ghep');
   assert.equal(kq.caiDat.inputCols, 'C:J, L');
   assert.equal(kq.caiDat.noteTabs, 'Chú thích');
   assert.equal(kq.caiDat.dataRows, '');
-  const cdSai = (doi) => h.kiemCaiDatSua_(Object.assign({ tableName: 'X', group: 'TC', sourceType: 'docLap', inputCols: 'C' }, doi), LV).loi;
+  const cdSai = (doi) => h.kiemCaiDatSua_(Object.assign({ tableName: 'X', sourceType: 'docLap', inputCols: 'C' }, doi)).loi;
   assert.ok(cdSai({ inputCols: 'C-J' }).includes('Cột được nhập'));
   assert.ok(cdSai({ lockedRows: 'năm' }).includes('Dòng khoá'));
   assert.ok(cdSai({ dataRows: '-1' }).includes('Số dòng sẵn'));
-  assert.ok(cdSai({ group: 'XX' }).includes('chưa có trong danh mục'));
   assert.ok(cdSai({ lockDay: '40' }).includes('Tự khoá'));
   assert.ok(cdSai({ hiddenCols: 'B-D' }).includes('Cột ẩn'));
   assert.equal(kq.caiDat.periodMode, 'nhapMoi');
-  const cdDung = (doi) => h.kiemCaiDatSua_(Object.assign({ tableName: 'X', group: 'TC', sourceType: 'docLap', inputCols: 'C' }, doi), LV).caiDat;
+  const cdDung = (doi) => h.kiemCaiDatSua_(Object.assign({ tableName: 'X', sourceType: 'docLap', inputCols: 'C' }, doi)).caiDat;
   assert.equal(cdDung({ hiddenCols: ' b, d:e ' }).hiddenCols, 'B, D:E');
   assert.equal(cdDung({ periodMode: 'capNhat' }).periodMode, 'capNhat');
   assert.equal(cdDung({ periodMode: 'la' }).periodMode, 'nhapMoi');
@@ -134,8 +131,8 @@ bai('cài đặt sửa trên app', () => {
   assert.equal(cdDung({ aggregateKeep: 'la' }).aggregateKeep, 'congThuc');
   assert.equal(cdDung({ shareType: 'la' }).shareType, 'moi');
   assert.equal(kq.caiDat.lockDay, '');
-  assert.equal(h.kiemCaiDatSua_({ tableName: 'X', group: 'TC', sourceType: 'docLap', inputCols: 'C', lockDay: '5' }, LV).caiDat.lockDay, 5);
-  assert.equal(sach(h.kiemCaiDatSua_({ tableName: 'X', group: 'TC', sourceType: 'docLap', aggregateType: 'tong', inputCols: 'C' }, LV)).caiDat.sourceType, 'gopTach');
+  assert.equal(h.kiemCaiDatSua_({ tableName: 'X', sourceType: 'docLap', inputCols: 'C', lockDay: '5' }).caiDat.lockDay, 5);
+  assert.equal(sach(h.kiemCaiDatSua_({ tableName: 'X', sourceType: 'docLap', aggregateType: 'tong', inputCols: 'C' })).caiDat.sourceType, 'gopTach');
 });
 
 const cd = (doi) => Object.assign({ sourceType: 'gopTach', inputCols: 'C:D', inputRows: '', lockedRows: '', noteTabs: [], dataRows: '' }, doi);
@@ -164,19 +161,6 @@ bai('đọc mã đơn vị ở cột A để giao bảng', () => {
   const kq = sach(h.maTrongMau_(['Bảng', 'Mã đơn vị', 'DV2', 'all', 'DV1', 'DV2', '', 'XX', 'XX', 5], ['DV1', 'DV2']));
   assert.deepEqual(kq, { ma: ['DV2', 'DV1'], coAll: true, sai: ['XX', '5'] });
   assert.deepEqual(sach(h.maTrongMau_(['Bảng', 'Không tiêu đề'], ['DV1'])), { ma: [], coAll: false, sai: [] });
-});
-
-bai('lĩnh vực: tab + mã đang dùng ở tab Bảng; thêm mới', () => {
-  const gtLv = [['groupCode', 'groupName'], ['TC', 'Tài chính'], ['', '']];
-  const gtBang = [['tableCode', 'tableName', 'group'], ['a', 'A', 'BTTDC'], ['b', 'B', 'TC']];
-  assert.deepEqual(sach(h.docLinhVuc_(gtLv, gtBang)),
-    [{ groupCode: 'TC', groupName: 'Tài chính' }, { groupCode: 'BTTDC', groupName: 'BTTDC' }]);
-  assert.deepEqual(sach(h.docLinhVuc_([], [])), []);
-  assert.deepEqual(sach(h.kiemLinhVucMoi_(' khtc ', ' Kế hoạch ', gtLv)).linhVuc, { groupCode: 'KHTC', groupName: 'Kế hoạch' });
-  assert.ok(h.kiemLinhVucMoi_('tc', 'Khác', gtLv).loi.includes('đã có'));
-  assert.ok(h.kiemLinhVucMoi_('XY', 'tài chính', gtLv).loi.includes('đã có'));
-  assert.ok(h.kiemLinhVucMoi_('Tài', 'X', gtLv).loi.includes('Mã lĩnh vực'));
-  assert.ok(h.kiemLinhVucMoi_('XY', ' ', gtLv).loi.includes('tên lĩnh vực'));
 });
 
 bai('kiểm mẫu: hợp lệ → rỗng', () => {
@@ -217,7 +201,7 @@ bai('kiểm mẫu: Sở giao dòng chưa có mã · tự nhập dòng có chữ 
 });
 
 bai('dòng tab Bảng: giữ ô cũ, thay ô có giá trị mới', () => {
-  assert.deepEqual(sach(h.dongBangMoi_(['tableCode', 'tableName', 'managerUnits'], ['a', 'Cũ', 'X'], { tableName: 'Mới' })),
+  assert.deepEqual(sach(h.dongBangMoi_(['tableCode', 'tableName', 'noteTabs'], ['a', 'Cũ', 'X'], { tableName: 'Mới' })),
     ['a', 'Mới', 'X']);
   assert.deepEqual(sach(h.dongBangMoi_(['tableCode', 'group'], null, { tableCode: 'b' })), ['b', '']);
 });
@@ -235,22 +219,21 @@ bai('cài đặt cho trang: chữ hoá, noteTabs nối lại', () => {
 });
 
 bai('tải Excel: mã bảng, file .xlsx, cỡ file, cài đặt như Sửa', () => {
-  const kb = { tableCode: 'bttdc_duan', tableName: 'Tiến độ dự án', group: 'BTTDC', sourceType: 'gopTach',
+  const kb = { tableCode: 'bttdc_duan', tableName: 'Tiến độ dự án', sourceType: 'gopTach',
     inputCols: 'o:s, v', noteTabs: 'Chú thích', tenFile: 'mau.XLSX', duLieu: 'QUJD', dataRows: '99' };
-  const kq = sach(h.kiemKhaiTaiMau_(kb, ['khac'], LV));
+  const kq = sach(h.kiemKhaiTaiMau_(kb, ['khac']));
   assert.equal(kq.tableCode, 'bttdc_duan');
   assert.equal(kq.caiDat.inputCols, 'O:S, V');
   assert.equal(kq.caiDat.noteTabs, 'Chú thích');
   assert.equal(kq.caiDat.dataRows, '');
   assert.equal(kq.caiDat.allowAddRows, false);
-  const sai = (doi, dsMa) => h.kiemKhaiTaiMau_(Object.assign({}, kb, doi), dsMa || [], LV).loi;
+  const sai = (doi, dsMa) => h.kiemKhaiTaiMau_(Object.assign({}, kb, doi), dsMa || []).loi;
   assert.match(sai({}, ['BTTDC_duan']), /đã có/);
   assert.match(sai({ tableCode: 'Bảng' }), /chữ thường/);
   assert.match(sai({ duLieu: '' }), /Chưa chọn file/);
   assert.match(sai({ tenFile: 'mau.xls' }), /\.xlsx/);
   assert.match(sai({ duLieu: 'A'.repeat(15 * 1048576) }), /quá lớn/);
   assert.match(sai({ inputCols: '' }), /Cột được nhập/);
-  assert.match(sai({ group: 'XX' }), /chưa có trong danh mục/);
 });
 
 bai('tải Excel: cách sửa chỉ về file Excel', () => {

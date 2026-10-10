@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-quan-tri.mjs
 // Vai trò  : Kiểm hàm thuần mật khẩu / phiên quản trị phía GAS bằng Node
 // Chạy     : node app/kiem-thu/kiem-gas-quan-tri.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 06/10/2026 11:15
+// Phiên bản: 0.2.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -65,11 +65,14 @@ bai('laTaiKhoanQuanTri_ chỉ đúng vai trò Quản trị, đúng đơn vị', 
   assert.equal(h.laTaiKhoanQuanTri_(dsTK, '', ''), false);
 });
 
-bai('phienHopLe_ — đổi mật khẩu (đợt mới) thì phiên cũ hết', () => {
-  assert.equal(h.phienHopLe_({ email: 'qt@example.com', dot: '1' }, '1'), true);
-  assert.equal(h.phienHopLe_({ email: 'qt@example.com', dot: '1' }, '2'), false);
-  assert.equal(h.phienHopLe_(null, '1'), false);
-  assert.equal(h.phienHopLe_({ dot: '1' }, '1'), false);
+bai('phienHopLe_ — đổi mật khẩu (đợt mới) thì phiên cũ hết; phiên chỉ dùng ở lĩnh vực đã đăng nhập', () => {
+  const p = { email: 'qt@example.com', dot: '1', linhVuc: 'BTTDC' };
+  assert.equal(h.phienHopLe_(p, '1', 'BTTDC'), true);
+  assert.equal(h.phienHopLe_(p, '2', 'BTTDC'), false);
+  assert.equal(h.phienHopLe_(p, '1', 'NHIEMVU'), false);                              // b10b
+  assert.equal(h.phienHopLe_({ email: 'qt@example.com', dot: '1' }, '1', ''), false);   // phiên cũ chưa có lĩnh vực
+  assert.equal(h.phienHopLe_(null, '1', 'BTTDC'), false);
+  assert.equal(h.phienHopLe_({ dot: '1', linhVuc: 'BTTDC' }, '1', 'BTTDC'), false);
 });
 
 console.log('kiem-gas-quan-tri: ' + soBai + ' bài đạt');

@@ -1,12 +1,13 @@
 // ============================================================
 // bcsnn · js/pages/trang-linh-vuc.js
 // Vai trò  : Trang một lĩnh vực (/BTTDC, /Nhiem_Vu, /BC_xa): dựng khung đăng nhập + nhập liệu
-//            rồi điều khiển luồng — đăng nhập → nhập liệu (chỉ bảng của lĩnh vực) → đăng xuất
+//            rồi điều khiển luồng — đăng nhập → nhập liệu → đăng xuất
 // Lớp      : pages — được gọi bởi: <thư mục lĩnh vực>/index.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.2.0 · Cập nhật: 10/10/2026 14:10
+// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // Trang lĩnh vực chỉ ghi <body data-linh-vuc="<thư mục>"> và nạp script; khung HTML nằm ở đây
-// để ba lĩnh vực dùng chung một bản. Đăng nhập, vé nhớ chung cả ba (cùng địa chỉ gốc).
+// để ba lĩnh vực dùng chung một bản. Mỗi lĩnh vực một Sheet quản lý riêng (b10b): đơn vị, tài
+// khoản, bảng, phiên, vé nhớ đều riêng — đăng nhập lĩnh vực này không vào được lĩnh vực khác.
 
 (function () {
   'use strict';
@@ -87,7 +88,8 @@
   function batDau() {
     var lv = LINH_VUC.layTheoThuMuc(document.body.getAttribute('data-linh-vuc'));
     if (!lv) { location.replace(GOC); return; }
-    PHIEN.luuLinhVuc(lv.thuMuc);
+    PHIEN.luuLinhVuc(lv.thuMuc);   // phiên, vé nhớ cất riêng theo lĩnh vực
+    API.datLinhVuc(lv.ma);         // GAS mở Sheet quản lý của lĩnh vực này
 
     document.body.insertAdjacentHTML('afterbegin', khungHtml());
     DOM.$('#tieu-de-dang-nhap').textContent = lv.ten;
@@ -96,18 +98,16 @@
     var elUserBadge = DOM.$('#nhap-lieu-user-badge');
     var elBtnLogout = DOM.$('#btn-dang-xuat');
 
-    // Phiên giữ mọi bảng GAS trả; trang này chỉ hiện bảng của lĩnh vực mình
     function hienNhapLieu(phien) {
-      var rieng = Object.assign({}, phien, { tables: LINH_VUC.locBang(phien.tables, lv.group) });
       DOM.hien(elUserBadge);
       DOM.hien(elBtnLogout);
-      PAGE_NHAP_LIEU.hien(rieng);
+      PAGE_NHAP_LIEU.hien(phien);
     }
 
     PAGE_DANG_NHAP.khoiTao(
       hienNhapLieu,
       function () { location.href = GOC; },   // ← Chọn lĩnh vực khác
-      { google: true, locDonVi: function (ds) { return LINH_VUC.locDonVi(ds, lv.group); } }
+      { google: true }
     );
 
     PAGE_NHAP_LIEU.khoiTao(function () {      // Đăng xuất → về đăng nhập của lĩnh vực này

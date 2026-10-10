@@ -3,8 +3,8 @@
 // Vai trò  : Kỳ báo cáo — tạo tab kỳ ở mọi file đơn vị của một bảng (thiếu file
 //            thì tạo file), khoá / mở khoá / xoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
-//            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_)
-// Phiên bản: 0.6.1 · Cập nhật: 09/10/2026 13:05
+//            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_), Code.js (layQuanLyId_, DS_LINH_VUC)
+// Phiên bản: 0.7.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -17,7 +17,8 @@
 // KY_MS_TOI_DA rồi trả `tiepTu`; trang gọi lại với batDau = tiepTu tới khi null.
 // Tự khoá (thiết kế mục 7): mỗi kỳ có ngày tự khoá (tab Kỳ cột lockDate), mặc định
 // = ngày `lockDay` của bảng đầu tiên sau ngày kỳ. Trigger theo giờ gọi tuKhoaKy —
-// chủ dự án tự cài trong trình soạn (không dùng ScriptApp → không thêm quyền mới).
+// chủ dự án tự cài trong trình soạn (không dùng ScriptApp → không thêm quyền mới); một trigger
+// chạy lần lượt Sheet quản lý của mọi lĩnh vực, chỗ dừng cất riêng theo từng file.
 // Bảng công khai: tạo / khoá / mở / xoá kỳ bật–tắt luôn link công khai từng file — bảng
 // không còn kỳ mở thì tắt (PhanQuyen.js laCongKhai_).
 
@@ -27,7 +28,7 @@ var TIEN_TO_KHOA_KY = 'Khoá kỳ';
 var META_KHOA_KY = 'bcsnn_khoaKy';
 var TAB_KY = 'Kỳ';
 var KY_MS_TOI_DA = 240000;
-var TU_KHOA_TIEP = 'TU_KHOA_TIEP';   // Script Properties: chỗ dừng của lần tự khoá trước
+var TU_KHOA_TIEP = 'TU_KHOA_TIEP';   // Script Properties (+ '_' + ID Sheet quản lý): chỗ dừng của lần tự khoá trước
 // Kiểu kỳ (cài đặt bảng periodMode): nhập mới = khung từ file tổng, ô nhập trống ·
 // cập nhật = chép tab kỳ trước của chính file đơn vị (giữ số), thêm dòng mẫu mới
 var KY_NHAP_MOI = 'nhapMoi';
@@ -793,8 +794,9 @@ function xoaKy_(ss, tableCode, tenKy, batDau) {
   }
   var tabKy = tabKyQuanLy_(ss), dong = dongKy_(tabKy.getDataRange().getValues(), tableCode, tenKy);
   if (dong) tabKy.deleteRow(dong);
-  var p = PropertiesService.getScriptProperties(), tiep = JSON.parse(p.getProperty(TU_KHOA_TIEP) || 'null');
-  if (tiep && tiep.tableCode === tableCode && tiep.periodName === tenKy) p.deleteProperty(TU_KHOA_TIEP);
+  var p = PropertiesService.getScriptProperties(), khoaTiep = khoaTuKhoaTiep_(ss);
+  var tiep = JSON.parse(p.getProperty(khoaTiep) || 'null');
+  if (tiep && tiep.tableCode === tableCode && tiep.periodName === tenKy) p.deleteProperty(khoaTiep);
   return kq;
 }
 
@@ -813,13 +815,18 @@ function homNay_() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
 }
 
+/** Tên Script Property cất chỗ dừng tự khoá — riêng cho Sheet quản lý của mỗi lĩnh vực. */
+function khoaTuKhoaTiep_(ss) {
+  return TU_KHOA_TIEP + '_' + ss.getId();
+}
+
 /**
- * Khoá lần lượt các kỳ tới ngày tự khoá. Hết giờ giữa chừng thì cất chỗ dừng vào
- * Script Properties — lần chạy sau (giờ sau) làm tiếp từ đó.
+ * Khoá lần lượt các kỳ tới ngày tự khoá (của một lĩnh vực). Hết giờ giữa chừng thì cất chỗ
+ * dừng vào Script Properties — lần chạy sau (giờ sau) làm tiếp từ đó.
  */
 function tuKhoaKyDenHan_(ss, homNay, hetGio) {
-  var p = PropertiesService.getScriptProperties();
-  var tiep = JSON.parse(p.getProperty(TU_KHOA_TIEP) || 'null');
+  var p = PropertiesService.getScriptProperties(), khoaTiep = khoaTuKhoaTiep_(ss);
+  var tiep = JSON.parse(p.getProperty(khoaTiep) || 'null');
   var denHan = kyDenHan_(docKyQuanLy_(docTabQuanLy_(ss, TAB_KY)), homNay);
   var ketQua = [];
   for (var i = 0; i < denHan.length && Date.now() < hetGio; i++) {
@@ -828,25 +835,34 @@ function tuKhoaKyDenHan_(ss, homNay, hetGio) {
     var kq = khoaMoKy_(ss, k.tableCode, k.periodName, true, batDau, hetGio);
     ketQua.push({ tableCode: k.tableCode, kq: kq });
     if (kq.ok && kq.tiepTu !== null) {
-      p.setProperty(TU_KHOA_TIEP, JSON.stringify({ tableCode: k.tableCode, periodName: k.periodName, batDau: kq.tiepTu }));
+      p.setProperty(khoaTiep, JSON.stringify({ tableCode: k.tableCode, periodName: k.periodName, batDau: kq.tiepTu }));
+      ketQua.chuaXong = true;
       return ketQua;
     }
   }
-  p.deleteProperty(TU_KHOA_TIEP);
+  if (Date.now() >= hetGio && ketQua.length < denHan.length) ketQua.chuaXong = true;
+  else p.deleteProperty(khoaTiep);
   return ketQua;
 }
 
 /**
  * TRIGGER theo giờ — chủ dự án cài một lần: trình soạn Apps Script → Trình kích hoạt →
  * Thêm → hàm tuKhoaKy · Theo thời gian · Theo giờ · Mỗi giờ. Quản trị đang chạy việc
- * (đang giữ khoá) thì bỏ lượt này, giờ sau làm.
+ * (đang giữ khoá) thì bỏ lượt này, giờ sau làm. Lần lượt mọi lĩnh vực (Code.js DS_LINH_VUC);
+ * hết giờ ở lĩnh vực nào thì dừng, giờ sau làm tiếp.
  */
 function tuKhoaKy() {
   var khoa = LockService.getScriptLock();
   if (!khoa.tryLock(30000)) return;
   try {
-    var kq = tuKhoaKyDenHan_(SpreadsheetApp.openById(layQuanLyId_()), homNay_(), Date.now() + KY_MS_TOI_DA);
-    if (kq.length) console.log('Tự khoá: ' + JSON.stringify(kq));
+    var hetGio = Date.now() + KY_MS_TOI_DA;
+    for (var i = 0; i < DS_LINH_VUC.length && Date.now() < hetGio; i++) {
+      var id = layQuanLyId_(DS_LINH_VUC[i]);
+      if (!id) continue;
+      var kq = tuKhoaKyDenHan_(SpreadsheetApp.openById(id), homNay_(), hetGio);
+      if (kq.length) console.log('Tự khoá ' + DS_LINH_VUC[i] + ': ' + JSON.stringify(kq));
+      if (kq.chuaXong) break;
+    }
   } finally {
     khoa.releaseLock();
   }

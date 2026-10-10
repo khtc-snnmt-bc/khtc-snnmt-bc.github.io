@@ -2,14 +2,14 @@
 // bcsnn · gas/QuanLyBang.js
 // Vai trò  : Quản lý bảng — dựng file tổng (bảng mẫu) từ khai báo cột trên app,
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
-//            danh mục lĩnh vực (tab "Lĩnh vực": mã + tên), bảng mới từ Excel tải lên, xoá bảng,
-//            kiểm bảng đủ file đơn vị + đủ tab kỳ
+//            bảng mới từ Excel tải lên, xoá bảng, kiểm bảng đủ file đơn vị + đủ tab kỳ
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.8.1 · Cập nhật: 09/10/2026 13:05
+// Phiên bản: 0.9.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
-// File tổng nằm trong thư mục con tên mã bảng, cạnh Sheet quản lý — file đơn
+// Mỗi lĩnh vực một Sheet quản lý nằm trong thư mục Drive của lĩnh vực (b10b) →
+// file tổng nằm trong thư mục con tên mã bảng, cạnh Sheet quản lý — file đơn
 // vị tạo sau cũng vào đó (taoFileChoDonVi_). Bảng "Sở giao dòng": app dựng
 // khung, quản trị điền dòng (mã đơn vị ở cột A) trong file tổng rồi Kiểm mẫu.
 // Cột A bảng Sở giao dòng có danh sách chọn: 'all' + mã đơn vị, để trống được.
@@ -26,12 +26,11 @@ var KIEU_COT_NHAP = ['chu', 'so', 'ngay', 'chon'];
 var KIEU_COT_HOP_LE = KIEU_COT_NHAP.concat(['congThuc']);
 var CACH_NHAP_DONG = ['docLap', 'gopTach'];
 var CACH_TONG_HOP = ['ghep', 'tong'];
-var TAB_LINH_VUC = 'Lĩnh vực';
 var MAU_EXCEL_TOI_DA = 10 * 1048576;
 var MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 var LOI_CONG_THUC = ['#ERROR!', '#NAME?', '#REF!', '#N/A'];
 // Cột chữ trong tab Bảng — đặt định dạng chữ kẻo Sheet đổi '5:7' thành giờ
-var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'managerUnits', 'hiddenCols'];
+var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'hiddenCols'];
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-bang.mjs) ----------
 
@@ -60,46 +59,16 @@ function soDongSan_(o, macDinh) {
 }
 
 /**
- * Lĩnh vực + cách nhập dòng + cách tổng hợp (chung cho bảng mới và sửa) → {gt} hoặc {loi}.
+ * Cách nhập dòng + cách tổng hợp (chung cho bảng mới và sửa) → {gt} hoặc {loi}.
  * Bảng tổng các đơn vị luôn là Sở giao dòng (mọi đơn vị cùng các dòng) và không cho thêm dòng.
  */
-function kiemPhanLoai_(kb, dsMaLinhVuc) {
-  var group = String(kb.group || '').trim();
-  if (!group) return { loi: 'Chưa chọn lĩnh vực' };
-  if ((dsMaLinhVuc || []).indexOf(group) < 0) return { loi: 'Lĩnh vực "' + group + '" chưa có trong danh mục' };
+function kiemPhanLoai_(kb) {
   var tongHop = String(kb.aggregateType || 'ghep');
   if (CACH_TONG_HOP.indexOf(tongHop) < 0) return { loi: 'Cách tổng hợp không hợp lệ' };
   var cach = tongHop === 'tong' ? 'gopTach' : String(kb.sourceType || '');
   if (CACH_NHAP_DONG.indexOf(cach) < 0) return { loi: 'Cách nhập dòng không hợp lệ' };
-  return { gt: { group: group, sourceType: cach, aggregateType: tongHop,
+  return { gt: { sourceType: cach, aggregateType: tongHop,
     allowAddRows: tongHop === 'tong' ? false : kb.allowAddRows === true } };
-}
-
-/** Tab Lĩnh vực + mã lĩnh vực đang dùng ở tab Bảng (chưa có tên thì tên = mã) → [{groupCode, groupName}] */
-function docLinhVuc_(gtLinhVuc, gtBang) {
-  var kq = [], co = {};
-  function them(ma, ten) {
-    ma = String(ma || '').trim();
-    if (!ma || co[ma]) return;
-    co[ma] = true;
-    kq.push({ groupCode: ma, groupName: String(ten || '').trim() || ma });
-  }
-  (gtLinhVuc || []).slice(1).forEach(function (r) { them(r[0], r[1]); });
-  docBangQuanLy_(gtBang).forEach(function (b) { them(b.group); });
-  return kq;
-}
-
-/** Lĩnh vực mới → {linhVuc} hoặc {loi}. Mã viết hoa không dấu (làm tiền tố mã đơn vị quản lý, VD 'TC'). */
-function kiemLinhVucMoi_(ma, ten, gtLinhVuc) {
-  ma = String(ma || '').trim().toUpperCase();
-  ten = String(ten || '').trim();
-  if (!/^[A-Z0-9]{2,15}$/.test(ma)) return { loi: 'Mã lĩnh vực chỉ gồm chữ in hoa không dấu và số (2–15 ký tự), ví dụ TC' };
-  if (!ten) return { loi: 'Chưa ghi tên lĩnh vực' };
-  var trung = (gtLinhVuc || []).slice(1).filter(function (r) {
-    return String(r[0]).trim().toUpperCase() === ma || String(r[1]).trim().toLowerCase() === ten.toLowerCase();
-  });
-  if (trung.length) return { loi: 'Lĩnh vực "' + trung[0][0] + ' — ' + trung[0][1] + '" đã có' };
-  return { linhVuc: { groupCode: ma, groupName: ten } };
 }
 
 /** Mã bảng mới → '' nếu dùng được, không thì câu báo lỗi. */
@@ -111,10 +80,10 @@ function kiemMaBangMoi_(ma, dsMaCo) {
 
 /**
  * Kiểm khai báo bảng mới tải Excel lên → {tableCode, caiDat} hoặc {loi}.
- * @param {Object} kb — {tableCode, tableName, group, sourceType, aggregateType, allowAddRows,
+ * @param {Object} kb — {tableCode, tableName, sourceType, aggregateType, allowAddRows,
  *                      inputCols, inputRows, lockedRows, noteTabs, tenFile, duLieu (base64)}
  */
-function kiemKhaiTaiMau_(kb, dsMaCo, dsMaLinhVuc) {
+function kiemKhaiTaiMau_(kb, dsMaCo) {
   kb = kb || {};
   var ma = String(kb.tableCode || '').trim();
   var loiMa = kiemMaBangMoi_(ma, dsMaCo);
@@ -122,25 +91,24 @@ function kiemKhaiTaiMau_(kb, dsMaCo, dsMaLinhVuc) {
   if (!kb.duLieu) return { loi: 'Chưa chọn file Excel' };
   if (!/\.xlsx$/i.test(String(kb.tenFile || ''))) return { loi: 'Chỉ nhận file Excel .xlsx — file .xls thì mở bằng Excel, Lưu thành .xlsx' };
   if (String(kb.duLieu).length * 3 / 4 > MAU_EXCEL_TOI_DA) return { loi: 'File quá lớn (tối đa ' + (MAU_EXCEL_TOI_DA / 1048576) + ' MB)' };
-  var kiem = kiemCaiDatSua_(Object.assign({}, kb, { dataRows: '' }), dsMaLinhVuc);
+  var kiem = kiemCaiDatSua_(Object.assign({}, kb, { dataRows: '' }));
   if (kiem.loi) return kiem;
   return { tableCode: ma, caiDat: kiem.caiDat };
 }
 
 /**
  * Kiểm khai báo bảng mới gửi từ app → {bang} đã chuẩn hoá hoặc {loi}.
- * @param {Object} kb — {tableCode, tableName, group, sourceType, aggregateType, allowAddRows, dataRows, cot: [{ten, kieu, congThuc, luaChon}]}
+ * @param {Object} kb — {tableCode, tableName, sourceType, aggregateType, allowAddRows, dataRows, cot: [{ten, kieu, congThuc, luaChon}]}
  * @param {Array<string>} dsMaCo — mã bảng đã có
- * @param {Array<string>} dsMaLinhVuc
  */
-function kiemKhaiBangMoi_(kb, dsMaCo, dsMaLinhVuc) {
+function kiemKhaiBangMoi_(kb, dsMaCo) {
   kb = kb || {};
   var ma = String(kb.tableCode || '').trim();
   var loiMa = kiemMaBangMoi_(ma, dsMaCo);
   if (loiMa) return { loi: loiMa };
   var ten = String(kb.tableName || '').trim();
   if (!ten) return { loi: 'Chưa ghi tên bảng' };
-  var phanLoai = kiemPhanLoai_(kb, dsMaLinhVuc);
+  var phanLoai = kiemPhanLoai_(kb);
   if (phanLoai.loi) return phanLoai;
   var soDong = soDongSan_(kb.dataRows, MAU_DONG_SAN);
   if (soDong < 0) return { loi: 'Số dòng sẵn phải là số nguyên từ 1 đến ' + MAU_DONG_TOI_DA };
@@ -167,20 +135,19 @@ function kiemKhaiBangMoi_(kb, dsMaCo, dsMaLinhVuc) {
   var inputCols = cotNhapTuKhai_(cot);
   if (!inputCols) return { loi: 'Bảng phải có ít nhất một cột cho đơn vị nhập (không phải công thức)' };
   return { bang: {
-    tableCode: ma, tableName: ten, group: phanLoai.gt.group, sourceType: phanLoai.gt.sourceType,
+    tableCode: ma, tableName: ten, sourceType: phanLoai.gt.sourceType,
     aggregateType: phanLoai.gt.aggregateType, allowAddRows: phanLoai.gt.allowAddRows, dataRows: soDong, inputCols: inputCols, cot: cot
   } };
 }
 
 /** Kiểm phần cài đặt sửa trên app → {caiDat} chuẩn hoá (chỉ khoá sửa được) hoặc {loi}. */
-function kiemCaiDatSua_(cd, dsMaLinhVuc) {
+function kiemCaiDatSua_(cd) {
   cd = cd || {};
   var kq = {};
   kq.tableName = String(cd.tableName || '').trim();
   if (!kq.tableName) return { loi: 'Chưa ghi tên bảng' };
-  var phanLoai = kiemPhanLoai_(cd, dsMaLinhVuc);
+  var phanLoai = kiemPhanLoai_(cd);
   if (phanLoai.loi) return phanLoai;
-  kq.group = phanLoai.gt.group;
   kq.sourceType = phanLoai.gt.sourceType;
   kq.aggregateType = phanLoai.gt.aggregateType;
   kq.inputCols = String(cd.inputCols || '').trim().toUpperCase();
@@ -404,29 +371,24 @@ function dongBangMoi_(tieuDe, cu, giaTri) {
 // ---------- Chạm Drive / Sheet ----------
 
 /**
- * Thư mục của bảng: {thư mục Sheet quản lý}/{mã lĩnh vực}/{mã bảng} (đã có thì dùng lại).
- * Thư mục bảng đang nằm chỗ khác (chỗ cũ cạnh Sheet quản lý, hoặc lĩnh vực cũ) → dời cả thư mục sang.
- * @param {Object} bang — {tableCode, group, templateFileId?}
+ * Thư mục của bảng: {thư mục Sheet quản lý của lĩnh vực}/{mã bảng} (đã có thì dùng lại).
+ * Thư mục bảng đang nằm chỗ khác (thư mục cha của file tổng mang tên mã bảng) → dời cả thư mục sang.
+ * @param {Object} bang — {tableCode, templateFileId?}
  */
 function thuMucBang_(ss, bang) {
   var cha = DriveApp.getFileById(ss.getId()).getParents();
   var goc = cha.hasNext() ? cha.next() : DriveApp.getRootFolder();
-  var ma = bang.tableCode, nhom = String(bang.group || '').trim();
-  var linhVuc = goc;
-  if (nhom) {
-    var coLv = goc.getFoldersByName(nhom);
-    linhVuc = coLv.hasNext() ? coLv.next() : goc.createFolder(nhom);
-  }
-  var co = linhVuc.getFoldersByName(ma);
+  var ma = bang.tableCode;
+  var co = goc.getFoldersByName(ma);
   if (co.hasNext()) return co.next();
-  var cu = goc.getFoldersByName(ma), tmCu = cu.hasNext() ? cu.next() : null;
-  if (!tmCu && bang.templateFileId) {
+  var tmCu = null;
+  if (bang.templateFileId) {
     try {
       var p = DriveApp.getFileById(bang.templateFileId).getParents();
       if (p.hasNext()) { var tm = p.next(); if (tm.getName() === ma) tmCu = tm; }
     } catch (err) { /* file tổng đã mất: tạo thư mục mới */ }
   }
-  return tmCu ? tmCu.moveTo(linhVuc) : linhVuc.createFolder(ma);
+  return tmCu ? tmCu.moveTo(goc) : goc.createFolder(ma);
 }
 
 /**
@@ -622,13 +584,12 @@ function caiDatChoTrang_(gtBang) {
 function taoBang_(ss, khai, maYeuCau) {
   var cache = CacheService.getScriptCache(), khoaCache = maYeuCau ? 'qt_tao_bang_' + String(maYeuCau).slice(0, 64) : '';
   if (khoaCache && cache.get(khoaCache)) return JSON.parse(cache.get(khoaCache));
-  var kiem = kiemKhaiBangMoi_(khai, docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) { return b.tableCode; }),
-    dsMaLinhVuc_(ss));
+  var kiem = kiemKhaiBangMoi_(khai, docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) { return b.tableCode; }));
   if (kiem.loi) return { ok: false, loi: kiem.loi };
   var b = kiem.bang;
   var file = dungFileTong_(ss, b, maDonViCo_(ss));
   var giaTri = {
-    tableCode: b.tableCode, tableName: b.tableName, group: b.group, periodType: '', shareType: 'moi',
+    tableCode: b.tableCode, tableName: b.tableName, periodType: '', shareType: 'moi',
     sourceType: b.sourceType, aggregateType: b.aggregateType, rowType: b.sourceType === 'gopTach' ? 'donCoDinh' : 'tuDo',
     templateFileId: file.getId(), inputCols: b.inputCols, inputRows: '', lockedRows: '',
     allowAddRows: b.allowAddRows, noteTabs: '', dataRows: b.dataRows
@@ -637,7 +598,7 @@ function taoBang_(ss, khai, maYeuCau) {
   SpreadsheetApp.flush();
   var kq = {
     ok: true,
-    bang: { tableCode: b.tableCode, tableName: b.tableName, group: b.group, managerUnits: [],
+    bang: { tableCode: b.tableCode, tableName: b.tableName,
       caiDat: caiDatChoTrang_([Object.keys(giaTri), Object.keys(giaTri).map(function (k) { return giaTri[k]; })])[b.tableCode] },
     kiem: kiemMauBang_(ss, b.tableCode).kiem
   };
@@ -655,12 +616,11 @@ function taoBang_(ss, khai, maYeuCau) {
 function taiMauExcel_(ss, khai, maYeuCau) {
   var cache = CacheService.getScriptCache(), khoaCache = maYeuCau ? 'qt_tai_mau_' + String(maYeuCau).slice(0, 64) : '';
   if (khoaCache && cache.get(khoaCache)) return JSON.parse(cache.get(khoaCache));
-  var kiem = kiemKhaiTaiMau_(khai, docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) { return b.tableCode; }),
-    dsMaLinhVuc_(ss));
+  var kiem = kiemKhaiTaiMau_(khai, docBangQuanLy_(docTabQuanLy_(ss, 'Bảng')).map(function (b) { return b.tableCode; }));
   if (kiem.loi) return { ok: false, loi: kiem.loi };
   var ma = kiem.tableCode, cd = kiem.caiDat, dsMaDonVi = maDonViCo_(ss);
 
-  var thuMuc = thuMucBang_(ss, { tableCode: ma, group: cd.group }), id;
+  var thuMuc = thuMucBang_(ss, { tableCode: ma }), id;
   try {
     var blob = Utilities.newBlob(Utilities.base64Decode(String(khai.duLieu)), MIME_XLSX, String(khai.tenFile));
     id = Drive.Files.create({ name: ma + '_TONG', mimeType: MimeType.GOOGLE_SHEETS, parents: [thuMuc.getId()] }, blob).id;
@@ -685,7 +645,7 @@ function taiMauExcel_(ss, khai, maYeuCau) {
     SpreadsheetApp.flush();
     kq = {
       ok: true,
-      bang: { tableCode: ma, tableName: cd.tableName, group: cd.group, managerUnits: [],
+      bang: { tableCode: ma, tableName: cd.tableName,
         caiDat: caiDatChoTrang_(docTabQuanLy_(ss, 'Bảng'))[ma] },
       kiem: []
     };
@@ -752,7 +712,7 @@ function boThuMucRong_(thuMuc) {
 function luuBang_(ss, tableCode, caiDat) {
   var cu = caiDatBang_(ss, tableCode);
   if (!cu) return { ok: false, loi: 'Không tìm thấy bảng ' + tableCode };
-  var kiem = kiemCaiDatSua_(caiDat, dsMaLinhVuc_(ss));
+  var kiem = kiemCaiDatSua_(caiDat);
   if (kiem.loi) return { ok: false, loi: kiem.loi };
   ghiCaiDatBang_(ss, tableCode, kiem.caiDat);
   SpreadsheetApp.flush();
@@ -863,34 +823,10 @@ function xuLyQtThemDongDonVi_(token, tableCode, unitCode) {
   return quanTriChay_(token, function (ss) { return themDongDonVi_(ss, String(tableCode || '').trim(), unitCode); });
 }
 
-function dsMaLinhVuc_(ss) {
-  return docLinhVuc_(docTabQuanLy_(ss, TAB_LINH_VUC), docTabQuanLy_(ss, 'Bảng')).map(function (l) { return l.groupCode; });
-}
-
-/** Thêm lĩnh vực vào tab Lĩnh vực (chưa có tab thì tạo). */
-function themLinhVuc_(ss, ma, ten) {
-  var tab = ss.getSheetByName(TAB_LINH_VUC);
-  if (!tab) {
-    tab = ss.insertSheet(TAB_LINH_VUC);
-    tab.getRange(1, 1, 1, 2).setValues([['groupCode', 'groupName']]).setFontWeight('bold');
-    tab.setFrozenRows(1);
-  }
-  var gt = tab.getDataRange().getValues();
-  var kiem = kiemLinhVucMoi_(ma, ten, gt);
-  if (kiem.loi) return { ok: false, loi: kiem.loi };
-  tab.getRange(gt.length + 1, 1, 1, 2).setNumberFormat('@').setValues([[kiem.linhVuc.groupCode, kiem.linhVuc.groupName]]);
-  SpreadsheetApp.flush();
-  return { ok: true, moi: kiem.linhVuc, linhVuc: docLinhVuc_(tab.getDataRange().getValues(), docTabQuanLy_(ss, 'Bảng')) };
-}
-
 // ---------- Action quản trị ----------
 
 function xuLyQtGiaoTheoMau_(token, tableCode) {
   return quanTriChay_(token, function (ss) { return giaoTheoMau_(ss, String(tableCode || '').trim()); });
-}
-
-function xuLyQtThemLinhVuc_(token, ma, ten) {
-  return quanTriChay_(token, function (ss) { return themLinhVuc_(ss, ma, ten); });
 }
 
 function xuLyQtTaoBang_(token, khai, maYeuCau) {

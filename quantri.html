@@ -3,8 +3,8 @@
 bcsnn · quantri.html
 Vai trò  : Trang quản trị (pptx trang 4) — chỉ vai trò Quản trị, thêm mật khẩu quản trị
 Lớp      : trang tĩnh GitHub Pages — phiên nhập liệu lấy từ trang lĩnh vực (sessionStorage);
-           quản trị mọi lĩnh vực, nút quay về trỏ lại lĩnh vực vừa vào
-Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 13:50
+           quản trị đúng lĩnh vực vừa vào (Sheet quản lý riêng — b10b), nút quay về trỏ lại lĩnh vực đó
+Phiên bản: 0.6.0 · Cập nhật: 10/10/2026 16:10
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -19,7 +19,7 @@ Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 13:50
       <div class="brand">
         <img src="img/logo.svg" alt="" class="brand-logo">
         <div class="brand-text">
-          <span class="app-title">Quản trị · Báo cáo định kỳ Sở Nông nghiệp và Môi trường</span>
+          <span id="qt-ten-app" class="app-title">Quản trị · Báo cáo định kỳ Sở Nông nghiệp và Môi trường</span>
         </div>
       </div>
       <div class="user-info">
@@ -62,6 +62,7 @@ Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 13:50
   <script src="js/utils/doc-xlsx.js"></script>
   <script src="js/services/api.js"></script>
   <script src="js/domains/phien-dang-nhap.js"></script>
+  <script src="js/domains/linh-vuc.js"></script>
   <script src="js/domains/phan-quyen.js"></script>
   <script src="js/domains/ky-bao-cao.js"></script>
   <script src="js/domains/quan-ly-bang.js"></script>

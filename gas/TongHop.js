@@ -2,7 +2,7 @@
 // bcsnn · gas/TongHop.js
 // Vai trò  : Tổng hợp kỳ — gom số tab kỳ ở mọi file đơn vị về tab kỳ cùng tên ở file tổng
 // Lớp      : gas — gọi bởi: Code.js · gọi: KyBaoCao.js, DangNhap.js, PhanQuyen.js
-// Phiên bản: 0.3.0 · Cập nhật: 09/10/2026 13:45
+// Phiên bản: 0.3.1 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 // File tổng chỉ xem: số nhập ở file đơn vị, tổng hợp gom MỘT CHIỀU về file tổng (thiết kế 4.4).
 //   Cộng (aggregateType 'tong'): mỗi ô nhập của dòng mẫu = tổng số của các đơn vị có dòng đó
@@ -214,8 +214,9 @@ function demKhongKhop_(cotA, dongTieuDe, laTach, laTong, dsDv) {
 
 // ---------- Chạm Drive / Sheet ----------
 
-function khoaCacheTongHop_(tableCode, tenKy, ma) {
-  return 'th|' + tableCode + '|' + tenKy + '|' + ma;
+/** Khoá cache theo ID file tổng (không theo mã bảng — hai lĩnh vực có thể trùng mã bảng). */
+function khoaCacheTongHop_(templateFileId, tenKy, ma) {
+  return 'th|' + templateFileId + '|' + tenKy + '|' + ma;
 }
 
 /** Đọc tab đầu file tổng: cột A (bù tới dataRows như dungTabKy_), giá trị, công thức R1C1, cột khung. */
@@ -349,11 +350,11 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
       kq.loi.push(g.unitCode + ': tab kỳ quá lớn, chưa tổng hợp được');
     } else if (du.thieu) kq.thieuTab++;
     else if (!du.loi) kq.daDoc++;
-    cache.put(khoaCacheTongHop_(tableCode, tenKy, g.unitCode), chuoi, TH_CACHE_GIAY);
+    cache.put(khoaCacheTongHop_(caiDat.templateFileId, tenKy, g.unitCode), chuoi, TH_CACHE_GIAY);
   }
   if (bd < giao.length && Date.now() - batDauLuc > KY_MS_TOI_DA / 2) { kq.tiepTu = giao.length; return kq; }
 
-  var khoa = giao.map(function (g) { return khoaCacheTongHop_(tableCode, tenKy, g.unitCode); });
+  var khoa = giao.map(function (g) { return khoaCacheTongHop_(caiDat.templateFileId, tenKy, g.unitCode); });
   var daCat = khoa.length ? cache.getAll(khoa) : {};
   var dsDv = [];
   giao.forEach(function (g, j) {

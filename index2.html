@@ -8,7 +8,7 @@ Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
            Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
            Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
            Trang quản trị (pptx trang 4) là file riêng quantri.html
-Phiên bản: 0.9.0 · Cập nhật: 06/10/2026 11:25
+Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 16:10 — chỉ lĩnh vực BTTDC
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -172,6 +172,10 @@ Phiên bản: 0.9.0 · Cập nhật: 06/10/2026 11:25
       var elBtnLogout = DOM.$('#btn-dang-xuat');
 
       function batDau() {
+        // Cách đăng nhập cũ chỉ dùng cho lĩnh vực BTTĐC (mỗi lĩnh vực một Sheet quản lý — b10b)
+        PHIEN.luuLinhVuc('BTTDC');
+        API.datLinhVuc('BTTDC');
+
         // Khởi tạo Trang 1: Điều hướng lĩnh vực
         PAGE_DIEU_HUONG.khoiTao(function (maLinhVuc) {
           if (maLinhVuc === 'bttdc') {

@@ -1007,21 +1007,6 @@ a.sidebar-btn {
   gap: 8px;
 }
 
-.qt-ds-quan-ly {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.qt-ds-quan-ly:empty { display: none; }
-
-.qt-quan-ly {
-  display: grid;
-  grid-template-columns: 1fr 36px;
-  gap: 8px;
-}
-
 .qt-hang-nut {
   margin: 18px 0 12px;
 }
@@ -1205,15 +1190,6 @@ a.sidebar-btn {
 
 .qt-an-giu-cho { visibility: hidden; }
 
-.qt-them-linh-vuc {
-  display: grid;
-  grid-template-columns: 1fr 120px auto;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.qt-them-linh-vuc.an { display: none; }
-.qt-linh-vuc .alert { margin: 8px 0 0; }
 .qt-cot-quan-ly select:disabled, .qt-dong select:disabled { opacity: 0.65; }
 
 /* Quản lý bảng: hai tab · danh sách bảng · đầu trang chi tiết · nút Tải Excel */

@@ -2,11 +2,13 @@
 // bcsnn · js/pages/quan-tri.js
 // Vai trò  : Trang quản trị (pptx trang 4): mật khẩu quản trị, menu Quản lý,
 //            mục Kỳ báo cáo (tạo kỳ, khoá/mở khoá, ngày tự khoá, tổng hợp, xoá), Tài khoản (Gmail theo đơn vị),
-//            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
+//            Phân quyền (giao bảng), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.20.0 · Cập nhật: 10/10/2026 13:50
+// Phiên bản: 0.21.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
+// Quản trị đúng lĩnh vực vừa vào (mỗi lĩnh vực một Sheet quản lý — b10b); đơn vị quản lý báo cáo
+// theo vai trò của đơn vị trong lĩnh vực, không đặt theo từng bảng.
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về trang lĩnh vực vừa vào (không có thì trang chủ).
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
 // quản trị gửi kèm mã phiên; GAS trả hetPhien → hỏi lại mật khẩu.
@@ -31,13 +33,16 @@ var PAGE_QUAN_TRI = (function () {
   var baoPhanQuyen = null;    // { chu, laLoi } — báo sau khi thêm dòng đơn vị (vẽ lại xong mới hiện)
 
   function khoiTao() {
+    var lv = LINH_VUC.layTheoThuMuc(PHIEN.docLinhVuc());
     phien = PHIEN.doc();
-    var veTrang = PHIEN.docLinhVuc() ? PHIEN.docLinhVuc() + '/' : './';
-    if (!PHIEN.laQuanTri(phien)) {
-      location.replace(veTrang);
+    if (!lv || !PHIEN.laQuanTri(phien)) {
+      location.replace(lv ? lv.thuMuc + '/' : './');
       return;
     }
-    DOM.$('#qt-quay-ve').href = veTrang;
+    API.datLinhVuc(lv.ma);
+    DOM.$('#qt-quay-ve').href = lv.thuMuc + '/';
+    DOM.$('#qt-ten-app').textContent = 'Quản trị · ' + lv.ten;
+    document.title = 'Quản trị · ' + lv.tenNgan;
     elMenu = DOM.$('#qt-menu');
     elTieuDe = DOM.$('#qt-tieu-de');
     elKhoa = DOM.$('#qt-mat-khau');
@@ -127,7 +132,7 @@ var PAGE_QUAN_TRI = (function () {
       .then(kiemPhien)
       .then(function (res) {
         duLieu = { donVi: PHAN_QUYEN.xepDonVi(res.donVi), taiKhoan: res.taiKhoan, bang: res.bang, giao: res.giao,
-          ky: res.ky || [], linhVuc: res.linhVuc || [] };
+          ky: res.ky || [] };
         veNoiDung();
       })
       .catch(function (err) {
@@ -194,10 +199,6 @@ var PAGE_QUAN_TRI = (function () {
   function tenDonVi(uc) {
     var d = duLieu.donVi.filter(function (x) { return x.unitCode === uc; })[0];
     return d ? d.unitName : uc;
-  }
-
-  function luaChonDonVi() {
-    return duLieu.donVi.map(function (d) { return { giaTri: d.unitCode, nhan: d.unitName }; });
   }
 
   /** Nút Lưu: chờ GAS, báo kết quả ngay dưới nút. */
@@ -525,22 +526,6 @@ var PAGE_QUAN_TRI = (function () {
     var bangChon = chonBang(khung);
     if (!bangChon) return;
 
-    // Đơn vị quản lý: nhiều dòng chọn, mỗi dòng có nút gỡ; mặc định theo lĩnh vực (không khoá)
-    var hangQl = khung.appendChild(DOM.tao('div', { class: 'qt-dong qt-dong-tren' }));
-    hangQl.appendChild(DOM.tao('span', { class: 'qt-nhan' }, 'Đơn vị quản lý'));
-    var cotQl = hangQl.appendChild(DOM.tao('div', { class: 'qt-cot-quan-ly' }));
-    var dsQl = cotQl.appendChild(DOM.tao('div', { class: 'qt-ds-quan-ly' }));
-    function themQuanLy(ma) {
-      var hang = dsQl.appendChild(DOM.tao('div', { class: 'qt-quan-ly' }));
-      hang.appendChild(oChon([{ giaTri: '', nhan: '—' }].concat(luaChonDonVi()), ma || ''));
-      var xoa = hang.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-xoa', title: 'Gỡ đơn vị quản lý này' }, '×'));
-      xoa.addEventListener('click', function () { hang.remove(); });
-      return hang;
-    }
-    PHAN_QUYEN.quanLyMacDinh(bangChon, duLieu.bang, duLieu.donVi).forEach(themQuanLy);
-    var themQl = cotQl.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm đơn vị quản lý'));
-    themQl.addEventListener('click', function () { DOM.$('select', themQuanLy('')).focus(); });
-
     // Đơn vị của bảng đọc từ file tổng (lần đầu mở bảng thì hỏi GAS)
     var maBang = chon.bang, dvb = donViBang[maBang];
     if (!dvb) {
@@ -615,14 +600,11 @@ var PAGE_QUAN_TRI = (function () {
       DOM.$$('tr', than).forEach(function (tr) {
         q[tr.getAttribute('data-ma')] = PHAN_QUYEN.quyenTuO(DOM.$('[data-cot="nhap"]', tr).checked, DOM.$('[data-cot="xem"]', tr).checked);
       });
-      var ql = DOM.$$('select', dsQl).map(function (s) { return s.value; })
-        .filter(function (m, i, ds) { return m && ds.indexOf(m) === i; });
-      return API.qtLuuPhanQuyen(token(), chon.bang, ql, q).then(function (res) {
-        if (res && res.ok) { res.q = q; res.ql = ql; }
+      return API.qtLuuPhanQuyen(token(), chon.bang, q).then(function (res) {
+        if (res && res.ok) res.q = q;
         return res;
       });
     }, function (res) {
-      bangChon.managerUnits = res.ql;
       duLieu.giao = PHAN_QUYEN.thayGiao(duLieu.giao, chon.bang, res.q);
     });
     if (baoPhanQuyen) {
@@ -695,58 +677,14 @@ var PAGE_QUAN_TRI = (function () {
     return d;
   }
 
-  // Lĩnh vực: chỉ chọn trong danh mục (tránh gõ tràn lan); "+ Thêm lĩnh vực" mở ô tên + mã
-  function oLinhVuc(giaTri) {
-    var boc = DOM.tao('div', { class: 'qt-linh-vuc' });
-    var hangChon = boc.appendChild(DOM.tao('div', { class: 'qt-hang-loc' }));
-    var sel = hangChon.appendChild(DOM.tao('select', { class: 'form-control' }));
-    var nutMo = hangChon.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm lĩnh vực'));
-    var form = boc.appendChild(DOM.tao('div', { class: 'qt-them-linh-vuc an' }));
-    var oTen = form.appendChild(oNhap('', { placeholder: 'Tên lĩnh vực' }));
-    var oMa = form.appendChild(oNhap('', { placeholder: 'Mã', maxlength: '15' }));
-    var nutThem = form.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Thêm'));
-    var bao = boc.appendChild(DOM.tao('div'));
-
-    function veLuaChon(chonMa) {
-      sel.innerHTML = '';
-      [{ giaTri: '', nhan: '— Chọn lĩnh vực —' }].concat(QUAN_LY_BANG.luaChonLinhVuc(duLieu.linhVuc)).forEach(function (lc) {
-        var op = sel.appendChild(DOM.tao('option', { value: lc.giaTri }, lc.nhan));
-        if (lc.giaTri === chonMa) op.selected = true;
-      });
-    }
-    veLuaChon(giaTri || '');
-
-    var maTuSua = false;
-    oTen.addEventListener('input', function () { if (!maTuSua) oMa.value = QUAN_LY_BANG.maLinhVucTuTen(oTen.value); });
-    oMa.addEventListener('input', function () { maTuSua = !!oMa.value; });
-    nutMo.addEventListener('click', function () {
-      DOM.batTat(form, 'an', !form.classList.contains('an'));
-      if (!form.classList.contains('an')) oTen.focus();
-    });
-    nutThem.addEventListener('click', function () {
-      chayNut(nutThem, 'Đang thêm…', function () {
-        return API.qtThemLinhVuc(token(), oMa.value.trim(), oTen.value.trim());
-      }, function (res) {
-        duLieu.linhVuc = res.linhVuc;
-        veLuaChon(res.moi.groupCode);
-        oTen.value = oMa.value = '';
-        maTuSua = false;
-        DOM.an(form);
-      }, bao);
-    });
-    return { o: sel, el: boc };
-  }
-
   /**
-   * Lĩnh vực · Cách tổng hợp · Cách nhập dòng · Cho thêm dòng (chung bảng mới / bảng đã có).
+   * Cách tổng hợp · Cách nhập dòng · Cho thêm dòng (chung bảng mới / bảng đã có).
    * Bảng tổng các đơn vị: luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
    */
   function vePhanLoai(khung, cd, khiDoiCach) {
-    var linhVuc = oLinhVuc(cd.group);
     var selTong = oChon(QUAN_LY_BANG.CACH_TONG_HOP.map(function (c) { return { giaTri: c.ma, nhan: c.ten }; }), cd.aggregateType || 'ghep');
     var selCach = oCachNhapDong(cd.sourceType);
     var them = oTich(cd.allowAddRows);
-    khung.appendChild(hang('Lĩnh vực', linhVuc.el)).classList.add('qt-dong-tren');
     khung.appendChild(dong('Cách tổng hợp', selTong));
     khung.appendChild(dong('Cách nhập dòng', selCach));
     var hangThem = dong('Cho thêm dòng', them.el);
@@ -762,7 +700,7 @@ var PAGE_QUAN_TRI = (function () {
     return {
       hangThem: hangThem, apLuat: apLuat,
       giaTri: function () {
-        return { group: linhVuc.o.value, aggregateType: selTong.value, sourceType: selCach.value, allowAddRows: them.o.checked };
+        return { aggregateType: selTong.value, sourceType: selCach.value, allowAddRows: them.o.checked };
       }
     };
   }
@@ -853,7 +791,7 @@ var PAGE_QUAN_TRI = (function () {
       var h = ds.appendChild(DOM.tao('div', { class: 'qt-bang' }));
       var ten = h.appendChild(DOM.tao('div', { class: 'qt-bang-ten' }));
       ten.appendChild(DOM.tao('span', {}, b.tableName));
-      ten.appendChild(DOM.tao('small', {}, QUAN_LY_BANG.tenLinhVuc(duLieu.linhVuc, b.group) + ' · ' + b.tableCode));
+      ten.appendChild(DOM.tao('small', {}, b.tableCode));
       h.appendChild(DOM.tao('span', { class: 'qt-bang-so' }, QUAN_LY_BANG.soDonViCoFile(duLieu.giao, b.tableCode) + ' đơn vị'));
       var nutSua = h.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Chỉnh sửa'));
       var nutTao = h.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Tạo bảng cho đơn vị'));
@@ -908,7 +846,7 @@ var PAGE_QUAN_TRI = (function () {
     var oSoDong = oNhap(cd.dataRows, { type: 'number', min: '1', max: '500' });
     var oChuThich = oNhap(cd.noteTabs);
     var hangSoDong = dong('Số dòng sẵn', oSoDong);
-    var phanLoai = vePhanLoai(khung, { group: bang.group, aggregateType: cd.aggregateType, sourceType: cd.sourceType,
+    var phanLoai = vePhanLoai(khung, { aggregateType: cd.aggregateType, sourceType: cd.sourceType,
       allowAddRows: cd.allowAddRows }, function (cach) { DOM.batTat(hangSoDong, 'an', cach !== 'docLap'); });
     khung.appendChild(dong('Cột được nhập', oCot));
     khung.appendChild(dong('Dòng được nhập', oDongNhap));
@@ -963,7 +901,6 @@ var PAGE_QUAN_TRI = (function () {
       caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {
         bang.tableName = caiDat.tableName;
-        bang.group = caiDat.group;
         bang.caiDat = res.caiDat;
         var tt = tomTatDoi(res.doi);
         // Đổi cách vào nhập → GAS đã soát quyền mọi file của bảng

@@ -1,10 +1,10 @@
 // ============================================================
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
-// Lớp      : gas backend — đọc Sheet quản lý, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_, themToanQuyen_,
-//            donViToanQuyen_, laCongKhai_, bangCoKyMo_), KyBaoCao.js (docKyQuanLy_)
-// Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 14:10
-// layDonVi trả kèm groups (lĩnh vực của đơn vị) để trang lĩnh vực lọc ô chọn đơn vị (b10).
+// Lớp      : gas backend — đọc Sheet quản lý của lĩnh vực, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_,
+//            themToanQuyen_, donViToanQuyen_, laCongKhai_, bangCoKyMo_), KyBaoCao.js (docKyQuanLy_)
+// Phiên bản: 0.11.0 · Cập nhật: 10/10/2026 16:10
+// quanLyId = Sheet quản lý của lĩnh vực trang gọi (Code.js) — đơn vị, tài khoản, bảng chỉ của lĩnh vực đó (b10b).
 // Bảng công khai (b07): chọn đơn vị, để trống Gmail → vaoCongKhai trả bảng công khai đang mở.
 // ============================================================
 
@@ -13,7 +13,7 @@
  * @param {string} quanLyId - ID file Sheet quản lý
  * @returns {object} { ok: boolean, donVi: Array }
  */
-function xuLyLayDonVi_(quanLyId, kemLinhVuc) {
+function xuLyLayDonVi_(quanLyId) {
   if (!quanLyId) return { ok: false, loi: 'Chưa cấu hình Sheet quản lý' };
   try {
     var ss = SpreadsheetApp.openById(quanLyId);
@@ -21,22 +21,16 @@ function xuLyLayDonVi_(quanLyId, kemLinhVuc) {
     if (!tabDonVi) return { ok: false, loi: 'Không tìm thấy tab "Đơn vị" trong Sheet quản lý' };
 
     var duLieu = tabDonVi.getDataRange().getValues();
-    var nhom = kemLinhVuc ? linhVucTheoDonVi_(docTabQuanLy_(ss, 'Bảng'), docTabQuanLy_(ss, 'File')) : null;
     var ds = [];
     for (var i = 1; i < duLieu.length; i++) {
       var r = duLieu[i];
       if (r[0]) {
-        var dv = {
+        ds.push({
           unitCode: String(r[0]).trim(),
           unitName: String(r[1] || r[0]).trim(),
           region: r[2] || '',
           role: r[3] || ''
-        };
-        if (nhom) {
-          dv.groups = nhom.giao[dv.unitCode] || [];
-          dv.managedGroups = nhom.quanLy[dv.unitCode] || [];
-        }
-        ds.push(dv);
+        });
       }
     }
     return { ok: true, donVi: ds };
@@ -126,26 +120,6 @@ function chonDonViTheoEmail_(dsTaiKhoan, dsDonVi, email) {
 }
 
 /** Đọc một tab của Sheet quản lý thành mảng dòng (kèm tiêu đề), tab thiếu → []. */
-/**
- * Lĩnh vực mỗi đơn vị dính tới (hàm thuần) → { giao: {unitCode: [group]}, quanLy: {unitCode: [group]} }.
- * giao = được giao bảng (tab File, trừ quyền "khong") hoặc quản lý bảng; quanLy = ghi tên ở managerUnits.
- * Trang lĩnh vực chỉ hiện đơn vị của mình; đơn vị quản lý bảng của lĩnh vực xếp nhóm Quản trị.
- */
-function linhVucTheoDonVi_(dsBang, dsFile) {
-  var nhomBang = {}, kq = { giao: {}, quanLy: {} };
-  function them(bang, uc, g) {
-    if (!uc || !g) return;
-    bang[uc] = bang[uc] || [];
-    if (bang[uc].indexOf(g) < 0) bang[uc].push(g);
-  }
-  docBangQuanLy_(dsBang).forEach(function (b) {
-    nhomBang[b.tableCode] = b.group;
-    b.managerUnits.forEach(function (uc) { them(kq.giao, uc, b.group); them(kq.quanLy, uc, b.group); });
-  });
-  docFileQuanLy_(dsFile).forEach(function (f) { if (f.access !== 'khong') them(kq.giao, f.unitCode, nhomBang[f.tableCode]); });
-  return kq;
-}
-
 function docTabQuanLy_(ss, ten) {
   var tab = ss.getSheetByName(ten);
   return tab ? tab.getDataRange().getValues() : [];
@@ -154,7 +128,7 @@ function docTabQuanLy_(ss, ten) {
 /**
  * Bảng công khai đang nhập được của một đơn vị (hàm thuần): bảng công khai + đơn vị được
  * nhập + đã có file + bảng còn kỳ mở (đúng lúc file đang để link công khai — PhanQuyen.js laCongKhai_).
- * @returns {Array<object>} [{ tableCode, tableName, group, fileId }]
+ * @returns {Array<object>} [{ tableCode, tableName, fileId }]
  */
 function bangCongKhaiCuaDonVi_(dsBang, dsFile, dsKy, unitCode) {
   var uc = String(unitCode || '').trim(), theoMa = {};
@@ -165,7 +139,7 @@ function bangCongKhaiCuaDonVi_(dsBang, dsFile, dsKy, unitCode) {
     return uc && f.unitCode === uc && f.fileId && b && laCongKhai_(b.shareType, f.access, bangCoKyMo_(ky, f.tableCode));
   }).map(function (f) {
     var b = theoMa[f.tableCode];
-    return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, fileId: f.fileId };
+    return { tableCode: b.tableCode, tableName: b.tableName, fileId: f.fileId };
   });
 }
 
@@ -227,13 +201,13 @@ function layTenDonVi_(dsDonVi, unitCode) {
  * @param {Array<Array>} dsBang - các dòng trong tab Bảng
  * @param {Array<Array>} dsFile - các dòng trong tab File
  * @param {string} unitCode
- * @returns {Array<object>} [{ tableCode, tableName, group, periodType, fileId }]
+ * @returns {Array<object>} [{ tableCode, tableName, periodType, fileId }]
  */
 function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
   var uc = String(unitCode || '').trim();
   var bangTheoMa = {};
 
-  // Tab Bảng: tableCode, tableName, group, periodType, ...
+  // Tab Bảng: tableCode, tableName, group (cũ, bỏ qua), periodType, ...
   for (var i = 1; i < dsBang.length; i++) {
     var r = dsBang[i];
     var code = String(r[0] || '').trim();
@@ -241,7 +215,6 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
       bangTheoMa[code] = {
         tableCode: code,
         tableName: String(r[1] || code).trim(),
-        group: String(r[2] || '').trim(),
         periodType: String(r[3] || 'thang').trim()
       };
     }
@@ -259,7 +232,6 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
       ketQua.push({
         tableCode: fTable,
         tableName: bangTheoMa[fTable].tableName,
-        group: bangTheoMa[fTable].group,
         periodType: bangTheoMa[fTable].periodType,
         fileId: fileId
       });
@@ -272,17 +244,17 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
 /**
  * Bảng mà đơn vị là đơn vị quản lý (hàm thuần): fileId = file tổng, donVi = file
  * từng đơn vị đã tạo (xếp theo tên). Bảng chưa có file tổng vẫn hiện nếu có file đơn vị.
- * @returns {Array<object>} [{ tableCode, tableName, group, fileId, donVi: [{unitCode, unitName, fileId}] }]
+ * @returns {Array<object>} [{ tableCode, tableName, fileId, donVi: [{unitCode, unitName, fileId}] }]
  */
 function bangQuanLyCuaDonVi_(dsBang, dsFile, dsDonVi, unitCode) {
   var uc = String(unitCode || '').trim();
   var file = docFileQuanLy_(dsFile);
-  // Đơn vị nhóm Quản trị (Quản trị / Quản lý báo cáo) mặc định quản lý mọi bảng
+  // Đơn vị nhóm Quản trị (Quản trị / Quản lý báo cáo) của lĩnh vực quản lý mọi bảng của lĩnh vực
   return themToanQuyen_(docBangQuanLy_(dsBang), donViToanQuyen_(dsDonVi)).filter(function (b) { return uc && b.managerUnits.indexOf(uc) >= 0; }).map(function (b) {
     var donVi = file.filter(function (f) { return f.tableCode === b.tableCode && f.fileId; }).map(function (f) {
       return { unitCode: f.unitCode, unitName: layTenDonVi_(dsDonVi, f.unitCode), fileId: f.fileId };
     }).sort(function (a, c) { return a.unitName.localeCompare(c.unitName, 'vi', { numeric: true }); });
-    return { tableCode: b.tableCode, tableName: b.tableName, group: b.group, fileId: b.templateFileId, donVi: donVi };
+    return { tableCode: b.tableCode, tableName: b.tableName, fileId: b.templateFileId, donVi: donVi };
   }).filter(function (b) { return b.fileId || b.donVi.length; });
 }
 

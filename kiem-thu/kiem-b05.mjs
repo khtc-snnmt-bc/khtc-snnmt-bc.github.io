@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-b05.mjs
 // Vai trò  : Kiểm thử các hàm thuần của b05 bằng Node.js
 // Chạy     : node app/kiem-thu/kiem-b05.mjs
-// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 13:50
+// Phiên bản: 0.4.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -154,24 +154,33 @@ bai('b06a: vai trò Quản trị và hạn phiên quản trị', () => {
   assert.equal(P.docQuanTri(), null);
 });
 
-bai('b10: lĩnh vực theo thư mục web, lọc bảng theo mã lĩnh vực', () => {
+bai('b10: lĩnh vực theo thư mục web', () => {
   const L = sandbox.LINH_VUC;
-  assert.equal(L.layTheoThuMuc('Nhiem_Vu').group, 'NHIEMVU');
+  assert.equal(L.layTheoThuMuc('Nhiem_Vu').ma, 'NHIEMVU');
   assert.equal(L.layTheoThuMuc('BTTDC').thuMuc, 'BTTDC');
   assert.equal(L.layTheoThuMuc('khong_co'), null);
-  const ds = [{ tableCode: 'a', group: 'BTTDC' }, { tableCode: 'b', group: 'NHIEMVU' }, { tableCode: 'c', group: 'BTTDC' }];
-  assert.deepEqual(L.locBang(ds, 'BTTDC').map((b) => b.tableCode), ['a', 'c']);
-  assert.equal(L.locBang(ds, 'BCXA').length, 0);
-  assert.equal(L.locBang(undefined, 'BTTDC').length, 0);
-  const dv = [{ unitCode: 'KHTC', role: 'Quản trị', groups: [] },
-    { unitCode: 'BT', role: 'Quản lý báo cáo', groups: ['BTTDC', 'NHIEMVU'], managedGroups: ['BTTDC'] },
-    { unitCode: 'P1', role: 'Đơn vị báo cáo', groups: ['NHIEMVU'] }, { unitCode: 'P2', role: 'Đơn vị báo cáo' }];
-  const vt = (ds) => ds.map((d) => d.unitCode + ':' + d.role);
-  assert.deepEqual(vt(L.locDonVi(dv, 'NHIEMVU')), ['KHTC:Quản trị', 'BT:Đơn vị báo cáo', 'P1:Đơn vị báo cáo']);
-  assert.deepEqual(vt(L.locDonVi(dv, 'BTTDC')), ['KHTC:Quản trị', 'BT:Quản lý báo cáo']);
-  assert.equal(dv[1].role, 'Quản lý báo cáo'); // không sửa bản gốc
-  sandbox.PHIEN.luuLinhVuc('BC_xa');
-  assert.equal(sandbox.PHIEN.docLinhVuc(), 'BC_xa');
+  assert.equal(L.layTheoThuMuc(''), null);
+});
+
+bai('b10b: phiên + phiên quản trị riêng từng lĩnh vực', () => {
+  const P = sandbox.PHIEN;
+  assert.equal(P.khoaTheoLinhVuc('bcsnn_phien', 'BC_xa'), 'bcsnn_phien_BC_xa');
+  assert.equal(P.khoaTheoLinhVuc('bcsnn_phien', ''), 'bcsnn_phien');
+  P.luuLinhVuc('BTTDC');
+  P.luu({ unitCode: 'A', email: 'a@x.vn' });
+  P.luuQuanTri('t1', 60, 0);
+  P.luuLinhVuc('Nhiem_Vu');
+  assert.equal(P.doc(), null);                     // lĩnh vực khác: chưa đăng nhập
+  assert.equal(P.docQuanTri(), null);
+  P.luu({ unitCode: 'B', email: 'a@x.vn' });
+  P.luuLinhVuc('BTTDC');
+  assert.equal(P.doc().unitCode, 'A');             // quay lại: phiên cũ còn nguyên
+  assert.equal(P.docQuanTri().token, 't1');
+  P.xoa();
+  assert.equal(P.doc(), null);
+  P.luuLinhVuc('Nhiem_Vu');
+  assert.equal(P.doc().unitCode, 'B');             // đăng xuất BTTDC không đụng Nhiệm vụ
+  assert.equal(P.docLinhVuc(), 'Nhiem_Vu');
 });
 
 console.log('kiem-b05: ' + soBai + ' bài ĐẠT!');

@@ -5,7 +5,7 @@
 //            index2.html — tin Gmail đã gõ (cách cũ, giữ tới khi chốt b06h)
 //            Bảng công khai: chọn đơn vị, để trống Gmail → vào thẳng các bảng công khai
 // Lớp      : pages — được gọi bởi: trang-linh-vuc.js, index2.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.12.0 · Cập nhật: 10/10/2026 14:10
+// Phiên bản: 0.13.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -24,17 +24,12 @@ var PAGE_DANG_NHAP = (function () {
   var elBtnDangNhap, elThongBao, elBtnQuayLai;
   var onDangNhapThanhCong, onQuayLaiCallback;
   var laGoogle = false;       // true: Google xác minh Gmail (trang lĩnh vực) · false: tin Gmail đã gõ (index2.html)
-  var locDonVi = function (ds) { return ds; };   // trang lĩnh vực: chỉ đơn vị của lĩnh vực
 
-  /**
-   * @param {object} [tuyChon] — { google: true } bật cách đăng nhập mới;
-   *   { locDonVi: fn(ds) → ds } lọc danh sách đơn vị (ô chọn, kết quả tìm theo Gmail)
-   */
+  /** @param {object} [tuyChon] — { google: true } bật cách đăng nhập mới */
   function khoiTao(callbackThanhCong, callbackQuayLai, tuyChon) {
     onDangNhapThanhCong = callbackThanhCong;
     onQuayLaiCallback = callbackQuayLai;
     laGoogle = !!(tuyChon && tuyChon.google);
-    if (tuyChon && typeof tuyChon.locDonVi === 'function') locDonVi = tuyChon.locDonVi;
 
     elTrang = DOM.$('#trang-dang-nhap');
     elInputDonVi = DOM.$('#input-don-vi');
@@ -119,7 +114,7 @@ var PAGE_DANG_NHAP = (function () {
     API.layDanhSachDonVi()
       .then(function (res) {
         if (res.ok && res.donVi && res.donVi.length) {
-          dsDonViGoc = DON_VI.sapXepDonVi(locDonVi(res.donVi));
+          dsDonViGoc = DON_VI.sapXepDonVi(res.donVi);
           napDatalistDonVi();
           veDanhSachChonNhanh(elInputLoc.value);
         } else {

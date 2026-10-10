@@ -2,9 +2,10 @@
 // bcsnn · gas/QuanTri.js
 // Vai trò  : Mật khẩu quản trị (băm SHA-256 + muối) và phiên quản trị
 // Lớp      : gas — gọi bởi: Code.js · gọi: DangNhap.js (kiemTraTaiKhoan_)
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 12:55
+// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 16:10
 // ============================================================
-// Một mật khẩu chung cho mọi tài khoản vai trò "Quản trị" (KIEN-TRUC.md mục 4).
+// Một mật khẩu chung cho mọi tài khoản vai trò "Quản trị" của mọi lĩnh vực (KIEN-TRUC.md mục 4).
+// Phiên quản trị gắn với lĩnh vực đăng nhập (Code.js LINH_VUC_YC_): sang lĩnh vực khác phải nhập lại.
 // Script Properties: QT_MUOI, QT_BAM (băm), QT_DOT (đổi mật khẩu → phiên cũ hết).
 // Không bao giờ lưu mật khẩu gốc. Đặt / đổi mật khẩu: ghi tạm thuộc tính
 // QT_MAT_KHAU_MOI trong Cài đặt dự án rồi chạy tay datMatKhauQuanTri().
@@ -59,9 +60,10 @@ function laTaiKhoanQuanTri_(dsTaiKhoan, email, unitCode) {
   return kq.hopLe && kq.role === VAI_TRO_QUAN_TRI;
 }
 
-/** Phiên đọc từ cache còn hợp lệ không (đợt mật khẩu phải trùng). */
-function phienHopLe_(phien, dotHienTai) {
-  return !!(phien && phien.email && String(phien.dot) === String(dotHienTai));
+/** Phiên đọc từ cache còn hợp lệ không: đợt mật khẩu trùng + đúng lĩnh vực đã đăng nhập quản trị. */
+function phienHopLe_(phien, dotHienTai, linhVuc) {
+  return !!(phien && phien.email && String(phien.dot) === String(dotHienTai) &&
+    phien.linhVuc && phien.linhVuc === linhVuc);
 }
 
 // ---------- Chạm Script Properties / Cache ----------
@@ -121,7 +123,7 @@ function xuLyQuanTriDangNhap_(quanLyId, email, unitCode, matKhau) {
 
   cache.remove(khoaSai);
   var token = maNgauNhien_();
-  var phien = { email: em, unitCode: String(unitCode).trim(), dot: p.getProperty('QT_DOT') };
+  var phien = { email: em, unitCode: String(unitCode).trim(), linhVuc: LINH_VUC_YC_, dot: p.getProperty('QT_DOT') };
   cache.put('qt_phien_' + token, JSON.stringify(phien), QT_PHIEN_GIAY);
   return { ok: true, token: token, hetHanSau: QT_PHIEN_GIAY };
 }
@@ -132,7 +134,7 @@ function docPhienQuanTri_(token) {
   var raw = CacheService.getScriptCache().get('qt_phien_' + token);
   if (!raw) return null;
   var phien = JSON.parse(raw);
-  return phienHopLe_(phien, PropertiesService.getScriptProperties().getProperty('QT_DOT')) ? phien : null;
+  return phienHopLe_(phien, PropertiesService.getScriptProperties().getProperty('QT_DOT'), LINH_VUC_YC_) ? phien : null;
 }
 
 function xuLyQuanTriKiemPhien_(token) {
