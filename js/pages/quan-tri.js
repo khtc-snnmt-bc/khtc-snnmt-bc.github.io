@@ -5,10 +5,10 @@
 //            Phân quyền (giao bảng), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.21.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.22.0 · Cập nhật: 10/10/2026 17:30
 // ============================================================
 // Quản trị đúng lĩnh vực vừa vào (mỗi lĩnh vực một Sheet quản lý — b10b); đơn vị quản lý báo cáo
-// theo vai trò của đơn vị trong lĩnh vực, không đặt theo từng bảng.
+// theo vai trò của đơn vị trong lĩnh vực; Quản lý báo cáo tích bảng quản lý ở mục Tài khoản (trống = mọi bảng).
 // Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về trang lĩnh vực vừa vào (không có thì trang chủ).
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
 // quản trị gửi kèm mã phiên; GAS trả hetPhien → hỏi lại mật khẩu.
@@ -284,6 +284,20 @@ var PAGE_QUAN_TRI = (function () {
   function veKhoiTaiKhoan(d) {
     var khoi = DOM.tao('section', { class: 'qt-khoi', 'data-ma': d.unitCode });
     khoi.appendChild(DOM.tao('div', { class: 'qt-khoi-dau' }, d.unitName));
+    // Đơn vị Quản lý báo cáo: tích bảng quản lý — không tích bảng nào = mọi bảng
+    var tichBang = [];
+    if (d.role === 'Quản lý báo cáo' && duLieu.bang.length) {
+      var hangBang = khoi.appendChild(DOM.tao('div', { class: 'qt-bang-ql' }));
+      hangBang.appendChild(DOM.tao('span', { class: 'qt-bang-ql-nhan' }, 'Bảng quản lý'));
+      duLieu.bang.forEach(function (b) {
+        var nhan = hangBang.appendChild(DOM.tao('label'));
+        var o = nhan.appendChild(DOM.tao('input', { type: 'checkbox', value: b.tableCode }));
+        o.checked = (d.manageTables || []).indexOf(b.tableCode) >= 0;
+        nhan.appendChild(document.createTextNode(b.tableName));
+        tichBang.push(o);
+      });
+      hangBang.addEventListener('change', function () { daSua(); });
+    }
     var ds = khoi.appendChild(DOM.tao('div', { class: 'qt-ds-gmail' }));
     var chan = khoi.appendChild(DOM.tao('div', { class: 'qt-khoi-chan' }));
     var them = chan.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm Gmail'));
@@ -313,10 +327,12 @@ var PAGE_QUAN_TRI = (function () {
       nut.disabled = true;
       nut.innerHTML = '<span class="spinner"></span>Đang lưu…';
       bao.innerHTML = '';
-      API.qtLuuTaiKhoan(token(), d.unitCode, dsMoi)
+      var bangQl = tichBang.length ? tichBang.filter(function (o) { return o.checked; }).map(function (o) { return o.value; }) : undefined;
+      API.qtLuuTaiKhoan(token(), d.unitCode, dsMoi, bangQl)
         .then(kiemPhien)
         .then(function (res) {
           duLieu.taiKhoan = PHAN_QUYEN.thayTaiKhoan(duLieu.taiKhoan, d.unitCode, dsMoi);
+          if (bangQl) d.manageTables = bangQl;
           var moi = veKhoiTaiKhoan(d);
           khoi.replaceWith(moi);
           moi.appendChild(thongBao(PHAN_QUYEN.tomTatLuu(res, tenDonVi), res.quyen && res.quyen.loi.length));

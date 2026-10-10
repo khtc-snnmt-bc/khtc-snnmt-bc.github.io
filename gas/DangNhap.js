@@ -2,8 +2,8 @@
 // bcsnn · gas/DangNhap.js
 // Vai trò  : Xử lý đăng nhập và danh mục đơn vị phía Google Apps Script
 // Lớp      : gas backend — đọc Sheet quản lý của lĩnh vực, trả JSON · gọi: PhanQuyen.js (docBangQuanLy_, docFileQuanLy_,
-//            themToanQuyen_, donViToanQuyen_, laCongKhai_, bangCoKyMo_), KyBaoCao.js (docKyQuanLy_)
-// Phiên bản: 0.11.0 · Cập nhật: 10/10/2026 16:10
+//            themToanQuyen_, phamViQuanLy_, laCongKhai_, bangCoKyMo_), KyBaoCao.js (docKyQuanLy_)
+// Phiên bản: 0.12.0 · Cập nhật: 10/10/2026 17:30
 // quanLyId = Sheet quản lý của lĩnh vực trang gọi (Code.js) — đơn vị, tài khoản, bảng chỉ của lĩnh vực đó (b10b).
 // Bảng công khai (b07): chọn đơn vị, để trống Gmail → vaoCongKhai trả bảng công khai đang mở.
 // ============================================================
@@ -249,8 +249,8 @@ function ghepDanhSachBang_(dsBang, dsFile, unitCode) {
 function bangQuanLyCuaDonVi_(dsBang, dsFile, dsDonVi, unitCode) {
   var uc = String(unitCode || '').trim();
   var file = docFileQuanLy_(dsFile);
-  // Đơn vị nhóm Quản trị (Quản trị / Quản lý báo cáo) của lĩnh vực quản lý mọi bảng của lĩnh vực
-  return themToanQuyen_(docBangQuanLy_(dsBang), donViToanQuyen_(dsDonVi)).filter(function (b) { return uc && b.managerUnits.indexOf(uc) >= 0; }).map(function (b) {
+  // Đơn vị nhóm Quản trị của lĩnh vực: Quản trị quản lý mọi bảng; Quản lý báo cáo theo cột manageTables (trống = mọi bảng)
+  return themToanQuyen_(docBangQuanLy_(dsBang), phamViQuanLy_(dsDonVi)).filter(function (b) { return uc && b.managerUnits.indexOf(uc) >= 0; }).map(function (b) {
     var donVi = file.filter(function (f) { return f.tableCode === b.tableCode && f.fileId; }).map(function (f) {
       return { unitCode: f.unitCode, unitName: layTenDonVi_(dsDonVi, f.unitCode), fileId: f.fileId };
     }).sort(function (a, c) { return a.unitName.localeCompare(c.unitName, 'vi', { numeric: true }); });
