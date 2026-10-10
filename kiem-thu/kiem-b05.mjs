@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-b05.mjs
 // Vai trò  : Kiểm thử các hàm thuần của b05 bằng Node.js
 // Chạy     : node app/kiem-thu/kiem-b05.mjs
-// Phiên bản: 0.2.0 · Cập nhật: 06/10/2026 11:40
+// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 13:50
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -37,7 +37,8 @@ const sandbox = taoMoiTruong([
   'js/utils/bo-dau.js',
   'js/domains/don-vi.js',
   'js/domains/ky-bao-cao.js',
-  'js/domains/phien-dang-nhap.js'
+  'js/domains/phien-dang-nhap.js',
+  'js/domains/linh-vuc.js'
 ]);
 
 let soBai = 0;
@@ -151,6 +152,19 @@ bai('b06a: vai trò Quản trị và hạn phiên quản trị', () => {
   assert.equal(P.docQuanTri().hetHan, 61000);
   P.xoaQuanTri();
   assert.equal(P.docQuanTri(), null);
+});
+
+bai('b10: lĩnh vực theo thư mục web, lọc bảng theo mã lĩnh vực', () => {
+  const L = sandbox.LINH_VUC;
+  assert.equal(L.layTheoThuMuc('Nhiem_Vu').group, 'NHIEMVU');
+  assert.equal(L.layTheoThuMuc('BTTDC').thuMuc, 'BTTDC');
+  assert.equal(L.layTheoThuMuc('khong_co'), null);
+  const ds = [{ tableCode: 'a', group: 'BTTDC' }, { tableCode: 'b', group: 'NHIEMVU' }, { tableCode: 'c', group: 'BTTDC' }];
+  assert.deepEqual(L.locBang(ds, 'BTTDC').map((b) => b.tableCode), ['a', 'c']);
+  assert.equal(L.locBang(ds, 'BCXA').length, 0);
+  assert.equal(L.locBang(undefined, 'BTTDC').length, 0);
+  sandbox.PHIEN.luuLinhVuc('BC_xa');
+  assert.equal(sandbox.PHIEN.docLinhVuc(), 'BC_xa');
 });
 
 console.log('kiem-b05: ' + soBai + ' bài ĐẠT!');

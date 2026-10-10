@@ -1,11 +1,11 @@
 // ============================================================
 // bcsnn · js/pages/dang-nhap.js
-// Vai trò  : Màn hình đăng nhập bồi thường (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
-//            Hai cách, cùng giao diện: index.html — Google xác minh Gmail;
+// Vai trò  : Màn hình đăng nhập lĩnh vực (pptx trang 2): chọn đơn vị ↔ nhập Gmail hai chiều
+//            Hai cách, cùng giao diện: trang lĩnh vực (trang-linh-vuc.js) — Google xác minh Gmail;
 //            index2.html — tin Gmail đã gõ (cách cũ, giữ tới khi chốt b06h)
-//            Bảng công khai (index.html): chọn đơn vị, để trống Gmail → vào thẳng các bảng công khai
-// Lớp      : pages — được gọi bởi: index.html, index2.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.11.0 · Cập nhật: 08/10/2026 22:33
+//            Bảng công khai: chọn đơn vị, để trống Gmail → vào thẳng các bảng công khai
+// Lớp      : pages — được gọi bởi: trang-linh-vuc.js, index2.html · được phép gọi: domains, services, utils, config
+// Phiên bản: 0.11.1 · Cập nhật: 10/10/2026 13:50
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {

@@ -1,8 +1,8 @@
 // ============================================================
 // bcsnn · js/pages/nhap-lieu.js
 // Vai trò  : Màn hình nhập liệu (pptx trang 3): sidebar biểu được giao, nhúng Sheet thật
-// Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.7.0 · Cập nhật: 08/10/2026 22:33
+// Lớp      : pages — được gọi bởi: trang-linh-vuc.js, index2.html · được phép gọi: domains, services, utils, config
+// Phiên bản: 0.7.1 · Cập nhật: 10/10/2026 13:50
 // Bảng có donVi (đơn vị quản lý bảng): hộp chọn Bảng tổng / file từng đơn vị dưới tên bảng.
 // ============================================================
 

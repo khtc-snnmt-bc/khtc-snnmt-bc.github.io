@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <!-- ============================================================
 bcsnn · index.html
-Vai trò  : Trang chính WebApp Báo cáo định kỳ Sở NN&MT
-           Đăng nhập: bấm Đăng nhập → Google xác minh Gmail (cách cũ ở index2.html);
-           trình duyệt nhớ vé, lần sau vào thẳng tới khi Đăng xuất
-Lớp      : trang tĩnh GitHub Pages — gồm 3 trang theo giaodien.pptx
-           Trang 1: Điều hướng các lĩnh vực báo cáo
-           Trang 2: Đăng nhập bồi thường giải phóng mặt bằng
-           Trang 3: Nhập liệu (sidebar biểu + nhúng Google Sheet thật)
-           Trang quản trị (pptx trang 4) là file riêng quantri.html
-Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 22:33
+Vai trò  : Trang chủ — các ô lĩnh vực báo cáo (pptx trang 1), mỗi ô trỏ sang địa chỉ riêng
+           của lĩnh vực: BTTDC/ · Nhiem_Vu/ · BC_xa/ (đăng nhập + nhập liệu ở đó)
+Lớp      : trang tĩnh GitHub Pages — không cần JavaScript
+           Trang quản trị (pptx trang 4) là quantri.html; cách đăng nhập cũ ở index2.html
+Phiên bản: 0.13.0 · Cập nhật: 10/10/2026 13:50
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -20,8 +16,7 @@ Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 22:33
 </head>
 <body>
 
-  <!-- ==================== TRANG 1: ĐIỀU HƯỚNG CÁC LĨNH VỰC (pptx trang 1) ==================== -->
-  <!-- Phủ kín màn hình, che header chung. Ô có link = <a>/<button>; ô chưa làm = chữ thường -->
+  <!-- Ô có link = <a>; ô chưa làm = <div> chữ thường, không link -->
   <main id="trang-dieu-huong" class="portal">
     <div class="portal-tieu-de">
       <h1>SỞ NÔNG NGHIỆP VÀ MÔI TRƯỜNG</h1>
@@ -30,13 +25,12 @@ Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 22:33
 
     <img class="portal-logo" src="img/logo.svg" alt="Logo Sở Nông nghiệp và Môi trường">
 
-    <!-- Khung có link = <button>/<a>; khung chưa làm = <div> chữ thường, không link -->
     <div class="portal-luoi">
-      <button id="o-linh-vuc-bttdc" type="button" class="khung-linh-vuc co-link">
+      <a class="khung-linh-vuc co-link" href="BTTDC/">
         <span class="khung-dau"><span class="khung-bieu-tuong">🏗️</span><span class="khung-ten">Công tác Bồi thường, hỗ trợ, tái định cư</span></span>
         <span class="khung-mo-ta">Phòng Bồi thường, hỗ trợ, tái định cư · Tiến độ bồi thường các dự án, tổng hợp khó khăn vướng mắc và kiến nghị.</span>
         <span class="khung-vao">Vào báo cáo →</span>
-      </button>
+      </a>
 
       <a class="khung-linh-vuc co-link" href="https://khtc-snnmt.github.io/">
         <span class="khung-dau"><span class="khung-bieu-tuong">🏛️</span><span class="khung-ten">Báo cáo định kỳ của phòng, ban, đơn vị trực thuộc Sở</span></span>
@@ -44,16 +38,17 @@ Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 22:33
         <span class="khung-vao">Vào báo cáo →</span>
       </a>
 
-      <button id="o-linh-vuc-nhiem-vu" type="button" class="khung-linh-vuc co-link">
+      <a class="khung-linh-vuc co-link" href="Nhiem_Vu/">
         <span class="khung-dau"><span class="khung-bieu-tuong">📋</span><span class="khung-ten">Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở</span></span>
         <span class="khung-mo-ta">Theo dõi phân công, đôn đốc tiến độ thực hiện các kết luận chỉ đạo của UBND TP và Ban Giám đốc Sở.</span>
         <span class="khung-vao">Vào báo cáo →</span>
-      </button>
+      </a>
 
-      <div class="khung-linh-vuc">
-        <div class="khung-dau"><span class="khung-bieu-tuong">🌾</span><span class="khung-ten">Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản cấp xã</span></div>
-        <div class="khung-mo-ta">Số liệu chỉ tiêu trồng trọt, chăn nuôi, nuôi trồng thủy sản của các xã, phường, đặc khu.</div>
-      </div>
+      <a class="khung-linh-vuc co-link" href="BC_xa/">
+        <span class="khung-dau"><span class="khung-bieu-tuong">🌾</span><span class="khung-ten">Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản cấp xã</span></span>
+        <span class="khung-mo-ta">Số liệu chỉ tiêu trồng trọt, chăn nuôi, nuôi trồng thủy sản của các xã, phường, đặc khu.</span>
+        <span class="khung-vao">Vào báo cáo →</span>
+      </a>
 
       <div class="khung-linh-vuc">
         <div class="khung-dau"><span class="khung-bieu-tuong">🗺️</span><span class="khung-ten">Bản đồ Thực trạng và định hướng sản xuất nông nghiệp</span></div>
@@ -61,183 +56,5 @@ Phiên bản: 0.12.0 · Cập nhật: 08/10/2026 22:33
       </div>
     </div>
   </main>
-
-  <!-- ==================== TRANG 2: ĐĂNG NHẬP BỒI THƯỜNG ==================== -->
-  <!-- Cùng nền xanh với trang 1; thẻ trắng 2 cột: trái = nhập, phải = chọn nhanh đơn vị -->
-  <div id="trang-dang-nhap" class="login-page-wrapper an">
-    <button id="btn-quay-lai-dieu-huong" class="btn-back" type="button">← Chọn lĩnh vực khác</button>
-
-    <div class="login-card">
-      <!-- Cột trái: logo + form -->
-      <div class="login-form-pane">
-        <div class="login-brand">
-          <img src="img/logo.svg" alt="" class="login-brand-logo">
-          <div>
-            <div class="login-brand-org">Sở Nông nghiệp và Môi trường</div>
-            <h2 id="tieu-de-dang-nhap">Công tác Bồi thường, hỗ trợ, tái định cư</h2>
-          </div>
-        </div>
-
-        <div id="thong-bao-dang-nhap" class="alert an"></div>
-
-        <form id="form-dang-nhap" onsubmit="return false;">
-          <div class="login-field">
-            <label for="input-don-vi">Đơn vị báo cáo</label>
-            <input type="text" id="input-don-vi" class="form-control" list="ds-don-vi" placeholder="Gõ tên đơn vị hoặc chọn nhanh ở bên phải" autocomplete="off">
-            <datalist id="ds-don-vi"></datalist>
-          </div>
-
-          <div class="login-field">
-            <label for="input-email">Người nhập</label>
-            <input type="email" id="input-email" class="form-control" list="ds-tai-khoan" placeholder="Bấm để chọn tài khoản hoặc gõ Gmail" autocomplete="off">
-            <datalist id="ds-tai-khoan"></datalist>
-          </div>
-
-          <button id="btn-dang-nhap" type="submit" class="btn-login-main">Đăng nhập</button>
-
-          <p class="login-ghi-chu">Đã đăng nhập Google trên trình duyệt thì bấm Đăng nhập, không cần nhập mật khẩu.</p>
-        </form>
-      </div>
-
-      <!-- Cột phải: chọn nhanh đơn vị -->
-      <div class="quick-select-pane">
-        <div class="quick-filter-box">
-          <h4>Chọn nhanh đơn vị</h4>
-          <input type="text" id="loc-don-vi" class="form-control" placeholder="Lọc theo tên đơn vị …">
-        </div>
-        <ul id="danh-sach-chon-nhanh" class="quick-units-list"></ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== TRANG 3: MÀN HÌNH NHẬP LIỆU ==================== -->
-  <div id="trang-nhap-lieu" class="workspace-container an">
-    <div class="workspace-body">
-      <!-- Sidebar: thương hiệu + người dùng + danh sách biểu được giao -->
-      <aside class="workspace-sidebar">
-        <div class="sidebar-brand">
-          <img src="img/logo.svg" alt="" class="brand-logo">
-          <div class="brand-text">
-            <span class="app-title">Báo cáo định kỳ<br>Sở Nông nghiệp và Môi trường</span>
-            <span class="sub-title">Công tác BTTĐC</span>
-          </div>
-        </div>
-        <div class="sidebar-user">
-          <div id="nhap-lieu-user-badge" class="user-badge an"></div>
-          <button id="btn-dang-xuat" class="btn-logout an">Đăng xuất</button>
-        </div>
-        <div class="sidebar-section-title">Bảng báo cáo</div>
-        <ul id="danh-sach-bang-sidebar" class="sidebar-tables-list"></ul>
-
-        <div class="sidebar-footer">
-          <a id="lien-ket-quan-tri" class="sidebar-btn an" href="quantri.html">Quản trị</a>
-          <button id="btn-mo-tab-moi" class="sidebar-btn sidebar-btn-primary">Không tải được bảng! Bấm vào đây để nhập trên Google Sheet ↗</button>
-          <button id="btn-tai-lai-iframe" class="sidebar-btn">Tải lại báo cáo ↻</button>
-        </div>
-      </aside>
-
-      <!-- Khung chính: Iframe Google Sheet -->
-      <section class="workspace-main">
-        <div class="iframe-wrapper">
-          <iframe id="khung-nhung-sheet" class="sheet-iframe" title="Google Sheet báo cáo"></iframe>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <!-- ==================== SCRIPTS ==================== -->
-  <script src="js/config/cau-hinh.js"></script>
-  <script src="js/utils/dom.js"></script>
-  <script src="js/utils/bo-dau.js"></script>
-  <script src="js/services/api.js"></script>
-  <script src="js/domains/phien-dang-nhap.js"></script>
-  <script src="js/domains/don-vi.js"></script>
-  <script src="js/domains/ky-bao-cao.js"></script>
-  <script src="js/pages/dieu-huong.js"></script>
-  <script src="js/pages/dang-nhap.js"></script>
-  <script src="js/pages/nhap-lieu.js"></script>
-  <!-- Thư viện đăng nhập của Google — ngoại lệ CDN duy nhất (AGENTS.md mục 3) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <script>
-    // Bootstrap điều khiển luồng 3 trang
-    (function () {
-      'use strict';
-
-      var elUserBadge = DOM.$('#nhap-lieu-user-badge');
-      var elBtnLogout = DOM.$('#btn-dang-xuat');
-
-      function batDau() {
-        // Khởi tạo Trang 1: Điều hướng lĩnh vực
-        var TEN_LINH_VUC = {
-          bttdc: 'Công tác Bồi thường, hỗ trợ, tái định cư',
-          nhiemvu: 'Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở'
-        };
-        PAGE_DIEU_HUONG.khoiTao(function (maLinhVuc) {
-          if (TEN_LINH_VUC[maLinhVuc]) {
-            DOM.$('#tieu-de-dang-nhap').textContent = TEN_LINH_VUC[maLinhVuc];
-            PAGE_DIEU_HUONG.an();
-            PAGE_DANG_NHAP.hien();
-          }
-        });
-
-        // Khởi tạo Trang 2: Đăng nhập
-        PAGE_DANG_NHAP.khoiTao(
-          function (thongTinPhien) { // Đăng nhập thành công -> vào Trang 3
-            DOM.hien(elUserBadge);
-            DOM.hien(elBtnLogout);
-            PAGE_NHAP_LIEU.hien(thongTinPhien);
-          },
-          function () { // Bấm nút Quay lại -> về Trang 1
-            PAGE_DANG_NHAP.an();
-            PAGE_DIEU_HUONG.hien();
-          },
-          { google: true }
-        );
-
-        // Khởi tạo Trang 3: Nhập liệu
-        PAGE_NHAP_LIEU.khoiTao(function () { // Đăng xuất -> về Trang 1
-          DOM.an(elUserBadge);
-          DOM.an(elBtnLogout);
-          PAGE_DIEU_HUONG.hien();
-        });
-
-        // Phiên trong tab này, hoặc vé nhớ đăng nhập: vào thẳng bằng dữ liệu nhớ, rồi LUÔN hỏi
-        // GAS ngầm — danh sách bảng / file đơn vị đổi sau khi đăng nhập (VD vừa Tạo kỳ) thì vẽ lại
-        var phien = PHIEN.doc();
-        var nho = PHIEN.docNho();
-        if (!phien && nho) {
-          phien = nho.phien;
-          PHIEN.luu(phien);
-        }
-        if (phien && phien.congKhai) {
-          // Vào không cần đăng nhập (bảng công khai): chỉ giữ trong tab này, không có vé
-          PAGE_DANG_NHAP.lamMoiCongKhai(phien,
-            function (moi) { PAGE_NHAP_LIEU.hien(moi); },
-            function () { location.reload(); });
-        } else if (nho && phien && nho.phien.email === phien.email) {
-          PAGE_DANG_NHAP.lamMoiTuVe({ ve: nho.ve, phien: phien },
-            function (moi) { PAGE_NHAP_LIEU.hien(moi); },
-            function () { location.reload(); });
-        }
-        if (phien && phien.unitCode && (phien.email || phien.congKhai)) {
-          PAGE_DIEU_HUONG.an();
-          PAGE_DANG_NHAP.an();
-          DOM.hien(elUserBadge);
-          DOM.hien(elBtnLogout);
-          PAGE_NHAP_LIEU.hien(phien);
-        } else {
-          // Mặc định luôn hiện Trang 1 (Điều hướng lĩnh vực)
-          PAGE_DIEU_HUONG.hien();
-        }
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', batDau);
-      } else {
-        batDau();
-      }
-    })();
-  </script>
 </body>
 </html>

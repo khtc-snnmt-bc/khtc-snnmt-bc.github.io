@@ -2,8 +2,9 @@
 <!-- ============================================================
 bcsnn · quantri.html
 Vai trò  : Trang quản trị (pptx trang 4) — chỉ vai trò Quản trị, thêm mật khẩu quản trị
-Lớp      : trang tĩnh GitHub Pages — phiên nhập liệu lấy từ index.html (sessionStorage)
-Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 22:47
+Lớp      : trang tĩnh GitHub Pages — phiên nhập liệu lấy từ trang lĩnh vực (sessionStorage);
+           quản trị mọi lĩnh vực, nút quay về trỏ lại lĩnh vực vừa vào
+Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 13:50
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -19,7 +20,6 @@ Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 22:47
         <img src="img/logo.svg" alt="" class="brand-logo">
         <div class="brand-text">
           <span class="app-title">Quản trị · Báo cáo định kỳ Sở Nông nghiệp và Môi trường</span>
-          <span class="sub-title">Công tác BTTĐC</span>
         </div>
       </div>
       <div class="user-info">
@@ -32,7 +32,7 @@ Phiên bản: 0.4.0 · Cập nhật: 06/10/2026 22:47
         <div id="qt-menu-tieu-de" class="sidebar-section-title">Quản lý</div>
         <ul id="qt-menu" class="sidebar-tables-list"></ul>
         <div class="sidebar-footer">
-          <a class="sidebar-btn" href="index.html">← Quay về trang nhập liệu</a>
+          <a id="qt-quay-ve" class="sidebar-btn" href="./">← Quay về trang nhập liệu</a>
         </div>
       </aside>
 

@@ -2,7 +2,7 @@
 // bcsnn · js/config/cau-hinh.js
 // Vai trò  : Hằng số cấu hình duy nhất — chủ dự án sửa tay file này
 // Lớp      : config — không gọi ai
-// Phiên bản: 0.2.1 · Cập nhật: 06/10/2026 22:16
+// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 13:50
 // ============================================================
 // ⚠ KHÔNG ghi ID file, Gmail thật vào đây — repo Public!
 // Chủ dự án: dán URL web app GAS vào dòng GAS_URL bên dưới.
@@ -20,6 +20,14 @@ var CAU_HINH = {
 
   // Client ID "Đăng nhập bằng Google" (mã công khai, không phải bí mật)
   GOOGLE_CLIENT_ID: '237899473140-bqtoitjtpstbv9hu0j0jsdljfnn4hpv2.apps.googleusercontent.com',
+
+  // Lĩnh vực: tên thư mục web (khtc-snnmt-bc.github.io/<thư mục>) → mã lĩnh vực (cột group tab Bảng
+  // của Sheet quản lý; cũng là tên thư mục Drive), tên ở trang đăng nhập, tên ngắn ở thanh bên
+  LINH_VUC: {
+    BTTDC:    { group: 'BTTDC',   ten: 'Công tác Bồi thường, hỗ trợ, tái định cư', tenNgan: 'Công tác BTTĐC' },
+    Nhiem_Vu: { group: 'NHIEMVU', ten: 'Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở', tenNgan: 'Nhiệm vụ UBND TP và Sở' },
+    BC_xa:    { group: 'BCXA',    ten: 'Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản cấp xã', tenNgan: 'Báo cáo cấp xã' }
+  },
 
   // Lấy URL GAS: ưu tiên biến cấu hình, sau đó tới localStorage, rồi URL hash #gas=
   layGasUrl: function () {

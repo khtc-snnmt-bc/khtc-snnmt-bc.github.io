@@ -5,9 +5,9 @@
 //            Phân quyền (giao bảng, đơn vị quản lý), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.19.0 · Cập nhật: 09/10/2026 13:05
+// Phiên bản: 0.20.0 · Cập nhật: 10/10/2026 13:50
 // ============================================================
-// Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về index.html.
+// Chưa đăng nhập nhập liệu, hoặc không phải vai trò Quản trị → về trang lĩnh vực vừa vào (không có thì trang chủ).
 // Mật khẩu đúng → GAS trả mã phiên (6 giờ, giữ tới khi đóng tab). Mọi việc
 // quản trị gửi kèm mã phiên; GAS trả hetPhien → hỏi lại mật khẩu.
 // Lưu xong GAS tự chia sẻ / gỡ quyền file Drive cho khớp.
@@ -32,10 +32,12 @@ var PAGE_QUAN_TRI = (function () {
 
   function khoiTao() {
     phien = PHIEN.doc();
+    var veTrang = PHIEN.docLinhVuc() ? PHIEN.docLinhVuc() + '/' : './';
     if (!PHIEN.laQuanTri(phien)) {
-      location.replace('index.html');
+      location.replace(veTrang);
       return;
     }
+    DOM.$('#qt-quay-ve').href = veTrang;
     elMenu = DOM.$('#qt-menu');
     elTieuDe = DOM.$('#qt-tieu-de');
     elKhoa = DOM.$('#qt-mat-khau');

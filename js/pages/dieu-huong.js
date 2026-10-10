@@ -1,12 +1,11 @@
 // ============================================================
 // bcsnn · js/pages/dieu-huong.js
 // Vai trò  : Màn hình điều hướng (pptx trang 1): chọn lĩnh vực báo cáo
-// Lớp      : pages — được gọi bởi: app (index.html) · được phép gọi: utils
-// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 12:55
+// Lớp      : pages — được gọi bởi: index2.html (cách đăng nhập cũ) · được phép gọi: utils
+// Phiên bản: 0.4.0 · Cập nhật: 10/10/2026 13:50
 // ============================================================
-// Hai ô lĩnh vực (Bồi thường; Nhiệm vụ UBND TP và Sở) là nút → callback('bttdc' | 'nhiemvu').
-// Ô "Báo cáo định kỳ…" là link thường (<a href>) sang app khác — không cần JS.
-// Ô chưa làm chỉ là chữ, không gắn sự kiện.
+// Chỉ còn index2.html dùng (chờ b06h). index.html từ b10 là ô link sang /BTTDC, /Nhiem_Vu, /BC_xa.
+// Ô lĩnh vực là nút → callback('bttdc' | 'nhiemvu'); trang không có ô nào thì bỏ qua ô đó.
 
 var PAGE_DIEU_HUONG = (function () {
   'use strict';
@@ -16,7 +15,9 @@ var PAGE_DIEU_HUONG = (function () {
   function khoiTao(callbackChonLinhVuc) {
     elTrang = DOM.$('#trang-dieu-huong');
     [['#o-linh-vuc-bttdc', 'bttdc'], ['#o-linh-vuc-nhiem-vu', 'nhiemvu']].forEach(function (o) {
-      DOM.$(o[0]).addEventListener('click', function () {
+      var el = DOM.$(o[0]);
+      if (!el) return;
+      el.addEventListener('click', function () {
         an();
         if (typeof callbackChonLinhVuc === 'function') callbackChonLinhVuc(o[1]);
       });

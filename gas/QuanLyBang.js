@@ -403,12 +403,30 @@ function dongBangMoi_(tieuDe, cu, giaTri) {
 
 // ---------- Chạm Drive / Sheet ----------
 
-/** Thư mục con tên mã bảng, cạnh Sheet quản lý (đã có thì dùng lại). */
-function thuMucBang_(ss, tableCode) {
+/**
+ * Thư mục của bảng: {thư mục Sheet quản lý}/{mã lĩnh vực}/{mã bảng} (đã có thì dùng lại).
+ * Thư mục bảng đang nằm chỗ khác (chỗ cũ cạnh Sheet quản lý, hoặc lĩnh vực cũ) → dời cả thư mục sang.
+ * @param {Object} bang — {tableCode, group, templateFileId?}
+ */
+function thuMucBang_(ss, bang) {
   var cha = DriveApp.getFileById(ss.getId()).getParents();
   var goc = cha.hasNext() ? cha.next() : DriveApp.getRootFolder();
-  var co = goc.getFoldersByName(tableCode);
-  return co.hasNext() ? co.next() : goc.createFolder(tableCode);
+  var ma = bang.tableCode, nhom = String(bang.group || '').trim();
+  var linhVuc = goc;
+  if (nhom) {
+    var coLv = goc.getFoldersByName(nhom);
+    linhVuc = coLv.hasNext() ? coLv.next() : goc.createFolder(nhom);
+  }
+  var co = linhVuc.getFoldersByName(ma);
+  if (co.hasNext()) return co.next();
+  var cu = goc.getFoldersByName(ma), tmCu = cu.hasNext() ? cu.next() : null;
+  if (!tmCu && bang.templateFileId) {
+    try {
+      var p = DriveApp.getFileById(bang.templateFileId).getParents();
+      if (p.hasNext()) { var tm = p.next(); if (tm.getName() === ma) tmCu = tm; }
+    } catch (err) { /* file tổng đã mất: tạo thư mục mới */ }
+  }
+  return tmCu ? tmCu.moveTo(linhVuc) : linhVuc.createFolder(ma);
 }
 
 /**
@@ -425,7 +443,7 @@ function doiFileVaoThuMucBang_(ss, tableCode) {
   giaoCuaBangKy_(docTabQuanLy_(ss, 'File'), tableCode).forEach(function (g) { if (g.fileId) ids.push(g.fileId); });
   kq.tong = ids.length;
   if (!ids.length) return kq;
-  var thuMuc = thuMucBang_(ss, tableCode), idThuMuc = thuMuc.getId();
+  var thuMuc = thuMucBang_(ss, cd), idThuMuc = thuMuc.getId();
   for (var i = 0; i < ids.length; i++) {
     if (Date.now() - batDau > 270000) { kq.loi.push('Hết thời gian, còn ' + (ids.length - i) + ' file chưa xét — bấm lại để dời tiếp'); break; }
     try {
@@ -455,7 +473,7 @@ function capNhatChonMaMau_(templateFileId, dsMaDonVi) {
 /** Dựng file tổng `{mãBảng}_TONG` theo khai báo đã kiểm. */
 function dungFileTong_(ss, bang, dsMaDonVi) {
   var file = SpreadsheetApp.create(bang.tableCode + '_TONG');
-  DriveApp.getFileById(file.getId()).moveTo(thuMucBang_(ss, bang.tableCode));
+  DriveApp.getFileById(file.getId()).moveTo(thuMucBang_(ss, bang));
   var tab = file.getSheets()[0].setName('Mẫu');
   var soCot = bang.cot.length + 1, dongCuoi = MAU_DONG_DAU + bang.dataRows - 1, ngan = nganCongThuc_(file);
 
@@ -642,7 +660,7 @@ function taiMauExcel_(ss, khai, maYeuCau) {
   if (kiem.loi) return { ok: false, loi: kiem.loi };
   var ma = kiem.tableCode, cd = kiem.caiDat, dsMaDonVi = maDonViCo_(ss);
 
-  var thuMuc = thuMucBang_(ss, ma), id;
+  var thuMuc = thuMucBang_(ss, { tableCode: ma, group: cd.group }), id;
   try {
     var blob = Utilities.newBlob(Utilities.base64Decode(String(khai.duLieu)), MIME_XLSX, String(khai.tenFile));
     id = Drive.Files.create({ name: ma + '_TONG', mimeType: MimeType.GOOGLE_SHEETS, parents: [thuMuc.getId()] }, blob).id;

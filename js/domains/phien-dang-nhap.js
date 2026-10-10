@@ -1,9 +1,9 @@
 // ============================================================
 // bcsnn · js/domains/phien-dang-nhap.js
 // Vai trò  : Nghiệp vụ thuần: phiên đăng nhập + phiên quản trị (sessionStorage), đơn vị gần đây,
-//            vé nhớ đăng nhập (localStorage)
+//            vé nhớ đăng nhập (localStorage), lĩnh vực đang vào
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils, config
-// Phiên bản: 0.5.0 · Cập nhật: 06/10/2026 20:11
+// Phiên bản: 0.6.0 · Cập nhật: 10/10/2026 13:50
 // ============================================================
 // Phiên giữ tới khi đóng tab (sessionStorage). localStorage giữ mã đơn vị gần
 // đây, vài Gmail đăng nhập gần đây (để gợi ý) và vé nhớ đăng nhập của cách
@@ -94,6 +94,19 @@ var PHIEN = (function () {
     } catch (e) { /* chế độ riêng tư: bỏ qua */ }
   }
 
+  // ---------- Lĩnh vực đang vào (trang quản trị quay về đúng địa chỉ lĩnh vực) ----------
+
+  var KHOA_LINH_VUC = 'bcsnn_linh_vuc';
+
+  function luuLinhVuc(thuMuc) {
+    try { sessionStorage.setItem(KHOA_LINH_VUC, thuMuc); } catch (e) { /* private mode */ }
+  }
+
+  /** Thư mục web của lĩnh vực vào gần nhất trong tab này ('' nếu chưa có) */
+  function docLinhVuc() {
+    try { return sessionStorage.getItem(KHOA_LINH_VUC) || ''; } catch (e) { return ''; }
+  }
+
   // ---------- Quản trị ----------
 
   var VAI_TRO_QUAN_TRI = 'Quản trị';
@@ -129,7 +142,7 @@ var PHIEN = (function () {
 
   return {
     luu: luu, doc: doc, xoa: xoa, luuNho: luuNho, docNho: docNho, themGanDay: themGanDay, docGanDay: docGanDay, ghiGanDay: ghiGanDay,
-    docEmailGanDay: docEmailGanDay, ghiEmailGanDay: ghiEmailGanDay,
+    docEmailGanDay: docEmailGanDay, ghiEmailGanDay: ghiEmailGanDay, luuLinhVuc: luuLinhVuc, docLinhVuc: docLinhVuc,
     laQuanTri: laQuanTri, conHanQuanTri: conHanQuanTri, luuQuanTri: luuQuanTri, docQuanTri: docQuanTri, xoaQuanTri: xoaQuanTri
   };
 })();
