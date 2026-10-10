@@ -2,7 +2,7 @@
 // bcsnn · gas/TongHop.js
 // Vai trò  : Tổng hợp kỳ — gom số tab kỳ ở mọi file đơn vị về tab kỳ cùng tên ở file tổng
 // Lớp      : gas — gọi bởi: Code.js · gọi: KyBaoCao.js, DangNhap.js, PhanQuyen.js
-// Phiên bản: 0.3.1 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.4.0 · Cập nhật: 10/10/2026 18:10
 // ============================================================
 // File tổng chỉ xem: số nhập ở file đơn vị, tổng hợp gom MỘT CHIỀU về file tổng (thiết kế 4.4).
 //   Cộng (aggregateType 'tong'): mỗi ô nhập của dòng mẫu = tổng số của các đơn vị có dòng đó
@@ -18,9 +18,12 @@
 // trỏ vào tab kỳ sẽ thành #REF!. Cài đặt bảng aggregateKeep: giaTri → xong thì đổi mọi công thức của tab
 // thành giá trị · congThuc (mặc định) ở bảng Cộng → ô cột số = N(IMPORTRANGE(file đơn vị))+… , tự cập nhật;
 // file tổng tự được "Cho phép truy cập" từng file đơn vị (choPhepNhapTu_).
+// Cài byUnitCols (b11): thêm tab "Theo đơn vị" (mỗi đơn vị một cụm cột, không cộng) + tab mỗi đơn vị
+// Quản lý báo cáo của bảng (dòng có cột trackCol = mã của nó) — chỉ giá trị, ghi đè mỗi lần tổng hợp.
 // Theo lô: mỗi lần đọc tối đa KY_MS_TOI_DA, cất từng đơn vị vào CacheService (6 giờ), trả tiepTu;
 // đọc xong hết mới ghi file tổng (đọc đã lâu thì để lần gọi sau ghi).
 
+var TH_TAB_THEO_DON_VI = 'Theo đơn vị';
 var TH_CACHE_GIAY = 21600;
 var TH_CACHE_BYTE = 99000;   // CacheService: tối đa 100 KB mỗi khoá
 
@@ -212,6 +215,49 @@ function demKhongKhop_(cotA, dongTieuDe, laTach, laTong, dsDv) {
   return n;
 }
 
+/**
+ * Bảng "Theo đơn vị": mỗi đơn vị một cụm cột (cột byUnitCols của mẫu), không cộng. Dòng = dòng
+ * dữ liệu của mẫu; cột nhãn = cột khung trừ cột A. Đơn vị chưa đọc được (du null) → ô trống.
+ * @param {Array<{ma, ten, du}>} dsDv — mọi đơn vị được giao, theo thứ tự danh mục
+ * @returns {{dau1: Array, dau2: Array, gt: Array<Array>, cotNhan: Array<number>}}
+ */
+function bangTheoDonVi_(mau, dsDv, cotTrai) {
+  var cotNhan = mau.cotKhung.filter(function (c) { return c > 1 && cotTrai.indexOf(c) < 0; });
+  var tdMau = mau.hienThi[mau.dongTieuDe - 1] || [];
+  var dau1 = cotNhan.map(function () { return ''; }), dau2 = cotNhan.map(function (c) { return tdMau[c - 1] || ''; });
+  dsDv.forEach(function (d) {
+    cotTrai.forEach(function (c, k) { dau1.push(k ? '' : d.ten); dau2.push(tdMau[c - 1] || ''); });
+  });
+  var gt = mau.gt.map(function (dongGt, j) {
+    var dong = mau.dongTieuDe + 1 + j;
+    var hang = cotNhan.map(function (c) { return dongGt[c - 1] === undefined ? '' : dongGt[c - 1]; });
+    dsDv.forEach(function (d) {
+      var i = d.du ? d.du.anhXa[dong] : undefined;
+      var goc = i === undefined ? null : duCot_(d.du.hang[i], mau.soCot);
+      cotTrai.forEach(function (c) { hang.push(goc ? docGiaTri_(goc[c - 1]) : ''); });
+    });
+    return hang;
+  });
+  return { dau1: dau1, dau2: dau2, gt: gt, cotNhan: cotNhan };
+}
+
+/**
+ * Cột (số từ 1, trong dsCot) mà mọi ô của các dòng gt là chữ — ghi lại bằng setValues phải đặt kiểu
+ * chữ trước, kẻo Sheet đổi '1.1.1' thành ngày. Cột có số / ngày giữ nguyên.
+ */
+function cotToanChu_(gt, dsCot) {
+  return dsCot.filter(function (c) {
+    return gt.length && gt.every(function (r) { return typeof docGiaTri_(r[c - 1]) === 'string'; });
+  });
+}
+
+/** Dòng của bảng Theo đơn vị có ô cột Theo dõi (cột mẫu cotTheoDoi) = ma. */
+function locTheoDoi_(bang, cotTheoDoi, ma) {
+  var k = bang.cotNhan.indexOf(cotTheoDoi);
+  if (k < 0) return [];
+  return bang.gt.filter(function (h) { return String(h[k]).trim() === ma; });
+}
+
 // ---------- Chạm Drive / Sheet ----------
 
 /** Khoá cache theo ID file tổng (không theo mã bảng — hai lĩnh vực có thể trùng mã bảng). */
@@ -299,6 +345,7 @@ function dungTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
     }
     j = k + 1;
   }
+  cotToanChu_(khoi.gt, mau.cotKhung).forEach(function (c) { tab.getRange(dau, c, soRa, 1).setNumberFormat('@'); });
   tab.getRange(dau, 1, soRa, soCot).setValues(khoi.gt.map(function (r) { return r.map(docGiaTri_); }));
   // Công thức: mỗi cột, mỗi đoạn ô có công thức liên tiếp một lần ghi
   for (var c = 0; c < soCot; c++) {
@@ -311,6 +358,60 @@ function dungTabTong_(fileTong, mau, tenKy, ra, khoi, laGhep) {
     }
   }
   return tab;
+}
+
+/**
+ * Ghi đè một tab phẳng ở cuối file tổng (chưa có thì tạo): dòng 1 tiêu đề, dòng 2–3 tiêu đề cột,
+ * dữ liệu từ dòng 4. Chỉ giá trị — xem trên điện thoại / ứng dụng như trên máy tính.
+ */
+function ghiTabPhang_(fileTong, ten, tieuDe, bang, dsDong, soNhan) {
+  var tab = fileTong.getSheetByName(ten) || fileTong.insertSheet(ten, fileTong.getSheets().length);
+  tab.clear();
+  var soCot = bang.dau1.length, soDong = 3 + Math.max(dsDong.length, 1);
+  if (tab.getMaxColumns() < soCot) tab.insertColumnsAfter(tab.getMaxColumns(), soCot - tab.getMaxColumns());
+  if (tab.getMaxRows() < soDong) tab.insertRowsAfter(tab.getMaxRows(), soDong - tab.getMaxRows());
+  tab.getRange(1, 1).setValue(tieuDe).setFontWeight('bold').setFontSize(12);
+  tab.getRange(2, 1, 2, soCot).setValues([bang.dau1, bang.dau2]).setFontWeight('bold').setWrap(true)
+    .setVerticalAlignment('middle').setBackground('#DDEBF7');
+  cotToanChu_(dsDong, khoangSo_(1, Math.min(soNhan, soCot))).forEach(function (c) {
+    tab.getRange(4, c, dsDong.length, 1).setNumberFormat('@');
+  });
+  if (dsDong.length) tab.getRange(4, 1, dsDong.length, soCot).setValues(dsDong);
+  tab.setFrozenRows(3);
+  tab.setFrozenColumns(Math.min(soNhan, soCot));
+  return tab;
+}
+
+/**
+ * Dựng tab "Theo đơn vị" + tab của từng đơn vị Quản lý báo cáo (lọc theo cột Theo dõi) — bảng có
+ * cài byUnitCols. Bỏ qua (không báo lỗi) khi chưa cài.
+ */
+function ghiTheoDonVi_(ss, fileTong, mau, caiDat, giao, tenKy) {
+  var cotTrai = docDanhSachCot_(String(caiDat.byUnitCols || '')) || [];
+  if (!cotTrai.length) return null;
+  var dsDvTab = docTabQuanLy_(ss, 'Đơn vị'), ten = {}, thuTu = {};
+  dsDvTab.slice(1).forEach(function (r, i) { ten[String(r[0]).trim()] = String(r[1] || r[0]).trim(); thuTu[String(r[0]).trim()] = i; });
+  var khoa = function (g) { return khoaCacheTongHop_(caiDat.templateFileId, tenKy, g.unitCode); };
+  var daCat = giao.length ? CacheService.getScriptCache().getAll(giao.map(khoa)) : {};
+  var dsDv = giao.slice().sort(function (a, b) { return (thuTu[a.unitCode] || 0) - (thuTu[b.unitCode] || 0); }).map(function (g) {
+    var s = daCat[khoa(g)], du = s ? JSON.parse(s) : null;
+    return { ma: g.unitCode, ten: ten[g.unitCode] || g.unitCode, du: du && !du.thieu && !du.loi ? du : null };
+  });
+  var bang = bangTheoDonVi_(mau, dsDv, cotTrai);
+  var tenBang = String(caiDat.tableName || caiDat.tableCode);
+  ghiTabPhang_(fileTong, TH_TAB_THEO_DON_VI, tenBang + ' — kỳ ' + tenKy, bang, bang.gt, bang.cotNhan.length);
+  var cotTheoDoi = soCot_(String(caiDat.trackCol || '').trim());
+  var soTab = 0;
+  if (cotTheoDoi) {
+    phamViQuanLy_(dsDvTab).forEach(function (pv) {
+      var dong = dsDvTab.filter(function (r) { return String(r[0]).trim() === pv.unitCode; })[0];
+      if (String(dong[3]).trim() !== 'Quản lý báo cáo' || !quanLyBang_(pv, caiDat.tableCode)) return;
+      ghiTabPhang_(fileTong, pv.unitCode, ten[pv.unitCode] + ' — ' + tenBang + ' — kỳ ' + tenKy, bang,
+        locTheoDoi_(bang, cotTheoDoi, pv.unitCode), bang.cotNhan.length);
+      soTab++;
+    });
+  }
+  return { soDonVi: dsDv.length, soTab: soTab };
 }
 
 /**
@@ -379,6 +480,11 @@ function tongHopKy_(ss, tableCode, tenKy, batDau) {
     khoi = khoiGhep_(ra, mau, dsDv, cotNhap, dongNhap);
   }
   ghiTabTong_(fileTong, mau, tenKy, ra, khoi, !kq.laTong, caiDat.aggregateKeep === TH_GIA_TRI);
+  try {
+    kq.theoDonVi = ghiTheoDonVi_(ss, fileTong, mau, caiDat, giao, tenKy);
+  } catch (err) {
+    kq.loi.push('Tab ' + TH_TAB_THEO_DON_VI + ': ' + String(err.message || err));
+  }
   kq.xong = true;
   kq.chiGiaTri = caiDat.aggregateKeep === TH_GIA_TRI;
   kq.lienKet = lienKet;

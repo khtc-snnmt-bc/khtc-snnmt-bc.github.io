@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-tong-hop.mjs
 // Vai trò  : Kiểm hàm thuần Tổng hợp kỳ phía GAS (khớp dòng đơn vị, bảng Ghép, bảng Cộng)
 // Chạy     : node app/kiem-thu/kiem-gas-tong-hop.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 09/10/2026 12:30
+// Phiên bản: 0.2.0 · Cập nhật: 10/10/2026 18:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +13,7 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(doc('DangNhap.js') + '\n' + doc('QuanTri.js') + '\n' + doc('PhanQuyen.js') + '\n' + doc('KyBaoCao.js') +
   '\n' + doc('TongHop.js') +
-  '\n;this.ham = { luuGiaTri_, docGiaTri_, dongNhapMau_, khopDongDv_, keHoachGhep_, khoiGhep_, khoiTong_, demKhongKhop_, congThucLienKet_, chuanGiuTongHop_ };',
+  '\n;this.ham = { luuGiaTri_, docGiaTri_, dongNhapMau_, khopDongDv_, keHoachGhep_, khoiGhep_, khoiTong_, demKhongKhop_, congThucLienKet_, chuanGiuTongHop_, bangTheoDonVi_, locTheoDoi_, cotToanChu_ };',
   sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
@@ -165,6 +165,30 @@ bai('đếm dòng không khớp: dòng mẫu của đơn vị thiếu ở tab + 
   assert.equal(h.demKhongKhop_(mauGhep.cotA, 2, true, false, [{ ma: 'A', anhXa: { 3: 0 }, thua: [1] }]), 1);   // thiếu dòng all
   assert.equal(h.demKhongKhop_(['Mã đơn vị', 'all'], 1, true, true, [{ ma: 'P', anhXa: { 2: 0 }, thua: [1, 2] }]), 2);
   assert.equal(h.demKhongKhop_(['Mã đơn vị', ''], 1, false, false, [{ ma: 'X', anhXa: {}, thua: [0] }]), 0);
+});
+
+bai('bảng Theo đơn vị: mỗi đơn vị một cụm cột, không cộng; đơn vị chưa đọc được → ô trống; lọc theo cột Theo dõi', () => {
+  // mẫu: A Mã · B Chỉ tiêu · C (1) · D (2) · E Theo dõi; dữ liệu dòng 3–4
+  const mau = { dongTieuDe: 2, soCot: 5, cotKhung: [1, 2, 5],
+    hienThi: [['T'], ['Mã đơn vị', 'Chỉ tiêu', '(1)', '(2)', 'Theo dõi']],
+    gt: [['all', 'Lúa', '', '', 'TT'], ['all', 'Bò', '', '', 'CN']] };
+  const dsDv = [
+    { ma: 'X1', ten: 'Xã 1', du: { anhXa: { 3: 0, 4: 1 }, hang: { 0: ['X1', 'Lúa', 1, 2, 'TT'], 1: ['X1', 'Bò', 5, 6, 'CN'] } } },
+    { ma: 'X2', ten: 'Xã 2', du: null }];
+  const b = sach(h.bangTheoDonVi_(mau, dsDv, [3, 4]));
+  assert.deepEqual(b.cotNhan, [2, 5]);
+  assert.deepEqual(b.dau1, ['', '', 'Xã 1', '', 'Xã 2', '']);
+  assert.deepEqual(b.dau2, ['Chỉ tiêu', 'Theo dõi', '(1)', '(2)', '(1)', '(2)']);
+  assert.deepEqual(b.gt, [['Lúa', 'TT', 1, 2, '', ''], ['Bò', 'CN', 5, 6, '', '']]);
+  assert.deepEqual(sach(h.locTheoDoi_(b, 5, 'CN')), [['Bò', 'CN', 5, 6, '', '']]);
+  assert.deepEqual(sach(h.locTheoDoi_(b, 5, 'BVMT')), []);
+  assert.deepEqual(sach(h.locTheoDoi_(b, 9, 'CN')), []);
+});
+
+bai('cột toàn chữ (đặt kiểu chữ trước khi ghi — "1.1.1" không thành ngày); cột có số / ngày giữ nguyên', () => {
+  const gt = [['all', '1.1.1', 5, { d: 0 }], ['all', '', 6, '']];
+  assert.deepEqual(sach(h.cotToanChu_(gt, [1, 2, 3, 4])), [1, 2]);
+  assert.deepEqual(sach(h.cotToanChu_([], [1])), []);
 });
 
 console.log('kiem-gas-tong-hop: ' + soBai + ' bài ĐẠT');
