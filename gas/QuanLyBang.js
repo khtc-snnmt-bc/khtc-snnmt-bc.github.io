@@ -4,7 +4,7 @@
 //            lưu cài đặt bảng (tab "Bảng"), kiểm mẫu theo quy ước thiết kế 5.1,
 //            bảng mới từ Excel tải lên, xoá bảng, kiểm bảng đủ file đơn vị + đủ tab kỳ
 // Lớp      : gas — gọi bởi: Code.js, PhanQuyen.js, KyBaoCao.js, B04.js (thử) · gọi: KyBaoCao.js, PhanQuyen.js, DangNhap.js
-// Phiên bản: 0.9.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 20:10
 // ============================================================
 // Mẫu dựng trên app: dòng 1 tên bảng, dòng 2 tiêu đề (A2 = 'Mã đơn vị'), dữ
 // liệu từ dòng 3, sẵn `dataRows` dòng. Công thức khai cho dòng 3, app chép xuống.
@@ -13,9 +13,9 @@
 // vị tạo sau cũng vào đó (taoFileChoDonVi_). Bảng "Sở giao dòng": app dựng
 // khung, quản trị điền dòng (mã đơn vị ở cột A) trong file tổng rồi Kiểm mẫu.
 // Cột A bảng Sở giao dòng có danh sách chọn: 'all' + mã đơn vị, để trống được.
-// Cách tổng hợp (thiết kế 4.4): 'ghep' ghép dòng các đơn vị · 'tong' cộng từng ô —
-// bảng tổng thì mọi đơn vị nhận cùng các dòng (cột A = 'all'), luôn Sở giao dòng,
-// đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
+// Cách tổng hợp (thiết kế 4.4): 'ghep' ghép dòng các đơn vị · 'tong' cộng từng ô · 'cot' ghép cột
+// (mỗi đơn vị một cụm cột byUnitCols, b11) — Cộng và Ghép cột thì mọi đơn vị nhận cùng các dòng
+// (cột A = 'all'), luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
 // Sửa mẫu sau khi đã tạo kỳ thì tab kỳ đã sinh không đổi.
 
 var MAU_DONG_DAU = 3;
@@ -25,12 +25,12 @@ var MAU_DONG_TOI_DA = 500;
 var KIEU_COT_NHAP = ['chu', 'so', 'ngay', 'chon'];
 var KIEU_COT_HOP_LE = KIEU_COT_NHAP.concat(['congThuc']);
 var CACH_NHAP_DONG = ['docLap', 'gopTach'];
-var CACH_TONG_HOP = ['ghep', 'tong'];
+var CACH_TONG_HOP = ['ghep', 'tong', 'cot'];
 var MAU_EXCEL_TOI_DA = 10 * 1048576;
 var MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 var LOI_CONG_THUC = ['#ERROR!', '#NAME?', '#REF!', '#N/A'];
 // Cột chữ trong tab Bảng — đặt định dạng chữ kẻo Sheet đổi '5:7' thành giờ
-var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'hiddenCols'];
+var COT_BANG_CHU = ['inputCols', 'inputRows', 'lockedRows', 'noteTabs', 'hiddenCols', 'byUnitCols'];
 
 // ---------- Hàm thuần (kiểm bằng Node: kiem-thu/kiem-gas-bang.mjs) ----------
 
@@ -60,15 +60,21 @@ function soDongSan_(o, macDinh) {
 
 /**
  * Cách nhập dòng + cách tổng hợp (chung cho bảng mới và sửa) → {gt} hoặc {loi}.
- * Bảng tổng các đơn vị luôn là Sở giao dòng (mọi đơn vị cùng các dòng) và không cho thêm dòng.
+ * Bảng Cộng / Ghép cột luôn là Sở giao dòng (mọi đơn vị cùng các dòng) và không cho thêm dòng.
  */
 function kiemPhanLoai_(kb) {
   var tongHop = String(kb.aggregateType || 'ghep');
   if (CACH_TONG_HOP.indexOf(tongHop) < 0) return { loi: 'Cách tổng hợp không hợp lệ' };
-  var cach = tongHop === 'tong' ? 'gopTach' : String(kb.sourceType || '');
+  var cungDong = cungDong_(tongHop);
+  var cach = cungDong ? 'gopTach' : String(kb.sourceType || '');
   if (CACH_NHAP_DONG.indexOf(cach) < 0) return { loi: 'Cách nhập dòng không hợp lệ' };
   return { gt: { sourceType: cach, aggregateType: tongHop,
-    allowAddRows: tongHop === 'tong' ? false : kb.allowAddRows === true } };
+    allowAddRows: cungDong ? false : kb.allowAddRows === true } };
+}
+
+/** Cộng ('tong') và Ghép cột ('cot'): mọi đơn vị nhận cùng các dòng của mẫu (cột A = all). */
+function cungDong_(aggregateType) {
+  return aggregateType === 'tong' || aggregateType === 'cot';
 }
 
 /** Mã bảng mới → '' nếu dùng được, không thì câu báo lỗi. */
@@ -168,6 +174,8 @@ function kiemCaiDatSua_(cd) {
   kq.periodMode = cd.periodMode === KY_CAP_NHAT ? KY_CAP_NHAT : KY_NHAP_MOI;
   kq.shareType = chuanChiaSe_(cd.shareType);
   kq.aggregateKeep = chuanGiuTongHop_(cd.aggregateKeep);
+  kq.byUnitCols = String(cd.byUnitCols || '').trim().toUpperCase();
+  if (kq.byUnitCols && !hopLeDsCot_(kq.byUnitCols)) return { loi: 'Cột ghép theo đơn vị ghi chữ cột, ví dụ E:J' };
   return { caiDat: kq };
 }
 
@@ -269,7 +277,7 @@ function kiemMau_(m, caiDat, dsMaDonVi) {
     }
   });
 
-  var laTong = caiDat.aggregateType === 'tong';
+  var laTong = cungDong_(caiDat.aggregateType);
   if (laTong && !laTach) {
     loi.push(loiMau_('Cài đặt', 'Bảng tổng các đơn vị mà đơn vị tự nhập dòng', 'Chọn Cách nhập dòng "Sở giao dòng sẵn"'));
   }
@@ -476,7 +484,7 @@ function dungFileTong_(ss, bang, dsMaDonVi) {
   if (bang.sourceType === 'gopTach') {
     var cotA = tab.getRange(MAU_DONG_DAU, 1, bang.dataRows, 1);
     datChonMaDonVi_(cotA, dsMaDonVi);
-    if (bang.aggregateType === 'tong') {
+    if (cungDong_(bang.aggregateType)) {
       cotA.setValues(cotA.getValues().map(function () { return [MA_MOI_DON_VI]; }));
     }
   }
@@ -574,7 +582,7 @@ function caiDatChoTrang_(gtBang) {
       inputRows: chu(cd.inputRows), lockedRows: chu(cd.lockedRows), allowAddRows: cd.allowAddRows,
       noteTabs: cd.noteTabs.join(', '), dataRows: chu(cd.dataRows), aggregateType: cd.aggregateType,
       lockDay: chu(cd.lockDay), hiddenCols: cd.hiddenCols, periodMode: cd.periodMode, shareType: cd.shareType,
-      aggregateKeep: cd.aggregateKeep
+      aggregateKeep: cd.aggregateKeep, byUnitCols: chu(cd.byUnitCols)
     };
   }
   return kq;

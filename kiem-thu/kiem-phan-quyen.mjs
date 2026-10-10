@@ -109,6 +109,8 @@ bai('gộp lô + câu báo tổng hợp kỳ', () => {
     'Đã tổng hợp kỳ 20.11.2026 từ 2/2 đơn vị vào file tổng (cộng từng ô). 1 ô ghi chữ ở cột số bị bỏ qua. Lỗi: A: x');
   assert.equal(KY.tomTatTongHop({ tenKy: '20.11.2026', laTong: true, chiGiaTri: true, tong: 1, soDonVi: 1, loi: [] }),
     'Đã tổng hợp kỳ 20.11.2026 từ 1/1 đơn vị vào file tổng (cộng từng ô, chỉ giữ giá trị).');
+  assert.equal(KY.tomTatTongHop({ tenKy: '20.11.2026', laCot: true, soTab: 7, tong: 3, soDonVi: 3, loi: [] }),
+    'Đã tổng hợp kỳ 20.11.2026 từ 3/3 đơn vị vào file tổng (ghép cột, mỗi đơn vị một cụm cột; thêm 7 tab theo đơn vị chủ trì).');
 });
 
 bai('ngày tự khoá gợi ý (giống GAS hanKhoaMacDinh_)', () => {

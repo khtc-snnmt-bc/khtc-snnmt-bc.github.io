@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-gas-bang.mjs
 // Vai trò  : Kiểm hàm thuần Quản lý bảng phía GAS (khai bảng mới, tải Excel, cài đặt sửa, kiểm mẫu, mã all, đủ file / tab kỳ)
 // Chạy     : node app/kiem-thu/kiem-gas-bang.mjs
-// Phiên bản: 0.5.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.6.0 · Cập nhật: 10/10/2026 20:10
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -80,6 +80,11 @@ bai('khai bảng mới hợp lệ → chuẩn hoá', () => {
   assert.equal(tong.bang.allowAddRows, false, 'bảng tổng không cho thêm dòng');
   assert.equal(kq.bang.allowAddRows, true);
   assert.equal(sach(h.docCaiDat_(['tableCode', 'aggregateType', 'allowAddRows'], ['a', 'tong', true])).allowAddRows, false);
+  const cot = sach(h.kiemKhaiBangMoi_(Object.assign({}, khai, { aggregateType: 'cot' }), []));
+  assert.equal(cot.bang.sourceType, 'gopTach', 'Ghép cột luôn Sở giao dòng');
+  assert.equal(cot.bang.allowAddRows, false);
+  const cdCot = sach(h.docCaiDat_(['tableCode', 'aggregateType', 'allowAddRows'], ['a', ' cot ', true]));
+  assert.deepEqual([cdCot.aggregateType, cdCot.allowAddRows], ['cot', false]);
   assert.equal(kq.bang.tableName, 'Tiến độ giải ngân');
   assert.equal(kq.bang.dataRows, 20);
   assert.equal(kq.bang.inputCols, 'B:D, F');
@@ -133,6 +138,10 @@ bai('cài đặt sửa trên app', () => {
   assert.equal(kq.caiDat.lockDay, '');
   assert.equal(h.kiemCaiDatSua_({ tableName: 'X', sourceType: 'docLap', inputCols: 'C', lockDay: '5' }).caiDat.lockDay, 5);
   assert.equal(sach(h.kiemCaiDatSua_({ tableName: 'X', sourceType: 'docLap', aggregateType: 'tong', inputCols: 'C' })).caiDat.sourceType, 'gopTach');
+  assert.equal(kq.caiDat.byUnitCols, '');                                // Ghép cột (b11)
+  assert.equal(cdDung({ aggregateType: 'cot', byUnitCols: ' e:j ' }).byUnitCols, 'E:J');
+  assert.equal(cdDung({ aggregateType: 'cot' }).sourceType, 'gopTach');
+  assert.ok(cdSai({ byUnitCols: 'E-J' }).includes('Cột ghép theo đơn vị'));
 });
 
 const cd = (doi) => Object.assign({ sourceType: 'gopTach', inputCols: 'C:D', inputRows: '', lockedRows: '', noteTabs: [], dataRows: '' }, doi);
@@ -143,6 +152,8 @@ bai('kiểm mẫu: mã all — bảng ghép nhận all, bảng tổng chỉ nh�
   const m = mau({ cotA: ['Bảng', 'Mã đơn vị', 'all', '', 'DV1'] });
   assert.deepEqual(cho(h.kiemMau_(m, cd(), ['DV1'])), []);
   assert.deepEqual(cho(h.kiemMau_(m, cd({ aggregateType: 'tong' }), ['DV1'])),
+    ['Cột A dòng 5 | Bảng tổng các đơn vị mà dòng ghi mã riêng']);
+  assert.deepEqual(cho(h.kiemMau_(m, cd({ aggregateType: 'cot' }), ['DV1'])),
     ['Cột A dòng 5 | Bảng tổng các đơn vị mà dòng ghi mã riêng']);
   assert.deepEqual(cho(h.kiemMau_(mau({ cotA: ['Bảng', 'Mã đơn vị', ''] }), cd({ aggregateType: 'tong' }), [])),
     ['Cột A | Chưa có dòng nào ghi all']);
@@ -215,7 +226,7 @@ bai('cài đặt cho trang: chữ hoá, noteTabs nối lại', () => {
   assert.deepEqual(Object.keys(kq), ['a']);
   assert.deepEqual(kq.a, { templateFileId: 'ID', sourceType: 'docLap', inputCols: 'C:J', inputRows: '5', lockedRows: '',
     allowAddRows: true, noteTabs: 'X, Y', dataRows: '20', aggregateType: 'ghep', lockDay: '',
-    hiddenCols: '', periodMode: 'nhapMoi', shareType: 'moi', aggregateKeep: 'congThuc' });
+    hiddenCols: '', periodMode: 'nhapMoi', shareType: 'moi', aggregateKeep: 'congThuc', byUnitCols: '' });
 });
 
 bai('tải Excel: mã bảng, file .xlsx, cỡ file, cài đặt như Sửa', () => {

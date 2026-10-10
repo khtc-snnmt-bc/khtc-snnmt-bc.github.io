@@ -4,7 +4,7 @@
 //            thì tạo file), khoá / mở khoá / xoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_), Code.js (layQuanLyId_, DS_LINH_VUC)
-// Phiên bản: 0.7.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.7.1 · Cập nhật: 10/10/2026 20:10
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -276,8 +276,9 @@ function docCaiDat_(tieuDe, dong) {
   caiDat.tableCode = String(caiDat.tableCode || '').trim();
   caiDat.templateFileId = String(caiDat.templateFileId || '').trim();
   caiDat.allowAddRows = caiDat.allowAddRows === true || String(caiDat.allowAddRows).trim().toUpperCase() === 'TRUE';
-  caiDat.aggregateType = String(caiDat.aggregateType || '').trim() === 'tong' ? 'tong' : 'ghep';
-  if (caiDat.aggregateType === 'tong') caiDat.allowAddRows = false;   // bảng tổng: đơn vị không thêm dòng
+  var cachTh = String(caiDat.aggregateType || '').trim();
+  caiDat.aggregateType = cachTh === 'tong' || cachTh === 'cot' ? cachTh : 'ghep';
+  if (caiDat.aggregateType !== 'ghep') caiDat.allowAddRows = false;   // Cộng / Ghép cột: đơn vị không thêm dòng
   caiDat.noteTabs = String(caiDat.noteTabs || '').split(',')
     .map(function (t) { return t.trim(); }).filter(function (t) { return t; });
   caiDat.hiddenCols = String(caiDat.hiddenCols || '').trim();

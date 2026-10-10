@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.22.0 · Cập nhật: 10/10/2026 17:30
+// Phiên bản: 0.23.0 · Cập nhật: 10/10/2026 20:10
 // ============================================================
 // Quản trị đúng lĩnh vực vừa vào (mỗi lĩnh vực một Sheet quản lý — b10b); đơn vị quản lý báo cáo
 // theo vai trò của đơn vị trong lĩnh vực; Quản lý báo cáo tích bảng quản lý ở mục Tài khoản (trống = mọi bảng).
@@ -695,9 +695,10 @@ var PAGE_QUAN_TRI = (function () {
 
   /**
    * Cách tổng hợp · Cách nhập dòng · Cho thêm dòng (chung bảng mới / bảng đã có).
-   * Bảng tổng các đơn vị: luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
+   * Cộng / Ghép cột: luôn Sở giao dòng, đơn vị không thêm dòng (chủ dự án chốt 07/10/2026).
+   * khiDoiTong (không bắt buộc): báo cách tổng hợp đang chọn.
    */
-  function vePhanLoai(khung, cd, khiDoiCach) {
+  function vePhanLoai(khung, cd, khiDoiCach, khiDoiTong) {
     var selTong = oChon(QUAN_LY_BANG.CACH_TONG_HOP.map(function (c) { return { giaTri: c.ma, nhan: c.ten }; }), cd.aggregateType || 'ghep');
     var selCach = oCachNhapDong(cd.sourceType);
     var them = oTich(cd.allowAddRows);
@@ -705,11 +706,12 @@ var PAGE_QUAN_TRI = (function () {
     khung.appendChild(dong('Cách nhập dòng', selCach));
     var hangThem = dong('Cho thêm dòng', them.el);
     function apLuat() {
-      var laTong = selTong.value === 'tong';
-      if (laTong) { selCach.value = 'gopTach'; them.o.checked = false; }
-      selCach.disabled = laTong;
-      them.o.disabled = laTong;
+      var cungDong = QUAN_LY_BANG.cungDong(selTong.value);
+      if (cungDong) { selCach.value = 'gopTach'; them.o.checked = false; }
+      selCach.disabled = cungDong;
+      them.o.disabled = cungDong;
       khiDoiCach(selCach.value);
+      if (khiDoiTong) khiDoiTong(selTong.value);
     }
     selTong.addEventListener('change', apLuat);
     selCach.addEventListener('change', function () { khiDoiCach(selCach.value); });
@@ -862,8 +864,17 @@ var PAGE_QUAN_TRI = (function () {
     var oSoDong = oNhap(cd.dataRows, { type: 'number', min: '1', max: '500' });
     var oChuThich = oNhap(cd.noteTabs);
     var hangSoDong = dong('Số dòng sẵn', oSoDong);
+    var oCotDv = oNhap(cd.byUnitCols, { placeholder: 'Như cột được nhập' });
+    var hangCotDv = dong('Cột ghép theo đơn vị', oCotDv);
+    var hangGiuTh;
     var phanLoai = vePhanLoai(khung, { aggregateType: cd.aggregateType, sourceType: cd.sourceType,
-      allowAddRows: cd.allowAddRows }, function (cach) { DOM.batTat(hangSoDong, 'an', cach !== 'docLap'); });
+      allowAddRows: cd.allowAddRows }, function (cach) { DOM.batTat(hangSoDong, 'an', cach !== 'docLap'); },
+    function (tong) {
+      // Ghép cột: chỉ giá trị, mỗi đơn vị một cụm cột
+      DOM.batTat(hangCotDv, 'an', tong !== 'cot');
+      DOM.batTat(hangGiuTh, 'an', tong === 'cot');
+    });
+    khung.appendChild(hangCotDv);
     khung.appendChild(dong('Cột được nhập', oCot));
     khung.appendChild(dong('Dòng được nhập', oDongNhap));
     khung.appendChild(dong('Dòng khoá', oDongKhoa));
@@ -875,7 +886,7 @@ var PAGE_QUAN_TRI = (function () {
     var oKieuKy = oChon(QUAN_LY_BANG.KIEU_KY.map(function (k) { return { giaTri: k.ma, nhan: k.ten }; }), cd.periodMode || 'nhapMoi');
     khung.appendChild(dong('Kỳ mới', oKieuKy));
     var oGiuTh = oChon(QUAN_LY_BANG.GIU_KHI_TONG_HOP.map(function (g) { return { giaTri: g.ma, nhan: g.ten }; }), cd.aggregateKeep || 'congThuc');
-    khung.appendChild(dong('Khi tổng hợp', oGiuTh));
+    hangGiuTh = khung.appendChild(dong('Khi tổng hợp', oGiuTh));
     var oNgayKhoa = oNhap(cd.lockDay, { type: 'number', min: '1', max: '31', class: 'form-control qt-o-ngay-khoa' });
     var hangKhoa = DOM.tao('span', { class: 'qt-ngay-khoa' });
     hangKhoa.appendChild(document.createTextNode('ngày '));
@@ -912,7 +923,7 @@ var PAGE_QUAN_TRI = (function () {
         tableName: oTen.value.trim(), inputCols: oCot.value.trim(), inputRows: oDongNhap.value.trim(),
         lockedRows: oDongKhoa.value.trim(), noteTabs: oChuThich.value.trim(), lockDay: oNgayKhoa.value.trim(),
         hiddenCols: oCotAn.value.trim(), periodMode: oKieuKy.value, shareType: oChiaSe.value,
-        aggregateKeep: oGiuTh.value
+        aggregateKeep: oGiuTh.value, byUnitCols: oCotDv.value.trim()
       });
       caiDat.dataRows = caiDat.sourceType === 'docLap' ? oSoDong.value.trim() : cd.dataRows;
       chayNut(nut, 'Đang lưu…', function () { return API.qtLuuBang(token(), bang.tableCode, caiDat); }, function (res) {

@@ -4,7 +4,7 @@
 //            cách nhập dòng / tổng hợp, kiểu kỳ, cách đơn vị vào nhập, số đơn vị có file,
 //            câu báo kiểm mẫu / đủ file + tab kỳ / giao theo mã
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: utils (BO_DAU), config
-// Phiên bản: 0.9.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 20:10
 // ============================================================
 // Khai báo gửi GAS (qtTaoBang) và luật kiểm ở gas/QuanLyBang.js — GAS kiểm lại,
 // ở đây chỉ phục vụ giao diện.
@@ -25,11 +25,15 @@ var QUAN_LY_BANG = (function () {
     { ma: 'gopTach', ten: 'Sở giao dòng sẵn' }
   ];
 
-  // Thiết kế 4.4. Bảng tổng: mọi đơn vị cùng các dòng (cột A = all) → luôn Sở giao dòng
+  // Thiết kế 4.4. Cộng / Ghép cột: mọi đơn vị cùng các dòng (cột A = all) → luôn Sở giao dòng
   var CACH_TONG_HOP = [
-    { ma: 'ghep', ten: 'Ghép từ các đơn vị' },
-    { ma: 'tong', ten: 'Tổng các đơn vị' }
+    { ma: 'ghep', ten: 'Ghép dòng các đơn vị' },
+    { ma: 'tong', ten: 'Cộng các đơn vị' },
+    { ma: 'cot', ten: 'Ghép cột các đơn vị' }
   ];
+
+  /** Cách tổng hợp mà mọi đơn vị nhận cùng các dòng */
+  function cungDong(ma) { return ma === 'tong' || ma === 'cot'; }
 
   // Kỳ mới: chép khung từ file tổng (ô nhập trống) hay chép kỳ trước của đơn vị (giữ số)
   var KIEU_KY = [
@@ -176,7 +180,7 @@ var QUAN_LY_BANG = (function () {
   return {
     tenBangTuExcel: tenBangTuExcel, baoTaoTuExcel: baoTaoTuExcel,
     KIEU_COT: KIEU_COT, CACH_NHAP_DONG: CACH_NHAP_DONG, CACH_TONG_HOP: CACH_TONG_HOP, KIEU_KY: KIEU_KY, GIU_KHI_TONG_HOP: GIU_KHI_TONG_HOP, CACH_CHIA_SE: CACH_CHIA_SE, DONG_DAU: DONG_DAU,
-    chuCot: chuCot, maTuTen: maTuTen,
+    chuCot: chuCot, maTuTen: maTuTen, cungDong: cungDong,
     oPhu: oPhu, tomTatKiem: tomTatKiem, tomTatDuFile: tomTatDuFile, soDonViCoFile: soDonViCoFile, tomTatGiaoTheoMau: tomTatGiaoTheoMau
   };
 })();
