@@ -163,6 +163,13 @@ bai('b10: lĩnh vực theo thư mục web, lọc bảng theo mã lĩnh vực', (
   assert.deepEqual(L.locBang(ds, 'BTTDC').map((b) => b.tableCode), ['a', 'c']);
   assert.equal(L.locBang(ds, 'BCXA').length, 0);
   assert.equal(L.locBang(undefined, 'BTTDC').length, 0);
+  const dv = [{ unitCode: 'KHTC', role: 'Quản trị', groups: [] },
+    { unitCode: 'BT', role: 'Quản lý báo cáo', groups: ['BTTDC', 'NHIEMVU'], managedGroups: ['BTTDC'] },
+    { unitCode: 'P1', role: 'Đơn vị báo cáo', groups: ['NHIEMVU'] }, { unitCode: 'P2', role: 'Đơn vị báo cáo' }];
+  const vt = (ds) => ds.map((d) => d.unitCode + ':' + d.role);
+  assert.deepEqual(vt(L.locDonVi(dv, 'NHIEMVU')), ['KHTC:Quản trị', 'BT:Đơn vị báo cáo', 'P1:Đơn vị báo cáo']);
+  assert.deepEqual(vt(L.locDonVi(dv, 'BTTDC')), ['KHTC:Quản trị', 'BT:Quản lý báo cáo']);
+  assert.equal(dv[1].role, 'Quản lý báo cáo'); // không sửa bản gốc
   sandbox.PHIEN.luuLinhVuc('BC_xa');
   assert.equal(sandbox.PHIEN.docLinhVuc(), 'BC_xa');
 });

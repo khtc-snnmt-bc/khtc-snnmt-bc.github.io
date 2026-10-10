@@ -5,7 +5,7 @@
 //            index2.html — tin Gmail đã gõ (cách cũ, giữ tới khi chốt b06h)
 //            Bảng công khai: chọn đơn vị, để trống Gmail → vào thẳng các bảng công khai
 // Lớp      : pages — được gọi bởi: trang-linh-vuc.js, index2.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.11.1 · Cập nhật: 10/10/2026 13:50
+// Phiên bản: 0.12.0 · Cập nhật: 10/10/2026 14:10
 // ============================================================
 
 var PAGE_DANG_NHAP = (function () {
@@ -23,15 +23,18 @@ var PAGE_DANG_NHAP = (function () {
   var elTrang, elInputDonVi, elDsDonVi, elInputLoc, elListChonNhanh, elInputEmail, elDsTaiKhoan;
   var elBtnDangNhap, elThongBao, elBtnQuayLai;
   var onDangNhapThanhCong, onQuayLaiCallback;
-  var laGoogle = false;       // true: Google xác minh Gmail (index.html) · false: tin Gmail đã gõ (index2.html)
+  var laGoogle = false;       // true: Google xác minh Gmail (trang lĩnh vực) · false: tin Gmail đã gõ (index2.html)
+  var locDonVi = function (ds) { return ds; };   // trang lĩnh vực: chỉ đơn vị của lĩnh vực
 
   /**
-   * @param {object} [tuyChon] — { google: true } bật cách đăng nhập mới
+   * @param {object} [tuyChon] — { google: true } bật cách đăng nhập mới;
+   *   { locDonVi: fn(ds) → ds } lọc danh sách đơn vị (ô chọn, kết quả tìm theo Gmail)
    */
   function khoiTao(callbackThanhCong, callbackQuayLai, tuyChon) {
     onDangNhapThanhCong = callbackThanhCong;
     onQuayLaiCallback = callbackQuayLai;
     laGoogle = !!(tuyChon && tuyChon.google);
+    if (tuyChon && typeof tuyChon.locDonVi === 'function') locDonVi = tuyChon.locDonVi;
 
     elTrang = DOM.$('#trang-dang-nhap');
     elInputDonVi = DOM.$('#input-don-vi');
@@ -116,7 +119,7 @@ var PAGE_DANG_NHAP = (function () {
     API.layDanhSachDonVi()
       .then(function (res) {
         if (res.ok && res.donVi && res.donVi.length) {
-          dsDonViGoc = DON_VI.sapXepDonVi(res.donVi);
+          dsDonViGoc = DON_VI.sapXepDonVi(locDonVi(res.donVi));
           napDatalistDonVi();
           veDanhSachChonNhanh(elInputLoc.value);
         } else {
@@ -214,11 +217,14 @@ var PAGE_DANG_NHAP = (function () {
     var luot = ++luotHoiEmail;
     API.timDonViTheoEmail(email)
       .then(function (res) {
-        if (luot !== luotHoiEmail || !res.ok || !res.donVi || !res.donVi.length) return;
+        if (luot !== luotHoiEmail || !res.ok || !res.donVi) return;
+        // Chỉ nhận đơn vị có trong danh sách của trang (trang lĩnh vực đã lọc)
+        var ds = res.donVi.filter(function (d) { return dsDonViGoc.some(function (g) { return g.unitCode === d.unitCode; }); });
+        if (!ds.length) return;
         // Đã chọn đúng một đơn vị của Gmail này rồi thì giữ nguyên
-        var daDung = donViDangChon && res.donVi.some(function (d) { return d.unitCode === donViDangChon.unitCode; });
+        var daDung = donViDangChon && ds.some(function (d) { return d.unitCode === donViDangChon.unitCode; });
         if (daDung) return;
-        chonDonVi(res.donVi[0], true);
+        chonDonVi(ds[0], true);
       })
       .catch(function () { /* im lặng: bấm Đăng nhập sẽ báo lỗi cụ thể */ });
   }

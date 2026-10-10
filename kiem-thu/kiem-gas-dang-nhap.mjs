@@ -13,7 +13,7 @@ const doc = (f) => readFileSync(new URL('../gas/' + f, import.meta.url), 'utf8')
 const ma = doc('DangNhap.js') + '\n' + doc('PhanQuyen.js');
 const sandbox = {};
 vm.createContext(sandbox);
-vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_, chonDonViTheoEmail_ };', sandbox);
+vm.runInContext(ma + '\n;this.ham = { kiemTraTaiKhoan_, layTenDonVi_, ghepDanhSachBang_, layEmailCuaDonVi_, timDonViTheoEmail_, chonDonViTheoEmail_, linhVucTheoDonVi_ };', sandbox);
 const h = sandbox.ham;
 const sach = (x) => JSON.parse(JSON.stringify(x));
 
@@ -22,6 +22,20 @@ function bai(ten, fn) {
   fn();
   soBai++;
 }
+
+bai('b10: lĩnh vực của đơn vị — được giao bảng (trừ "khong") hoặc quản lý bảng', () => {
+  const bang = [['tableCode', 'tableName', 'group', 'managerUnits'],
+    ['a', 'A', 'BTTDC', 'BTTDC.SNNMT'], ['b', 'B', 'NHIEMVU', ''], ['c', 'C', 'BTTDC', '']];
+  const file = [['unitCode', 'tableCode', 'fileId', 'createdAt', 'access'],
+    ['X', 'a', '', '', 'sua'], ['X', 'b', '', '', 'xem'], ['Y', 'b', '', '', 'khong'], ['Z', 'c', '', '', '']];
+  const kq = sach(h.linhVucTheoDonVi_(bang, file));
+  assert.deepEqual(kq.giao['BTTDC.SNNMT'], ['BTTDC']);
+  assert.deepEqual(kq.quanLy['BTTDC.SNNMT'], ['BTTDC']);
+  assert.deepEqual(kq.giao.X, ['BTTDC', 'NHIEMVU']);
+  assert.equal(kq.quanLy.X, undefined);
+  assert.equal(kq.giao.Y, undefined);
+  assert.deepEqual(kq.giao.Z, ['BTTDC']);
+});
 
 // Dữ liệu mẫu giả lập Sheet Quản lý
 const mauTaiKhoan = [
