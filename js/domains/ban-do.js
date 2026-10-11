@@ -3,7 +3,7 @@
 // Vai trò  : Nghiệp vụ thuần của bản đồ: dựng kiểu vẽ MapLibre cho từng nhóm lớp, bộ lọc theo loại
 //            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
-// Phiên bản: 0.3.0 · Cập nhật: 11/10/2026 22:31
+// Phiên bản: 0.4.0 · Cập nhật: 11/10/2026 23:37
 // ============================================================
 // Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', vien?: true, loai: [{ma, ten, mau}] }
 // vien = vùng chỉ vẽ viền (ranh giới).
@@ -31,12 +31,17 @@ var BAN_DO = (function () {
     return ['in', ['get', 'loai'], ['literal', maBat.slice()]];
   }
 
-  /** Các lớp vẽ MapLibre của một nhóm. Id lớp vẽ = <id nhóm>-<phần> */
+  /** Id lớp vẽ: <id nhóm>-<phần>; nhóm của file Nội bộ thêm tiền tố (cùng tên nhóm có thể ở cả hai file) */
+  function maLop(nhom, nguon, phan) {
+    return (nguon === 'cong-khai' ? '' : nguon + ':') + nhom.id + '-' + phan;
+  }
+
+  /** Các lớp vẽ MapLibre của một nhóm */
   function lopVe(nhom, nguon) {
     var mau = bieuThucMau(nhom);
     var chung = { source: nguon, 'source-layer': nhom.id };
     function lop(phan, kieu, paint, them) {
-      var l = Object.assign({ id: nhom.id + '-' + phan, type: kieu, paint: paint }, chung, them || {});
+      var l = Object.assign({ id: maLop(nhom, nguon, phan), type: kieu, paint: paint }, chung, them || {});
       return l;
     }
     if (nhom.hinh === 'vung' && nhom.vien) {
@@ -121,6 +126,16 @@ var BAN_DO = (function () {
     return { tieuDe: tieuDe, dong: dong, noiDung: noiDung };
   }
 
+  /** Hạn dùng (giây, giờ Unix) của vé Google ID token; vé hỏng thì 0. Chỉ đọc, không kiểm chữ ký (Worker kiểm). */
+  function hanVe(ve) {
+    try {
+      var p = String(ve).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return Number(JSON.parse(atob(p + '==='.slice((p.length + 3) % 4))).exp) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   /** Khung thành phố [tây, nam, đông, bắc] nới thêm một phần để kéo bản đồ không bị cứng */
   function khungNoi(khung, tiLe) {
     var dx = (khung[2] - khung[0]) * tiLe, dy = (khung[3] - khung[1]) * tiLe;
@@ -201,7 +216,7 @@ var BAN_DO = (function () {
   }
 
   return {
-    lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin,
+    maLop: maLop, lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin, hanVe: hanVe,
     khungNoi: khungNoi, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
     duongDanEarthWeb: duongDanEarthWeb,
   };

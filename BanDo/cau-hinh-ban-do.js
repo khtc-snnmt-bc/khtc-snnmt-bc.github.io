@@ -3,11 +3,12 @@
 // Vai trò  : Lớp Công khai của bản đồ (tên, màu, thứ tự) + khung thành phố
 // Lớp      : config — SINH TỰ ĐỘNG bởi bando/cong-cu/day-ban-do.py từ danh-sach-lop.xlsx, đừng sửa tay
 //            (địa chỉ kho file thì sửa hằng KHO trong day-ban-do.py)
-// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 22:30
+// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 23:34
 // ============================================================
 
 var CAU_HINH_BAN_DO = {
-  KHO: "/kho/",
+  KHO: "https://bando-snnmt.gsheet.workers.dev/",
+  PHIEN_BAN: {"cong-khai": "6b263269", "noi-bo": "7f134d39"},
   KHUNG_THANH_PHO: [106.3352, 10.32, 107.5719, 11.5014],
   NHOM_LOP_CONG_KHAI: [
     {

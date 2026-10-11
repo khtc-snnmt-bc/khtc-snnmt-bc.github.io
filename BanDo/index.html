@@ -3,7 +3,7 @@
 bcsnn · BanDo/index.html
 Vai trò  : Bản đồ Thực trạng và định hướng sản xuất nông nghiệp — chỉ xem
 Lớp      : trang tĩnh GitHub Pages — dựng ở js/pages/ban-do.js; lớp, màu ở cau-hinh-ban-do.js (sinh tự động)
-Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
+Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 23:37
 ============================================================ -->
 <html lang="vi">
 <head>
@@ -25,6 +25,8 @@ Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
     </div>
     <div class="bd-ds-lop" id="bd-ds-lop"></div>
     <div class="bd-chan">
+      <div class="bd-dang-nhap" id="bd-dang-nhap"><div id="bd-nut-google"></div></div>
+      <div class="bd-tai-khoan" id="bd-tai-khoan" hidden></div>
       <button class="bd-nut" id="bd-earth-web" type="button">Xem trên Google Earth</button>
       <a class="bd-huong-dan" href="huong-dan-google-earth.html" target="_blank">Hướng dẫn xem trên Google Earth</a>
     </div>
@@ -37,8 +39,10 @@ Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
     <div id="bd-tt-noi-dung"></div>
   </aside>
 
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="../vendor/maplibre-gl/maplibre-gl.js"></script>
   <script src="../vendor/pmtiles/pmtiles.js"></script>
+  <script src="../js/config/cau-hinh.js"></script>
   <script src="cau-hinh-ban-do.js"></script>
   <script src="../js/services/ban-do-du-lieu.js"></script>
   <script src="../js/domains/ban-do.js"></script>

@@ -2,7 +2,7 @@
    bcsnn · css/ban-do.css
    Trang bản đồ (BanDo/) — dùng biến màu của app.css.
    Máy tính: bảng lớp trên trái, khung thông tin cạnh phải. Điện thoại: bảng lớp gập, khung thông tin trượt lên.
-   Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
+   Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 23:37
    ============================================================ */
 
 .trang-ban-do { overflow: hidden; }
@@ -52,6 +52,9 @@
   background: #fff; color: var(--xc); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
 }
 .bd-nut:hover { background: var(--xp); }
+.bd-dang-nhap { display: flex; justify-content: center; min-height: 32px; }
+.bd-dang-nhap[hidden], .bd-tai-khoan[hidden], .bd-loai-dong[hidden] { display: none; }
+.bd-tai-khoan { font-size: 12px; color: var(--text-muted); text-align: center; overflow-wrap: anywhere; }
 .bd-huong-dan { font-size: 12px; color: var(--text-muted); text-align: center; }
 .bd-huong-dan:hover { color: var(--xc); }
 

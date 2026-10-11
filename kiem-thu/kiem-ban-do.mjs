@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
-const sandbox = {};
+const sandbox = { atob };
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL('../js/domains/ban-do.js', import.meta.url), 'utf8'), sandbox);
 vm.runInContext('this.BD = BAN_DO;', sandbox);
@@ -42,6 +42,25 @@ bai('lopVe vùng chỉ viền: nền trong suốt, viền theo màu nhóm', () =
   assert.equal(ls[3].type, 'symbol');
   assert.equal(ls[3]['source-layer'], 'ranh_xa_nhan');
   assert.deepEqual(ls[3].layout['text-field'], ['get', 'ten']);
+});
+
+bai('lopVe nhóm Nội bộ: id lớp có tiền tố nguồn, source-layer giữ tên nhóm', () => {
+  const ls = sach(BD.lopVe(khoanh, 'noi-bo'));
+  assert.deepEqual(ls.map((l) => l.id), ['noi-bo:khoanh_dat-nen', 'noi-bo:khoanh_dat-vien', 'noi-bo:khoanh_dat-chon']);
+  assert.equal(ls[0].source, 'noi-bo');
+  assert.equal(ls[0]['source-layer'], 'khoanh_dat');
+  assert.equal(BD.maLop(khoanh, 'cong-khai', 'chon'), 'khoanh_dat-chon');
+});
+
+bai('hanVe: đọc exp của vé Google; vé hỏng = 0', () => {
+  const nd = Buffer.from(JSON.stringify({ email: 'ả@gmail.com', exp: 1760000000 })).toString('base64url');
+  assert.equal(BD.hanVe('eyJhbGciOiJSUzI1NiJ9.' + nd + '.chuky'), 1760000000);
+  for (const cat of ['', 'a', 'a.b', 'a.!!!.c']) assert.equal(BD.hanVe(cat), 0);
+  // đủ mọi độ dài phần nội dung (đệm base64)
+  for (let i = 0; i < 4; i++) {
+    const p = Buffer.from(JSON.stringify({ exp: 5, x: 'y'.repeat(i) })).toString('base64url');
+    assert.equal(BD.hanVe('h.' + p + '.k'), 5);
+  }
 });
 
 bai('lopVe đường một màu', () => {
