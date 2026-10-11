@@ -190,7 +190,13 @@
     dungBangLop();
     dungBanDo();
     $('bd-tt-dong-nut').addEventListener('click', boChon);
-    $('bd-earth').addEventListener('click', xuatGoogleEarth);
+    $('bd-earth-pro').addEventListener('click', xuatGoogleEarth);
+    $('bd-earth-web').addEventListener('click', function () {
+      // mở tab ngay trong lúc bấm (mở trễ sau khi chụp thì trình duyệt chặn cửa sổ bật lên)
+      var b = map.getBounds();
+      window.open(BAN_DO.duongDanEarthWeb({ w: b.getWest(), s: b.getSouth(), e: b.getEast(), n: b.getNorth() }), '_blank');
+      xuatGoogleEarth();
+    });
     BAN_DO_DU_LIEU.layLoaiDat(NGUON).then(function (ld) { loaiDat = ld; });
   });
 })();

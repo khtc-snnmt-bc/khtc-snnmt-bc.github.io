@@ -86,4 +86,12 @@ bai('taoZip: cấu trúc zip không nén, CRC đúng', () => {
   assert.equal(z.subarray(30, 37).toString(), 'doc.kml');
 });
 
+bai('duongDanEarthWeb: tâm khung, khoảng cách theo bề ngang', () => {
+  const u = BD.duongDanEarthWeb({ w: 106.5, s: 10.9, e: 106.7, n: 11.0 });
+  const m = /^https:\/\/earth\.google\.com\/web\/@10\.950000,106\.600000,0a,(\d+)d,35y,0h,0t,0r$/.exec(u);
+  assert.ok(m, u);
+  // bề ngang 0,2° ở vĩ độ 10,95 ≈ 21,86 km → khoảng cách ≈ 34,7 km
+  assert.ok(Math.abs(+m[1] - 34660) < 300, m[1]);
+});
+
 console.log(`kiem-ban-do: ${soBai} bài đạt`);

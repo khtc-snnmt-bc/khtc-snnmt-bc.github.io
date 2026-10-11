@@ -119,6 +119,15 @@ var BAN_DO = (function () {
       + '</GroundOverlay></kml>';
   }
 
+  /** Đường dẫn Google Earth web nhìn đúng khung {w, s, e, n}: tâm khung, khoảng cách camera theo bề ngang
+   *  (góc nhìn 35°: khoảng cách ≈ bề ngang / (2·tan 17,5°)) */
+  function duongDanEarthWeb(khung) {
+    var lat = (khung.s + khung.n) / 2, lon = (khung.w + khung.e) / 2;
+    var ngangM = (khung.e - khung.w) * 111320 * Math.cos(lat * Math.PI / 180);
+    var d = Math.round(ngangM / (2 * Math.tan(17.5 * Math.PI / 180)));
+    return 'https://earth.google.com/web/@' + lat.toFixed(6) + ',' + lon.toFixed(6) + ',0a,' + d + 'd,35y,0h,0t,0r';
+  }
+
   var BANG_CRC = (function () {
     var b = [];
     for (var n = 0; n < 256; n++) {
@@ -169,5 +178,6 @@ var BAN_DO = (function () {
   return {
     lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin,
     khungNoi: khungNoi, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
+    duongDanEarthWeb: duongDanEarthWeb,
   };
 })();
