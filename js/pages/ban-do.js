@@ -12,6 +12,16 @@
   var NGUON = 'cong-khai';
   // Nhóm Chữ (nhãn) cần bộ phông chữ cho MapLibre — chưa có, tạm không hiện
   var nhomLop = CAU_HINH_BAN_DO.NHOM_LOP_CONG_KHAI.filter(function (n) { return n.hinh !== 'chu'; });
+  // Bản đồ nền (chọn một). Không dùng tile.openstreetmap.org (không tới được từ máy trong nước, và chính sách
+  // cấm dùng cho ứng dụng) hay CARTO (nay đòi API key, in chữ mờ lên ô).
+  var NEN = [
+    { id: 'duong', ten: 'Bản đồ đường',
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'],
+      ghiCong: 'Esri, HERE, Garmin, © OpenStreetMap contributors' },
+    { id: 've-tinh', ten: 'Ảnh vệ tinh',
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      ghiCong: 'Esri, Maxar, Earthstar Geographics' },
+  ];
   var loaiDat = {};
   var dangChon = null;      // {nhom, id}
   var map;
@@ -36,18 +46,16 @@
       attributionControl: { compact: true },
       style: {
         version: 8,
-        sources: {
-          osm: {
-            type: 'raster', tileSize: 256, maxzoom: 19,
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
-          },
-          [NGUON]: { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(NGUON) },
-        },
-        // Lớp bản đồ nằm sẵn trong kiểu ban đầu — không chờ sự kiện 'load' (chờ cả nền OSM tải xong;
-        // nền chậm/hỏng thì khoanh đất không bao giờ hiện)
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }].concat(
-          [].concat.apply([], nhomLop.map(function (nhom) { return BAN_DO.lopVe(nhom, NGUON); }))),
+        sources: Object.assign({ [NGUON]: { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(NGUON) } },
+          NEN.reduce(function (kq, n) {
+            kq['nen-' + n.id] = { type: 'raster', tileSize: 256, maxzoom: 19, tiles: n.tiles, attribution: n.ghiCong };
+            return kq;
+          }, {})),
+        // Lớp bản đồ nằm sẵn trong kiểu ban đầu — không chờ sự kiện 'load' (chờ cả nền tải xong;
+        // nền chậm/hỏng thì khoanh đất không bao giờ hiện). Nền đầu tiên bật, các nền khác ẩn.
+        layers: NEN.map(function (n, i) {
+          return { id: 'nen-' + n.id, type: 'raster', source: 'nen-' + n.id, layout: { visibility: i ? 'none' : 'visible' } };
+        }).concat([].concat.apply([], nhomLop.map(function (nhom) { return BAN_DO.lopVe(nhom, NGUON); }))),
       },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
@@ -79,13 +87,20 @@
 
   function dungBangLop() {
     var ds = $('bd-ds-lop');
-    var nen = tao('div', 'bd-nhom');
-    var nenDau = tao('label', 'bd-nhom-dau');
-    var nenO = tao('input'); nenO.type = 'checkbox'; nenO.checked = true;
-    nenO.addEventListener('change', function () { map.setLayoutProperty('osm', 'visibility', nenO.checked ? 'visible' : 'none'); });
-    nenDau.appendChild(nenO);
-    nenDau.appendChild(tao('span', '', 'Bản đồ nền'));
-    nen.appendChild(nenDau);
+    var nen = tao('div', 'bd-nhom bd-nen');
+    nen.appendChild(tao('div', 'bd-nhom-dau', 'Bản đồ nền'));
+    var dsNen = tao('div', 'bd-loai');
+    NEN.concat([{ id: '', ten: 'Không nền' }]).forEach(function (n, i) {
+      var dong = tao('label', 'bd-loai-dong');
+      var o = tao('input'); o.type = 'radio'; o.name = 'bd-nen'; o.checked = i === 0;
+      o.addEventListener('change', function () {
+        NEN.forEach(function (x) { map.setLayoutProperty('nen-' + x.id, 'visibility', x.id === n.id ? 'visible' : 'none'); });
+      });
+      dong.appendChild(o);
+      dong.appendChild(tao('span', '', n.ten));
+      dsNen.appendChild(dong);
+    });
+    nen.appendChild(dsNen);
     ds.appendChild(nen);
     nhomLop.forEach(function (nhom) {
       var khoi = tao('div', 'bd-nhom');
