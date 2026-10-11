@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- ============================================================
+bcsnn · BanDo/index.html
+Vai trò  : Bản đồ Thực trạng và định hướng sản xuất nông nghiệp — chỉ xem
+Lớp      : trang tĩnh GitHub Pages — dựng ở js/pages/ban-do.js; lớp, màu ở cau-hinh-ban-do.js (sinh tự động)
+Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
+============================================================ -->
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bản đồ sản xuất nông nghiệp · Sở Nông nghiệp và Môi trường TP.HCM</title>
+  <link rel="stylesheet" href="../vendor/maplibre-gl/maplibre-gl.css">
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/ban-do.css">
+</head>
+<body class="trang-ban-do">
+  <div id="ban-do"></div>
+
+  <aside class="bd-lop" id="bd-lop">
+    <div class="bd-lop-dau">
+      <a class="bd-logo" href="../" title="Trang chủ"><img src="../img/logo.svg" alt=""></a>
+      <span class="bd-tieu-de">Thực trạng và định hướng sản xuất nông nghiệp</span>
+      <button class="bd-lop-mo" id="bd-lop-mo" type="button" aria-label="Lớp bản đồ">☰</button>
+    </div>
+    <div class="bd-ds-lop" id="bd-ds-lop"></div>
+  </aside>
+
+  <aside class="bd-tt" id="bd-tt" hidden>
+    <button class="bd-tt-dong" id="bd-tt-dong-nut" type="button" aria-label="Đóng">×</button>
+    <h2 id="bd-tt-ten"></h2>
+    <dl id="bd-tt-dong"></dl>
+    <div id="bd-tt-noi-dung"></div>
+  </aside>
+
+  <script src="../vendor/maplibre-gl/maplibre-gl.js"></script>
+  <script src="../vendor/pmtiles/pmtiles.js"></script>
+  <script src="cau-hinh-ban-do.js"></script>
+  <script src="../js/services/ban-do-du-lieu.js"></script>
+  <script src="../js/domains/ban-do.js"></script>
+  <script src="../js/pages/ban-do.js"></script>
+</body>
+</html>
