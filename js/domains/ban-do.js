@@ -3,9 +3,10 @@
 // Vai trò  : Nghiệp vụ thuần của bản đồ: dựng kiểu vẽ MapLibre cho từng nhóm lớp, bộ lọc theo loại
 //            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
-// Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
+// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:05
 // ============================================================
-// Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', loai: [{ma, ten, mau}] }
+// Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', vien?: true, loai: [{ma, ten, mau}] }
+// vien = vùng chỉ vẽ viền (ranh giới).
 // Mỗi nhóm là một lớp trong file PMTiles (tên = id); đối tượng có cột `loai` = mã loại.
 
 var BAN_DO = (function () {
@@ -36,6 +37,17 @@ var BAN_DO = (function () {
     function lop(phan, kieu, paint, them) {
       var l = Object.assign({ id: nhom.id + '-' + phan, type: kieu, paint: paint }, chung, them || {});
       return l;
+    }
+    if (nhom.hinh === 'vung' && nhom.vien) {
+      // Ranh giới: nền trong suốt (vẫn bấm được), chỉ vẽ viền — không che lớp bên dưới
+      return [
+        lop('nen', 'fill', { 'fill-color': mau, 'fill-opacity': 0 }),
+        lop('vien', 'line', {
+          'line-color': mau,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.8, 13, 1.6, 17, 2.5],
+        }),
+        lop('chon', 'line', { 'line-color': '#d62828', 'line-width': 3 }, { filter: ['==', ['id'], -1] }),
+      ];
     }
     if (nhom.hinh === 'vung') {
       return [

@@ -44,6 +44,7 @@
 .bd-mau { flex: none; width: 18px; height: 13px; background: var(--mau); border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 2px; }
 .bd-mau-duong { height: 3px; border: 0; }
 .bd-mau-diem { width: 11px; height: 11px; border-radius: 50%; }
+.bd-mau-vien { background: transparent; border: 2px solid var(--mau); }
 
 .bd-chan { display: grid; gap: 6px; padding: 8px 12px 12px; border-top: 1px solid var(--border); }
 .bd-nut {

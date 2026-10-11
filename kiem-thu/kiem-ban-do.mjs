@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-ban-do.mjs
 // Vai trò  : Kiểm domains bản đồ (ban-do.js): kiểu vẽ, bộ lọc loại, khung thông tin
 // Chạy     : node app/kiem-thu/kiem-ban-do.mjs
-// Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:10
+// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:05
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -30,6 +30,14 @@ bai('lopVe vùng: nền màu theo loại + viền + lớp chọn', () => {
   assert.equal(ls[0]['source-layer'], 'khoanh_dat');
   assert.deepEqual(ls[0].paint['fill-color'], ['match', ['get', 'loai'], 'LUC', '#FFFC82', 'CLN', '#FFD7AA', '#888888']);
   assert.deepEqual(ls[2].filter, ['==', ['id'], -1]);
+});
+
+bai('lopVe vùng chỉ viền: nền trong suốt, viền theo màu nhóm', () => {
+  const ranh = { id: 'ranh_xa', ten: 'Ranh xã', hinh: 'vung', vien: true, loai: [{ ma: '', ten: 'Ranh xã', mau: '#7B2D8E' }] };
+  const ls = sach(BD.lopVe(ranh, 'cong-khai'));
+  assert.deepEqual(ls.map((l) => l.id), ['ranh_xa-nen', 'ranh_xa-vien', 'ranh_xa-chon']);
+  assert.equal(ls[0].paint['fill-opacity'], 0);
+  assert.equal(ls[1].paint['line-color'], '#7B2D8E');
 });
 
 bai('lopVe đường một màu', () => {

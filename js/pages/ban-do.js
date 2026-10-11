@@ -3,7 +3,7 @@
 // Vai trò  : Trang bản đồ: nền OpenStreetMap khoá trong thành phố, bảng lớp (bật/tắt nhóm, tích từng
 //            loại — kiêm chú giải), bấm đối tượng → khung thông tin (cạnh phải / trượt lên trên điện thoại)
 // Lớp      : pages — được phép gọi: services (BAN_DO_DU_LIEU), domains (BAN_DO), config (CAU_HINH_BAN_DO)
-// Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
+// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:05
 // ============================================================
 
 (function () {
@@ -65,7 +65,14 @@
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     nhomLop.forEach(function (nhom) {
       var phanBam = nhom.id + '-' + (nhom.hinh === 'vung' ? 'nen' : nhom.hinh === 'duong' ? 'duong' : 'diem');
-      map.on('click', phanBam, function (e) { if (e.features.length) chon(nhom, e.features[0]); });
+      map.on('click', phanBam, function (e) {
+        if (!e.features.length) return;
+        // Ranh giới (chỉ viền) nhường cho đối tượng khác nằm cùng chỗ bấm
+        if (nhom.vien && map.queryRenderedFeatures(e.point).some(function (f) {
+          return f.source === NGUON && f.layer.id.indexOf(nhom.id + '-') !== 0;
+        })) return;
+        chon(nhom, e.features[0]);
+      });
       map.on('mouseenter', phanBam, function () { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', phanBam, function () { map.getCanvas().style.cursor = ''; });
     });
@@ -111,7 +118,7 @@
       var dau = tao('label', 'bd-nhom-dau');
       var o = tao('input'); o.type = 'checkbox'; o.checked = true;
       dau.appendChild(o);
-      if (nhom.loai.length <= 1) dau.appendChild(oMau(nhom.loai[0] && nhom.loai[0].mau, nhom.hinh));
+      if (nhom.loai.length <= 1) dau.appendChild(oMau(nhom.loai[0] && nhom.loai[0].mau, nhom.vien ? 'vien' : nhom.hinh));
       dau.appendChild(tao('span', '', nhom.ten));
       khoi.appendChild(dau);
       o.addEventListener('change', function () { batNhom(nhom, o.checked); khoi.classList.toggle('tat', !o.checked); });
@@ -122,7 +129,7 @@
           var ol = tao('input'); ol.type = 'checkbox'; ol.checked = true; ol.dataset.ma = l.ma;
           ol.addEventListener('change', function () { capNhatLoc(nhom, khoi); });
           dong.appendChild(ol);
-          dong.appendChild(oMau(l.mau, nhom.hinh));
+          dong.appendChild(oMau(l.mau, nhom.vien ? 'vien' : nhom.hinh));
           dong.appendChild(tao('span', '', l.ten));
           dsLoai.appendChild(dong);
         });

@@ -3,12 +3,12 @@
 // Vai trò  : Lớp Công khai của bản đồ (tên, màu, thứ tự) + khung thành phố
 // Lớp      : config — SINH TỰ ĐỘNG bởi bando/cong-cu/day-ban-do.py từ danh-sach-lop.xlsx, đừng sửa tay
 //            (địa chỉ kho file thì sửa hằng KHO trong day-ban-do.py)
-// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 14:43
+// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:11
 // ============================================================
 
 var CAU_HINH_BAN_DO = {
   KHO: "/kho/",
-  KHUNG_THANH_PHO: [106.3355, 10.3235, 107.5719, 11.4995],
+  KHUNG_THANH_PHO: [106.3352, 10.32, 107.5719, 11.5014],
   NHOM_LOP_CONG_KHAI: [
     {
       "id": "khoanh_dat",
@@ -31,6 +31,19 @@ var CAU_HINH_BAN_DO = {
           "mau": "#FFF0B4"
         }
       ]
+    },
+    {
+      "id": "ranh_xa",
+      "ten": "Ranh xã",
+      "hinh": "vung",
+      "loai": [
+        {
+          "ma": "",
+          "ten": "Ranh xã",
+          "mau": "#7B2D8E"
+        }
+      ],
+      "vien": true
     }
   ]
 };
