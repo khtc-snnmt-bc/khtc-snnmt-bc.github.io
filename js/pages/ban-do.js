@@ -12,8 +12,9 @@
   var NGUON = 'cong-khai';
   // Nhóm Chữ (nhãn) cần bộ phông chữ cho MapLibre — chưa có, tạm không hiện
   var nhomLop = CAU_HINH_BAN_DO.NHOM_LOP_CONG_KHAI.filter(function (n) { return n.hinh !== 'chu'; });
-  // Bản đồ nền (chọn một). Không dùng tile.openstreetmap.org (không tới được từ máy trong nước, và chính sách
-  // cấm dùng cho ứng dụng) hay CARTO (nay đòi API key, in chữ mờ lên ô).
+  // Bản đồ nền (chọn một). Không dùng tile.openstreetmap.org (bị chặn ở máy chủ dự án, chỉ cho dùng nhẹ)
+  // hay CARTO (nay đòi API key, in chữ mờ lên ô). Esri bên dưới: điều khoản dùng không khoá chưa rõ —
+  // có thể phải đổi sang basemaps-api.arcgis.com kèm API key (xem KE-HOACH.md).
   var NEN = [
     { id: 'duong', ten: 'Bản đồ đường',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'],
