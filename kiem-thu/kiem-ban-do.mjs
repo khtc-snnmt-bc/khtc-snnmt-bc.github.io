@@ -65,4 +65,25 @@ bai('khungNoi', () => {
   assert.deepEqual(sach(BD.khungNoi([106, 10, 107, 11], 0.1)), [[105.9, 9.9], [107.1, 11.1]]);
 });
 
+bai('taoKml: khung, tên ảnh, thoát ký tự', () => {
+  const kml = BD.taoKml({ w: 106.5, s: 10.9, e: 106.6, n: 11 }, 'anh.png', 'Khoanh <đất> & đơn vị');
+  assert.match(kml, /<north>11<\/north><south>10.9<\/south><east>106.6<\/east><west>106.5<\/west>/);
+  assert.match(kml, /<href>anh.png<\/href>/);
+  assert.match(kml, /<name>Khoanh &lt;đất&gt; &amp; đơn vị<\/name>/);
+});
+
+bai('taoZip: cấu trúc zip không nén, CRC đúng', () => {
+  const nd = Buffer.from('123456789'), nd2 = Buffer.from('xyz');
+  const z = Buffer.from(BD.taoZip([{ ten: 'doc.kml', byte: new Uint8Array(nd) }, { ten: 'anh.png', byte: new Uint8Array(nd2) }]));
+  assert.equal(z.readUInt32LE(0), 0x04034b50);
+  assert.equal(z.readUInt32LE(14), 0xCBF43926);            // CRC32 chuẩn của "123456789"
+  const cuoi = z.length - 22;
+  assert.equal(z.readUInt32LE(cuoi), 0x06054b50);
+  assert.equal(z.readUInt16LE(cuoi + 10), 2);              // số tệp
+  const viTriTrungTam = z.readUInt32LE(cuoi + 16);
+  assert.equal(z.readUInt32LE(viTriTrungTam), 0x02014b50);
+  assert.equal(z.readUInt32LE(viTriTrungTam + 42), 0);     // tệp đầu bắt đầu ở 0
+  assert.equal(z.subarray(30, 37).toString(), 'doc.kml');
+});
+
 console.log(`kiem-ban-do: ${soBai} bài đạt`);

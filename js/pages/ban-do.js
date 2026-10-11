@@ -44,6 +44,8 @@
       maxBounds: BAN_DO.khungNoi(khung, 0.15),
       minZoom: 8,
       maxZoom: 19,
+      dragRotate: false,       // khung nhìn luôn hướng bắc → KMZ phủ đúng
+      pitchWithRotate: false,
       attributionControl: { compact: true },
       style: {
         version: 8,
@@ -59,6 +61,7 @@
         }).concat([].concat.apply([], nhomLop.map(function (nhom) { return BAN_DO.lopVe(nhom, NGUON); }))),
       },
     });
+    map.touchZoomRotate.disableRotation();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     nhomLop.forEach(function (nhom) {
       var phanBam = nhom.id + '-' + (nhom.hinh === 'vung' ? 'nen' : nhom.hinh === 'duong' ? 'duong' : 'diem');
@@ -136,6 +139,31 @@
     return o;
   }
 
+  // ---------- xuất khung đang xem sang Google Earth ----------
+  // Chụp riêng lớp khoanh đất (ẩn nền → ảnh trong suốt) → KMZ phủ lên đúng khung; Google Earth tự có nền của nó.
+  function xuatGoogleEarth() {
+    var nenCu = NEN.map(function (n) { return map.getLayoutProperty('nen-' + n.id, 'visibility'); });
+    function datNen(ds) { NEN.forEach(function (n, i) { map.setLayoutProperty('nen-' + n.id, 'visibility', ds[i]); }); }
+    datNen(NEN.map(function () { return 'none'; }));
+    map.once('render', function () {
+      var anh = map.getCanvas().toDataURL('image/png');   // đọc ngay trong khung vẽ, trước khi trình duyệt xoá
+      datNen(nenCu);
+      var nhi = atob(anh.split(',')[1]), byte = new Uint8Array(nhi.length);
+      for (var i = 0; i < nhi.length; i++) byte[i] = nhi.charCodeAt(i);
+      var b = map.getBounds();
+      var kml = BAN_DO.taoKml({ w: b.getWest(), s: b.getSouth(), e: b.getEast(), n: b.getNorth() },
+        'anh.png', 'Khoanh đất');
+      var zip = BAN_DO.taoZip([{ ten: 'doc.kml', byte: new TextEncoder().encode(kml) }, { ten: 'anh.png', byte: byte }]);
+      var a = tao('a');
+      a.href = URL.createObjectURL(new Blob([zip], { type: 'application/vnd.google-earth.kmz' }));
+      a.download = 'ban-do-khung-nhin.kmz';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+    map.triggerRepaint();
+  }
+
   // ---------- khung thông tin ----------
   function chon(nhom, dt) {
     if (dangChon) map.setFilter(dangChon.nhom.id + '-chon', BAN_DO.locChon(null));
@@ -162,6 +190,7 @@
     dungBangLop();
     dungBanDo();
     $('bd-tt-dong-nut').addEventListener('click', boChon);
+    $('bd-earth').addEventListener('click', xuatGoogleEarth);
     BAN_DO_DU_LIEU.layLoaiDat(NGUON).then(function (ld) { loaiDat = ld; });
   });
 })();

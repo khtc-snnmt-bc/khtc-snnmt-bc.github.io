@@ -1,7 +1,7 @@
 // ============================================================
 // bcsnn · js/domains/ban-do.js
 // Vai trò  : Nghiệp vụ thuần của bản đồ: dựng kiểu vẽ MapLibre cho từng nhóm lớp, bộ lọc theo loại
-//            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng
+//            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
 // Phiên bản: 0.1.0 · Cập nhật: 11/10/2026 11:00
 // ============================================================
@@ -102,8 +102,72 @@ var BAN_DO = (function () {
     return [[khung[0] - dx, khung[1] - dy], [khung[2] + dx, khung[3] + dy]];
   }
 
+  // ---------- Xuất khung đang xem sang Google Earth (KMZ = zip chứa doc.kml + ảnh PNG) ----------
+
+  function xml(chu) {
+    return String(chu).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /** KML phủ ảnh lên khung {w, s, e, n} (độ). Ảnh chụp Mercator nên chỉ chính xác khi khung nhỏ (cấp xã). */
+  function taoKml(khung, tenAnh, ten) {
+    return '<?xml version="1.0" encoding="UTF-8"?>\n'
+      + '<kml xmlns="http://www.opengis.net/kml/2.2"><GroundOverlay>'
+      + '<name>' + xml(ten) + '</name><drawOrder>1</drawOrder>'
+      + '<Icon><href>' + xml(tenAnh) + '</href></Icon>'
+      + '<LatLonBox><north>' + khung.n + '</north><south>' + khung.s + '</south><east>' + khung.e
+      + '</east><west>' + khung.w + '</west><rotation>0</rotation></LatLonBox>'
+      + '</GroundOverlay></kml>';
+  }
+
+  var BANG_CRC = (function () {
+    var b = [];
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      b.push(c >>> 0);
+    }
+    return b;
+  })();
+
+  function crc32(byte) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < byte.length; i++) c = BANG_CRC[(c ^ byte[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  /** Zip không nén. tep: [{ten: 'chữ ASCII', byte: Uint8Array}] → Uint8Array */
+  function taoZip(tep) {
+    var phan = [], trungTam = [], vitri = 0;
+    function so(n, doDai) {
+      var o = [];
+      for (var i = 0; i < doDai; i++) o.push((n >>> (8 * i)) & 0xFF);
+      return o;
+    }
+    function chuoi(s) {
+      var o = [];
+      for (var i = 0; i < s.length; i++) o.push(s.charCodeAt(i) & 0xFF);
+      return o;
+    }
+    tep.forEach(function (t) {
+      var crc = crc32(t.byte), ten = chuoi(t.ten);
+      var dau = [].concat(so(0x04034b50, 4), so(20, 2), so(0, 2), so(0, 2), so(0, 2), so(0x21, 2),
+        so(crc, 4), so(t.byte.length, 4), so(t.byte.length, 4), so(ten.length, 2), so(0, 2), ten);
+      trungTam.push([].concat(so(0x02014b50, 4), so(20, 2), so(20, 2), so(0, 2), so(0, 2), so(0, 2), so(0x21, 2),
+        so(crc, 4), so(t.byte.length, 4), so(t.byte.length, 4), so(ten.length, 2), so(0, 2), so(0, 2),
+        so(0, 2), so(0, 2), so(0, 4), so(vitri, 4), ten));
+      phan.push(dau, t.byte);
+      vitri += dau.length + t.byte.length;
+    });
+    var cd = [].concat.apply([], trungTam);
+    var cuoi = [].concat(so(0x06054b50, 4), so(0, 2), so(0, 2), so(tep.length, 2), so(tep.length, 2),
+      so(cd.length, 4), so(vitri, 4), so(0, 2));
+    var tong = vitri + cd.length + cuoi.length, ra = new Uint8Array(tong), p = 0;
+    phan.concat([cd, cuoi]).forEach(function (m) { ra.set(m, p); p += m.length; });
+    return ra;
+  }
+
   return {
     lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin,
-    khungNoi: khungNoi, dinhDangDienTich: dinhDangDienTich,
+    khungNoi: khungNoi, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
   };
 })();
