@@ -2,7 +2,7 @@
 // bcsnn · gas/Code.js
 // Vai trò  : Cửa vào web app GAS — doPost định tuyến theo action, luôn trả JSON
 // Lớp      : gas — gọi: DangNhap.js, QuanTri.js, PhanQuyen.js, KyBaoCao.js, TongHop.js, QuanLyBang.js, DonVi.js, XacMinhGoogle.js, VeDangNhap.js
-// Phiên bản: 0.16.0 · Cập nhật: 10/10/2026 17:30
+// Phiên bản: 0.17.0 · Cập nhật: 11/10/2026 23:59
 // ============================================================
 // Nguồn GAS DUY NHẤT là thư mục app/gas/ (repo Public) → KHÔNG ghi ID file,
 // Gmail, mật khẩu ở đây. Mỗi lĩnh vực một Sheet quản lý, ID ở Script Properties
@@ -10,7 +10,8 @@
 // Mã dựng dữ liệu thử (B04.js) nằm ngoài app/, đẩy kèm khi clasp push;
 // có mặt trên máy chủ thì nhận các action b04_/b05_.
 
-var DS_LINH_VUC = ['BTTDC', 'NHIEMVU', 'BCXA'];
+// BANDO: lĩnh vực Bản đồ — chỉ dùng tab Đơn vị + Tài khoản (Worker bản đồ đọc Gmail qua layTaiKhoan)
+var DS_LINH_VUC = ['BTTDC', 'NHIEMVU', 'BCXA', 'BANDO'];
 var LINH_VUC_YC_ = '';   // lĩnh vực của yêu cầu đang chạy (doPost đặt) — phiên quản trị phải cùng lĩnh vực
 
 /** ID Sheet quản lý của một lĩnh vực ('' nếu mã lạ / chưa cấu hình). */
