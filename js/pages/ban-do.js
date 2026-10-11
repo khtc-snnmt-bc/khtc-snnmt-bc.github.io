@@ -79,6 +79,14 @@
 
   function dungBangLop() {
     var ds = $('bd-ds-lop');
+    var nen = tao('div', 'bd-nhom');
+    var nenDau = tao('label', 'bd-nhom-dau');
+    var nenO = tao('input'); nenO.type = 'checkbox'; nenO.checked = true;
+    nenO.addEventListener('change', function () { map.setLayoutProperty('osm', 'visibility', nenO.checked ? 'visible' : 'none'); });
+    nenDau.appendChild(nenO);
+    nenDau.appendChild(tao('span', '', 'Bản đồ nền'));
+    nen.appendChild(nenDau);
+    ds.appendChild(nen);
     nhomLop.forEach(function (nhom) {
       var khoi = tao('div', 'bd-nhom');
       var dau = tao('label', 'bd-nhom-dau');
