@@ -3,14 +3,14 @@
 // Vai trò  : Trang bản đồ: nền OpenStreetMap khoá trong thành phố, bảng lớp (bật/tắt nhóm, tích từng
 //            loại — kiêm chú giải), bấm đối tượng → khung thông tin (cạnh phải / trượt lên trên điện thoại)
 // Lớp      : pages — được phép gọi: services (BAN_DO_DU_LIEU), domains (BAN_DO), config (CAU_HINH_BAN_DO)
-// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:05
+// Phiên bản: 0.3.0 · Cập nhật: 11/10/2026 22:31
 // ============================================================
 
 (function () {
   'use strict';
 
   var NGUON = 'cong-khai';
-  // Nhóm Chữ (nhãn) cần bộ phông chữ cho MapLibre — chưa có, tạm không hiện
+  // Nhóm Chữ riêng (từ lớp chữ MapInfo/DGN) chưa dùng — tên xã lấy từ vùng ranh xã (domains/ban-do.js)
   var nhomLop = CAU_HINH_BAN_DO.NHOM_LOP_CONG_KHAI.filter(function (n) { return n.hinh !== 'chu'; });
   // Bản đồ nền (chọn một). Không dùng tile.openstreetmap.org (bị chặn ở máy chủ dự án, chỉ cho dùng nhẹ)
   // hay CARTO (nay đòi API key, in chữ mờ lên ô). Esri bên dưới: điều khoản dùng không khoá chưa rõ —
@@ -49,6 +49,7 @@
       attributionControl: { compact: true },
       style: {
         version: 8,
+        glyphs: new URL('../vendor/noto-sans/{fontstack}/{range}.pbf', location.href).href.replace(/%7B/g, '{').replace(/%7D/g, '}'),
         sources: Object.assign({ [NGUON]: { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(NGUON) } },
           NEN.reduce(function (kq, n) {
             kq['nen-' + n.id] = { type: 'raster', tileSize: 256, maxzoom: 19, tiles: n.tiles, attribution: n.ghiCong };

@@ -3,7 +3,7 @@
 // Vai trò  : Nghiệp vụ thuần của bản đồ: dựng kiểu vẽ MapLibre cho từng nhóm lớp, bộ lọc theo loại
 //            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
-// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:05
+// Phiên bản: 0.3.0 · Cập nhật: 11/10/2026 22:31
 // ============================================================
 // Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', vien?: true, loai: [{ma, ten, mau}] }
 // vien = vùng chỉ vẽ viền (ranh giới).
@@ -14,6 +14,7 @@ var BAN_DO = (function () {
 
   var TEN_COT = { loai: 'Loại', dien_tich_m2: 'Diện tích' };
   var COT_AN = { mvt_id: true };
+  var PHONG_CHU = 'NotoSansRegular';  // thư mục phông ở app/vendor/noto-sans/
 
   /** Biểu thức màu: theo mã loại, loại lạ thì xám */
   function bieuThucMau(nhom) {
@@ -47,6 +48,18 @@ var BAN_DO = (function () {
           'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.8, 13, 1.6, 17, 2.5],
         }),
         lop('chon', 'line', { 'line-color': '#d62828', 'line-width': 3 }, { filter: ['==', ['id'], -1] }),
+        // Tên xã: lớp điểm <id nhóm>_nhan (mỗi vùng một điểm, do day-ban-do.py sinh), hiện khi phóng đủ gần;
+        // đè lên nhau thì MapLibre tự bớt
+        lop('chu', 'symbol', { 'text-color': '#3b1a45', 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.6 }, {
+          'source-layer': nhom.id + '_nhan',
+          minzoom: 10.5,
+          layout: {
+            'text-field': ['get', 'ten'],
+            'text-font': [PHONG_CHU],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 10.5, 10, 14, 14, 17, 17],
+            'text-max-width': 7,
+          },
+        }),
       ];
     }
     if (nhom.hinh === 'vung') {

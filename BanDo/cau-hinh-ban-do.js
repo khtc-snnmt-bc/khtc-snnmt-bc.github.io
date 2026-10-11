@@ -3,7 +3,7 @@
 // Vai trò  : Lớp Công khai của bản đồ (tên, màu, thứ tự) + khung thành phố
 // Lớp      : config — SINH TỰ ĐỘNG bởi bando/cong-cu/day-ban-do.py từ danh-sach-lop.xlsx, đừng sửa tay
 //            (địa chỉ kho file thì sửa hằng KHO trong day-ban-do.py)
-// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 20:11
+// Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 22:30
 // ============================================================
 
 var CAU_HINH_BAN_DO = {
