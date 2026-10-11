@@ -51,6 +51,7 @@
   background: #fff; color: var(--xc); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
 }
 .bd-nut:hover { background: var(--xp); }
+.bd-huong-dan { font-size: 12px; line-height: 1.4; color: var(--text-muted); }
 
 /* ---------- khung thông tin ---------- */
 .bd-tt {

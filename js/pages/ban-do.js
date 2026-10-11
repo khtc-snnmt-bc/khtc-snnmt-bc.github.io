@@ -190,7 +190,6 @@
     dungBangLop();
     dungBanDo();
     $('bd-tt-dong-nut').addEventListener('click', boChon);
-    $('bd-earth-pro').addEventListener('click', xuatGoogleEarth);
     $('bd-earth-web').addEventListener('click', function () {
       // mở tab ngay trong lúc bấm (mở trễ sau khi chụp thì trình duyệt chặn cửa sổ bật lên)
       var b = map.getBounds();
