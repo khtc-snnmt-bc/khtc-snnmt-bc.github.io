@@ -2,8 +2,8 @@
 // bcsnn · gas/PhanQuyen.js
 // Vai trò  : Quản trị Tài khoản + Phân quyền (giao bảng) và
 //            tự chia sẻ / gỡ quyền file Drive cho khớp Sheet quản lý của lĩnh vực
-// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_), Code.js (layQuanLyId_)
-// Phiên bản: 0.10.0 · Cập nhật: 10/10/2026 17:30
+// Lớp      : gas — gọi bởi: Code.js, DangNhap.js, KyBaoCao.js, QuanLyBang.js · gọi: QuanTri.js, KyBaoCao.js (docKyQuanLy_), QuanLyBang.js (caiDatChoTrang_), Code.js (layQuanLyId_), BanDo.js (damBaoCotBanDo_)
+// Phiên bản: 0.11.0 · Cập nhật: 12/10/2026 23:55
 // ============================================================
 // Quyền mong muốn (app tự quản, quản trị không chia sẻ tay — thiết kế mục 4.2):
 // - File đơn vị: Gmail của đơn vị theo cột access tab File (sua → SỬA, xem → XEM,
@@ -276,12 +276,24 @@ function kiemDsTaiKhoan_(ds) {
   return { ds: kq };
 }
 
-/** Dòng mới của tab Tài khoản (không kèm tiêu đề): giữ đơn vị khác, thay dòng của unitCode. */
+/**
+ * Dòng mới của tab Tài khoản (không kèm tiêu đề): giữ đơn vị khác, thay dòng của unitCode. Cột thêm sau cột 3
+ * (VD "Chặn" của Bản đồ, tích thẳng trong Sheet) đi theo dòng: Gmail còn giữ ở unitCode thì giữ ô cũ.
+ */
 function thayTaiKhoanDonVi_(dsTaiKhoan, unitCode, dsMoi) {
-  var giu = (dsTaiKhoan || []).slice(1).filter(function (r) {
-    return chuanHoaEmail_(r[0]) && String(r[1] || '').trim() !== unitCode;
-  }).map(function (r) { return [chuanHoaEmail_(r[0]), String(r[1]).trim(), String(r[2] || 'Nhập liệu').trim()]; });
-  return giu.concat(dsMoi.map(function (d) { return [d.email, unitCode, d.role]; }));
+  var rong = Math.max(3, ((dsTaiKhoan || [])[0] || []).length), cuCuaDonVi = {}, giu = [];
+  function cotThem(r) {
+    var p = (r || []).slice(3, rong);
+    while (p.length < rong - 3) p.push('');
+    return p;
+  }
+  (dsTaiKhoan || []).slice(1).forEach(function (r) {
+    var em = chuanHoaEmail_(r[0]), uc = String(r[1] || '').trim();
+    if (!em) return;
+    if (uc === unitCode) { cuCuaDonVi[em] = cotThem(r); return; }
+    giu.push([em, uc, String(r[2] || 'Nhập liệu').trim()].concat(cotThem(r)));
+  });
+  return giu.concat(dsMoi.map(function (d) { return [d.email, unitCode, d.role].concat(cuCuaDonVi[d.email] || cotThem([])); }));
 }
 
 /** Quyền gửi lên { unitCode: 'sua'|'xem'|'khong' } → {quyen} đã chuẩn hoá hoặc {loi}. */
@@ -408,7 +420,8 @@ function quanTriChay_(token, viec) {
 
 /** Toàn bộ dữ liệu cho trang quản trị (người đã qua mật khẩu quản trị mới gọi được). */
 function xuLyQtLayDuLieu_(token) {
-  return quanTriChay_(token, function (ss) {
+  return quanTriChay_(token, function (ss, phien) {
+    if (phien.linhVuc === LINH_VUC_BAN_DO) damBaoCotBanDo_(ss);
     var dv = xuLyLayDonVi_(ss.getId());
     if (!dv.ok) return dv;
     var gtBang = docTabQuanLy_(ss, 'Bảng'), caiDat = caiDatChoTrang_(gtBang);
@@ -454,7 +467,7 @@ function xuLyQtLuuTaiKhoan_(token, unitCode, ds, bangQuanLy) {
       if (doi.loi) return { ok: false, loi: doi.loi };
       bangDoi = doi.bangDoi;
     }
-    ghiDeDuLieuTab_(tab, 3, dong);
+    ghiDeDuLieuTab_(tab, dong.length ? dong[0].length : 3, dong);
     SpreadsheetApp.flush();
     return { ok: true, quyen: dongBoQuyen_(ss, { unitCodes: [uc], tableCodes: bangDoi }) };
   });

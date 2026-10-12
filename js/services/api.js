@@ -270,6 +270,11 @@ var API = (function () {
     return goi('qtThemDonVi', { token: token, unitCode: unitCode, unitName: unitName, region: region, role: role }, CHO_LUU);
   }
 
+  /** Bản đồ: chép đơn vị + Gmail các lĩnh vực báo cáo vào lĩnh vực Bản đồ → { soDonVi, soGmail } */
+  function qtLayTaiKhoanLinhVuc(token) {
+    return goi('qtLayTaiKhoanLinhVuc', { token: token }, CHO_LUU);
+  }
+
   /** Giao bảng cho các đơn vị có mã ở cột A file tổng (thêm, không bỏ ai) + chia quyền file. */
   function qtGiaoTheoMau(token, tableCode) {
     return goi('qtGiaoTheoMau', { token: token, tableCode: tableCode }, CHO_LUU);
@@ -292,6 +297,7 @@ var API = (function () {
     qtDonViBang: qtDonViBang,
     qtThemDongDonVi: qtThemDongDonVi,
     qtThemDonVi: qtThemDonVi,
+    qtLayTaiKhoanLinhVuc: qtLayTaiKhoanLinhVuc,
     qtTaoBang: qtTaoBang,
     qtTaiMau: qtTaiMau,
     qtMauExcel: qtMauExcel,

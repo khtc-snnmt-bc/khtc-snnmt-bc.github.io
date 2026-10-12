@@ -5,7 +5,8 @@
 //            Phân quyền (giao bảng), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.24.0 · Cập nhật: 10/10/2026 20:40
+// Phiên bản: 0.25.0 · Cập nhật: 13/10/2026 00:15
+// Lĩnh vực chiQuanTri (Bản đồ): chỉ mục Tài khoản + nút Lấy tài khoản các lĩnh vực; Chặn / Ảnh vệ tinh tích trong Sheet.
 // ============================================================
 // Quản trị đúng lĩnh vực vừa vào (mỗi lĩnh vực một Sheet quản lý — b10b); đơn vị quản lý báo cáo
 // theo vai trò của đơn vị trong lĩnh vực; Quản lý báo cáo tích bảng quản lý ở mục Tài khoản (trống = mọi bảng).
@@ -31,6 +32,7 @@ var PAGE_QUAN_TRI = (function () {
   var ketQuaBang = null;      // { tableCode, chu, kiem } — báo ngay sau khi tạo / lưu bảng
   var donViBang = {};         // { tableCode: {ma, laTach, coAll, sai} } — đơn vị đọc từ file tổng (GAS qtDonViBang)
   var baoPhanQuyen = null;    // { chu, laLoi } — báo sau khi thêm dòng đơn vị (vẽ lại xong mới hiện)
+  var laChiQuanTri = false;   // lĩnh vực không có bảng nhập (Bản đồ — CAU_HINH.LINH_VUC chiQuanTri)
 
   function khoiTao() {
     var lv = LINH_VUC.layTheoThuMuc(PHIEN.docLinhVuc());
@@ -40,7 +42,16 @@ var PAGE_QUAN_TRI = (function () {
       return;
     }
     API.datLinhVuc(lv.ma);
-    DOM.$('#qt-quay-ve').href = lv.thuMuc + '/';
+    laChiQuanTri = lv.chiQuanTri;
+    if (laChiQuanTri) {
+      // Bản đồ: không có bảng nhập → chỉ mục Tài khoản; quay về trang bản đồ (trang đăng nhập sẽ đưa lại vào đây)
+      MUC = MUC.filter(function (m) { return m.ma === 'tai-khoan'; });
+      mucDangChon = MUC[0];
+      DOM.$('#qt-quay-ve').href = lv.thuMuc.split('/').slice(0, -1).join('/') + '/';
+      DOM.$('#qt-quay-ve').textContent = '← Về ' + lv.tenNgan.toLowerCase();
+    } else {
+      DOM.$('#qt-quay-ve').href = lv.thuMuc + '/';
+    }
     DOM.$('#qt-ten-app').textContent = 'Quản trị · ' + lv.ten;
     document.title = 'Quản trị · ' + lv.tenNgan;
     elMenu = DOM.$('#qt-menu');
@@ -124,7 +135,8 @@ var PAGE_QUAN_TRI = (function () {
     return res;
   }
 
-  function taiDuLieu() {
+  /** Tải lại dữ liệu quản trị; baoSau: dòng báo hiện đầu khung sau khi vẽ lại (không bắt buộc). */
+  function taiDuLieu(baoSau) {
     duLieu = null;
     donViBang = {};
     veNoiDung();
@@ -134,6 +146,8 @@ var PAGE_QUAN_TRI = (function () {
         duLieu = { donVi: PHAN_QUYEN.xepDonVi(res.donVi), taiKhoan: res.taiKhoan, bang: res.bang, giao: res.giao,
           ky: res.ky || [] };
         veNoiDung();
+        var khung = DOM.$('.qt-khung', elNoiDung);
+        if (baoSau && khung) khung.insertBefore(thongBao(baoSau, false), khung.firstChild);
       })
       .catch(function (err) {
         if (!elKhoa.classList.contains('an')) return;
@@ -234,6 +248,7 @@ var PAGE_QUAN_TRI = (function () {
     var hangLoc = khung.appendChild(DOM.tao('div', { class: 'qt-hang-loc qt-hang-loc-dv' }));
     var loc = hangLoc.appendChild(DOM.tao('input', { type: 'search', class: 'form-control qt-loc', placeholder: 'Lọc đơn vị…' }));
     var nutMo = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, '+ Thêm đơn vị'));
+    if (laChiQuanTri) veLayTaiKhoan(hangLoc, khung);
     var formMoi = khung.appendChild(veThemDonVi(function () { DOM.an(formMoi); }));
     DOM.an(formMoi);
     nutMo.addEventListener('click', function () {
@@ -247,6 +262,17 @@ var PAGE_QUAN_TRI = (function () {
       DOM.$$('.qt-khoi', luoi).forEach(function (el) {
         DOM.batTat(el, 'an', hien.indexOf(el.getAttribute('data-ma')) < 0);
       });
+    });
+  }
+
+  /** Bản đồ: chép đơn vị + Gmail của các lĩnh vực báo cáo vào lĩnh vực này (GAS gas/BanDo.js), xong tải lại. */
+  function veLayTaiKhoan(hangLoc, khung) {
+    var nut = hangLoc.appendChild(DOM.tao('button', { type: 'button', class: 'qt-nut-them' }, 'Lấy tài khoản các lĩnh vực'));
+    var bao = khung.appendChild(DOM.tao('div'));
+    nut.addEventListener('click', function () {
+      chayNut(nut, 'Đang lấy…', function () { return API.qtLayTaiKhoanLinhVuc(token()); }, function (res) {
+        taiDuLieu('Đã thêm ' + res.soDonVi + ' đơn vị, ' + res.soGmail + ' Gmail.');
+      }, bao);
     });
   }
 

@@ -2,7 +2,7 @@
 // bcsnn · js/config/cau-hinh.js
 // Vai trò  : Hằng số cấu hình duy nhất — chủ dự án sửa tay file này
 // Lớp      : config — không gọi ai
-// Phiên bản: 0.4.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.5.0 · Cập nhật: 13/10/2026 00:10
 // ============================================================
 // ⚠ KHÔNG ghi ID file, Gmail thật vào đây — repo Public!
 // Chủ dự án: dán URL web app GAS vào dòng GAS_URL bên dưới.
@@ -24,10 +24,12 @@ var CAU_HINH = {
   // Lĩnh vực: tên thư mục web (khtc-snnmt-bc.github.io/<thư mục>) → mã lĩnh vực (Apps Script mở
   // Sheet quản lý riêng của lĩnh vực theo mã này; cũng là tên thư mục Drive), tên ở trang đăng nhập,
   // tên ngắn ở thanh bên. Thêm lĩnh vực mới thì Apps Script cũng phải thêm mã (Code.js DS_LINH_VUC).
+  // chiQuanTri: lĩnh vực không có bảng nhập (Bản đồ) — đăng nhập xong vào thẳng trang Quản trị, chỉ mục Tài khoản.
   LINH_VUC: {
     BTTDC:    { ma: 'BTTDC',   ten: 'Công tác Bồi thường, hỗ trợ, tái định cư', tenNgan: 'Công tác BTTĐC' },
     Nhiem_Vu: { ma: 'NHIEMVU', ten: 'Tiến độ thực hiện các nhiệm vụ của UBND TP và Sở', tenNgan: 'Nhiệm vụ UBND TP và Sở' },
-    BC_xa:    { ma: 'BCXA',    ten: 'Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản cấp xã', tenNgan: 'Báo cáo cấp xã' }
+    BC_xa:    { ma: 'BCXA',    ten: 'Báo cáo tình hình sản xuất nông, lâm nghiệp và thủy sản cấp xã', tenNgan: 'Báo cáo cấp xã' },
+    'BanDo/QuanLy': { ma: 'BANDO', ten: 'Bản đồ Thực trạng và định hướng sản xuất nông nghiệp', tenNgan: 'Bản đồ', chiQuanTri: true }
   },
 
   // Lấy URL GAS: ưu tiên biến cấu hình, sau đó tới localStorage, rồi URL hash #gas=

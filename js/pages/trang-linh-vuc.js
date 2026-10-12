@@ -1,9 +1,9 @@
 // ============================================================
 // bcsnn · js/pages/trang-linh-vuc.js
-// Vai trò  : Trang một lĩnh vực (/BTTDC, /Nhiem_Vu, /BC_xa): dựng khung đăng nhập + nhập liệu
-//            rồi điều khiển luồng — đăng nhập → nhập liệu → đăng xuất
+// Vai trò  : Trang một lĩnh vực (/BTTDC, /Nhiem_Vu, /BC_xa, /BanDo/QuanLy): dựng khung đăng nhập + nhập liệu
+//            rồi điều khiển luồng — đăng nhập → nhập liệu (lĩnh vực chiQuanTri: → Quản trị) → đăng xuất
 // Lớp      : pages — được gọi bởi: <thư mục lĩnh vực>/index.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.3.1 · Cập nhật: 12/10/2026 18:58
+// Phiên bản: 0.4.0 · Cập nhật: 13/10/2026 00:10
 // ============================================================
 // Trang lĩnh vực chỉ ghi <body data-linh-vuc="<thư mục>"> và nạp script; khung HTML nằm ở đây
 // để ba lĩnh vực dùng chung một bản. Mỗi lĩnh vực một Sheet quản lý riêng (b10b): đơn vị, tài
@@ -12,7 +12,7 @@
 (function () {
   'use strict';
 
-  var GOC = '../';   // trang lĩnh vực nằm trong thư mục con của gốc app
+  var GOC = '../';   // đường về gốc app — tính lại theo thư mục lĩnh vực (BanDo/QuanLy sâu hai cấp)
 
   function khungHtml() {
     return '' +
@@ -88,6 +88,7 @@
   function batDau() {
     var lv = LINH_VUC.layTheoThuMuc(document.body.getAttribute('data-linh-vuc'));
     if (!lv) { location.replace(GOC); return; }
+    GOC = LINH_VUC.duongVeGoc(lv.thuMuc);
     PHIEN.luuLinhVuc(lv.thuMuc);   // phiên, vé nhớ cất riêng theo lĩnh vực
     API.datLinhVuc(lv.ma);         // GAS mở Sheet quản lý của lĩnh vực này
 
@@ -99,6 +100,8 @@
     var elBtnLogout = DOM.$('#btn-dang-xuat');
 
     function hienNhapLieu(phien) {
+      // Lĩnh vực không có bảng nhập (Bản đồ): Gmail Quản trị vào thẳng trang Quản trị
+      if (lv.chiQuanTri && PHIEN.laQuanTri(phien)) { location.replace(GOC + 'quantri.html'); return; }
       DOM.hien(elUserBadge);
       DOM.hien(elBtnLogout);
       PAGE_NHAP_LIEU.hien(phien);
