@@ -3,7 +3,7 @@
 // Vai trò  : Trang một lĩnh vực (/BTTDC, /Nhiem_Vu, /BC_xa): dựng khung đăng nhập + nhập liệu
 //            rồi điều khiển luồng — đăng nhập → nhập liệu → đăng xuất
 // Lớp      : pages — được gọi bởi: <thư mục lĩnh vực>/index.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.3.0 · Cập nhật: 10/10/2026 16:10
+// Phiên bản: 0.3.1 · Cập nhật: 12/10/2026 18:58
 // ============================================================
 // Trang lĩnh vực chỉ ghi <body data-linh-vuc="<thư mục>"> và nạp script; khung HTML nằm ở đây
 // để ba lĩnh vực dùng chung một bản. Mỗi lĩnh vực một Sheet quản lý riêng (b10b): đơn vị, tài
@@ -110,10 +110,10 @@
       { google: true }
     );
 
-    PAGE_NHAP_LIEU.khoiTao(function () {      // Đăng xuất → về đăng nhập của lĩnh vực này
+    PAGE_NHAP_LIEU.khoiTao(function () {      // Đăng xuất → về trang chọn lĩnh vực để đăng nhập
       DOM.an(elUserBadge);
       DOM.an(elBtnLogout);
-      PAGE_DANG_NHAP.hien();
+      location.href = GOC;
     });
 
     // Phiên trong tab này, hoặc vé nhớ đăng nhập: vào thẳng bằng dữ liệu nhớ, rồi LUÔN hỏi
