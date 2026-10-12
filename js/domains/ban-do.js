@@ -3,11 +3,11 @@
 // Vai trò  : Nghiệp vụ thuần của bản đồ: dựng kiểu vẽ MapLibre cho từng nhóm lớp, bộ lọc theo loại
 //            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
-// Phiên bản: 0.4.0 · Cập nhật: 11/10/2026 23:37
+// Phiên bản: 0.5.0 · Cập nhật: 12/10/2026 23:20
 // ============================================================
 // Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', vien?: true, loai: [{ma, ten, mau}] }
 // vien = vùng chỉ vẽ viền (ranh giới).
-// Mỗi nhóm là một lớp trong file PMTiles (tên = id); đối tượng có cột `loai` = mã loại.
+// Mỗi nhóm một file PMTiles (ck-<id> / nb-<id>), trong đó lớp tên = id; đối tượng có cột `loai` = mã loại.
 
 var BAN_DO = (function () {
   'use strict';
@@ -31,17 +31,22 @@ var BAN_DO = (function () {
     return ['in', ['get', 'loai'], ['literal', maBat.slice()]];
   }
 
-  /** Id lớp vẽ: <id nhóm>-<phần>; nhóm của file Nội bộ thêm tiền tố (cùng tên nhóm có thể ở cả hai file) */
-  function maLop(nhom, nguon, phan) {
-    return (nguon === 'cong-khai' ? '' : nguon + ':') + nhom.id + '-' + phan;
+  /** Nguồn (= tên file trên kho, không phiên bản) của một nhóm: 'ck-<id>' | 'nb-<id>' */
+  function maNguon(nhom, quyen) {
+    return quyen + '-' + nhom.id;
   }
 
-  /** Các lớp vẽ MapLibre của một nhóm */
-  function lopVe(nhom, nguon) {
+  /** Id lớp vẽ: <id nhóm>-<phần>; nhóm Nội bộ thêm tiền tố (cùng tên nhóm có thể có cả Công khai và Nội bộ) */
+  function maLop(nhom, quyen, phan) {
+    return (quyen === 'ck' ? '' : quyen + ':') + nhom.id + '-' + phan;
+  }
+
+  /** Các lớp vẽ MapLibre của một nhóm; quyen: 'ck' | 'nb' */
+  function lopVe(nhom, quyen) {
     var mau = bieuThucMau(nhom);
-    var chung = { source: nguon, 'source-layer': nhom.id };
+    var chung = { source: maNguon(nhom, quyen), 'source-layer': nhom.id };
     function lop(phan, kieu, paint, them) {
-      var l = Object.assign({ id: maLop(nhom, nguon, phan), type: kieu, paint: paint }, chung, them || {});
+      var l = Object.assign({ id: maLop(nhom, quyen, phan), type: kieu, paint: paint }, chung, them || {});
       return l;
     }
     if (nhom.hinh === 'vung' && nhom.vien) {
@@ -216,7 +221,7 @@ var BAN_DO = (function () {
   }
 
   return {
-    maLop: maLop, lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin, hanVe: hanVe,
+    maNguon: maNguon, maLop: maLop, lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin, hanVe: hanVe,
     khungNoi: khungNoi, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
     duongDanEarthWeb: duongDanEarthWeb,
   };

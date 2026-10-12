@@ -4,51 +4,60 @@
 //            nguồn CÓ CẤT (Cache Storage), gắn vé Google cho file Nội bộ, hỏi quyền, lấy nhóm lớp Nội bộ
 //            + nội dung loại đất; đăng nhập Google (thư viện GIS, vé ID token)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.3.0 · Cập nhật: 11/10/2026 23:37
+// Phiên bản: 0.4.0 · Cập nhật: 12/10/2026 23:20
 // ============================================================
-// Tận dụng bộ nhớ trình duyệt: file trên kho mang phiên bản theo nội dung (CAU_HINH_BAN_DO.PHIEN_BAN,
-// vd cong-khai.6b263269.pmtiles) nên KHÔNG BAO GIỜ đổi. Mọi đoạn byte đã tải (đầu file, thư mục, ô bản đồ, json)
-// cất vào Cache Storage "bd-<quyền>-<phiên bản>" và dùng lại mãi, kể cả lần mở sau. Đẩy bản đồ mới → phiên bản
-// mới → chỉ tải phần mới; bộ cất của phiên bản cũ bị xoá khi mở trang. (Thư viện pmtiles tự tắt bộ nhớ HTTP
-// trên Chrome/Windows nên phải tự cất.) Không có Cache Storage (trình duyệt cũ) thì tải thẳng như thường.
+// Mỗi lớp một file trên kho: ck-<nhóm> (Công khai), nb-<nhóm> (Nội bộ — kèm vé Google). Tên file mang phiên bản
+// theo nội dung (vd ck-khoanh_dat.6b263269.pmtiles) nên KHÔNG BAO GIỜ đổi. Phiên bản file Công khai +
+// nb-cau-hinh ở CAU_HINH_BAN_DO.PHIEN_BAN; phiên bản file Nội bộ nằm trong nb-cau-hinh (chỉ người có quyền đọc).
+// Mọi đoạn byte đã tải cất vào Cache Storage "bd-<file>-<phiên bản>" và dùng lại mãi; đẩy bản đồ mới thì chỉ
+// file đổi có phiên bản mới, bộ cất của phiên bản cũ bị xoá. (Thư viện pmtiles tự tắt bộ nhớ HTTP trên
+// Chrome/Windows nên phải tự cất.) Không có Cache Storage (trình duyệt cũ) thì tải thẳng như thường.
 
 var BAN_DO_DU_LIEU = (function () {
   'use strict';
 
-  var PHIEN = CAU_HINH_BAN_DO.PHIEN_BAN || {};
+  var PHIEN = Object.assign({}, CAU_HINH_BAN_DO.PHIEN_BAN || {});
   var giaoThuc = null;
+  var daNoi = {};          // file pmtiles đã nối vào giao thức
   var ve = '';
   var coDem = typeof caches !== 'undefined';
 
-  function tenTep(quyen, phan, duoi) {
-    return quyen + phan + '.' + PHIEN[quyen] + duoi;
+  function laNoiBo(goc) { return goc.indexOf('nb-') === 0; }
+  function tenTep(goc, duoi) {
+    return goc + '.' + PHIEN[goc] + duoi;
   }
   function diaChi(tenTep) {
     return new URL(CAU_HINH_BAN_DO.KHO + tenTep, location.href).href;
   }
-  function tenDem(quyen) {
-    return 'bd-' + quyen + '-' + PHIEN[quyen];
+  function tenDem(goc) {
+    return 'bd-' + goc + '-' + PHIEN[goc];
   }
-  function dauVe(quyen) {
+  function dauVe(goc) {
     var h = new Headers();
-    if (ve && quyen === 'noi-bo') h.set('Authorization', 'Bearer ' + ve);
+    if (ve && laNoiBo(goc)) h.set('Authorization', 'Bearer ' + ve);
     return h;
   }
 
-  /** Bộ cất của phiên bản cũ (đã có bản đồ mới) → xoá; xin trình duyệt giữ bộ nhớ lâu dài */
-  function donDemCu() {
+  /**
+   * Xoá bộ cất không còn dùng: phiên bản cũ của file trong phạm vi (laTrongPhamVi(goc) = true) + bộ cất kiểu cũ
+   * (gói chung cong-khai / noi-bo).
+   */
+  function donDem(laTrongPhamVi) {
     if (!coDem) return;
-    var dung = Object.keys(PHIEN).map(tenDem);
     caches.keys().then(function (ds) {
-      ds.forEach(function (t) { if (t.indexOf('bd-') === 0 && dung.indexOf(t) < 0) caches.delete(t); });
+      ds.forEach(function (t) {
+        if (t.indexOf('bd-') !== 0) return;
+        var m = /^bd-(.+)-([0-9a-f]{8})$/.exec(t);
+        var cu = !m || !/^(ck|nb)-/.test(m[1]);
+        if (cu || (laTrongPhamVi(m[1]) && PHIEN[m[1]] !== m[2])) caches.delete(t);
+      });
     }).catch(function () { /* bỏ qua */ });
-    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () { /* bỏ qua */ });
   }
 
   /** Tải (có cất): khoá = địa chỉ + đoạn byte. tai() trả Promise<ArrayBuffer> */
-  function layCoCat(quyen, khoa, tai) {
+  function layCoCat(goc, khoa, tai) {
     if (!coDem) return tai();
-    return caches.open(tenDem(quyen)).then(function (dem) {
+    return caches.open(tenDem(goc)).then(function (dem) {
       return dem.match(khoa).then(function (cu) {
         if (cu) return cu.arrayBuffer();
         return tai().then(function (du) {
@@ -60,15 +69,15 @@ var BAN_DO_DU_LIEU = (function () {
   }
 
   /** Nguồn PMTiles có cất — cùng giao diện với pmtiles.FetchSource (getKey, getBytes) */
-  function NguonCoCat(quyen) {
-    this.quyen = quyen;
-    this.url = diaChi(tenTep(quyen, '', '.pmtiles'));
+  function NguonCoCat(goc) {
+    this.goc = goc;
+    this.url = diaChi(tenTep(goc, '.pmtiles'));
   }
   NguonCoCat.prototype.getKey = function () { return this.url; };
   NguonCoCat.prototype.getBytes = function (dau, doDai, signal) {
-    var url = this.url, quyen = this.quyen;
-    return layCoCat(quyen, url + '?r=' + dau + '-' + doDai, function () {
-      var h = dauVe(quyen);
+    var url = this.url, goc = this.goc;
+    return layCoCat(goc, url + '?r=' + dau + '-' + doDai, function () {
+      var h = dauVe(goc);
       h.set('Range', 'bytes=' + dau + '-' + (dau + doDai - 1));
       return fetch(url, { signal: signal, headers: h, cache: 'no-store' }).then(function (r) {
         if (r.status >= 300) throw new Error('Kho bản đồ trả lỗi ' + r.status);
@@ -80,31 +89,35 @@ var BAN_DO_DU_LIEU = (function () {
     }).then(function (du) { return { data: du }; });
   };
 
-  /** Nối giao thức pmtiles:// vào MapLibre (một lần), mỗi quyền có phiên bản một nguồn có cất */
+  /** Nối giao thức pmtiles:// vào MapLibre (một lần); dọn bộ cất cũ của file Công khai */
   function noiGiaoThuc(maplibregl, pmtiles) {
     if (giaoThuc) return;
-    giaoThuc = new pmtiles.Protocol();
-    maplibregl.addProtocol('pmtiles', giaoThuc.tile);
-    Object.keys(PHIEN).forEach(function (q) { giaoThuc.add(new pmtiles.PMTiles(new NguonCoCat(q))); });
-    donDemCu();
+    giaoThuc = { p: new pmtiles.Protocol(), PMTiles: pmtiles.PMTiles };
+    maplibregl.addProtocol('pmtiles', giaoThuc.p.tile);
+    donDem(function (goc) { return !laNoiBo(goc) || goc === 'nb-cau-hinh'; });
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () { /* bỏ qua */ });
   }
 
-  /** Địa chỉ nguồn vector cho MapLibre: 'cong-khai' | 'noi-bo' */
-  function nguonPmtiles(quyen) {
-    return 'pmtiles://' + diaChi(tenTep(quyen, '', '.pmtiles'));
+  /** Địa chỉ nguồn vector cho MapLibre của một file lớp ('ck-khoanh_dat'…) — nối nguồn có cất lần đầu */
+  function nguonPmtiles(goc) {
+    if (!daNoi[goc]) {
+      daNoi[goc] = true;
+      giaoThuc.p.add(new giaoThuc.PMTiles(new NguonCoCat(goc)));
+    }
+    return 'pmtiles://' + diaChi(tenTep(goc, '.pmtiles'));
   }
 
-  /** Quyền này có file trên kho không (đẩy bản đồ chưa có lớp Nội bộ thì không) */
-  function coQuyen(quyen) { return !!PHIEN[quyen]; }
+  /** Lần đẩy bản đồ gần nhất có lớp Nội bộ không */
+  function coNoiBo() { return !!PHIEN['nb-cau-hinh']; }
 
   /** Vé Google (ID token) gửi kèm mọi yêu cầu file Nội bộ; '' = bỏ */
   function datVe(veMoi) { ve = veMoi || ''; }
 
-  function layJson(quyen, phan) {
-    if (!PHIEN[quyen]) return Promise.resolve(null);
-    var url = diaChi(tenTep(quyen, phan, '.json'));
-    return layCoCat(quyen, url, function () {
-      return fetch(url, { headers: dauVe(quyen) }).then(function (r) {
+  function layJson(goc) {
+    if (!PHIEN[goc]) return Promise.resolve(null);
+    var url = diaChi(tenTep(goc, '.json'));
+    return layCoCat(goc, url, function () {
+      return fetch(url, { headers: dauVe(goc) }).then(function (r) {
         if (!r.ok) throw new Error('Kho bản đồ trả lỗi ' + r.status);
         return r.arrayBuffer();
       });
@@ -112,19 +125,30 @@ var BAN_DO_DU_LIEU = (function () {
       .catch(function () { return null; });
   }
 
-  /** Nội dung theo loại đất; lỗi thì trả {} (bản đồ vẫn xem được) */
-  function layLoaiDat(quyen) {
-    return layJson(quyen, '-loai-dat').then(function (kq) { return kq || {}; });
+  /** Nội dung theo loại đất của quyền 'ck' | 'nb'; lỗi thì trả {} (bản đồ vẫn xem được) */
+  function layLoaiDat(tienTo) {
+    return layJson(tienTo + '-loai-dat').then(function (kq) { return kq || {}; });
   }
 
-  /** Nhóm lớp Nội bộ (như CAU_HINH_BAN_DO.NHOM_LOP_CONG_KHAI) — Worker chỉ trả khi có quyền */
+  /**
+   * Nhóm lớp Nội bộ (như CAU_HINH_BAN_DO.NHOM_LOP_CONG_KHAI) — Worker chỉ trả khi có quyền. Ghi nhận phiên bản
+   * các file Nội bộ rồi dọn bộ cất cũ của chúng.
+   */
   function layNhomNoiBo() {
-    return layJson('noi-bo', '-cau-hinh').then(function (kq) { return (kq && kq.nhom) || []; });
+    return layJson('nb-cau-hinh').then(function (kq) {
+      if (!kq) return [];
+      Object.assign(PHIEN, kq.phienBan || {});
+      donDem(function (goc) { return laNoiBo(goc) && goc !== 'nb-cau-hinh'; });
+      return kq.nhom || [];
+    });
   }
 
-  /** Gmail không còn quyền xem Nội bộ → xoá phần Nội bộ đã cất trên máy */
+  /** Gmail không còn quyền xem Nội bộ → xoá mọi phần Nội bộ đã cất trên máy */
   function xoaDemNoiBo() {
-    if (coDem && PHIEN['noi-bo']) caches.delete(tenDem('noi-bo')).catch(function () { /* bỏ qua */ });
+    if (!coDem) return;
+    caches.keys().then(function (ds) {
+      ds.forEach(function (t) { if (t.indexOf('bd-nb-') === 0) caches.delete(t); });
+    }).catch(function () { /* bỏ qua */ });
   }
 
   /** Quyền của vé đang giữ → { ok, email, noiBo, veTinh } | null (vé hỏng, hết hạn, mạng lỗi) */
@@ -161,7 +185,7 @@ var BAN_DO_DU_LIEU = (function () {
   }
 
   return {
-    noiGiaoThuc: noiGiaoThuc, nguonPmtiles: nguonPmtiles, coQuyen: coQuyen, datVe: datVe, layLoaiDat: layLoaiDat,
+    noiGiaoThuc: noiGiaoThuc, nguonPmtiles: nguonPmtiles, coNoiBo: coNoiBo, datVe: datVe, layLoaiDat: layLoaiDat,
     layQuyen: layQuyen, layNhomNoiBo: layNhomNoiBo, xoaDemNoiBo: xoaDemNoiBo,
     khoiTaoGoogle: khoiTaoGoogle, lamMoiVe: lamMoiVe,
   };

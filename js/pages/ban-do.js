@@ -4,14 +4,15 @@
 //            bấm đối tượng → khung thông tin (cạnh phải / trượt lên trên điện thoại); đăng nhập Google →
 //            Gmail thuộc đơn vị được quyền thấy thêm lớp Nội bộ / nền ảnh vệ tinh
 // Lớp      : pages — được phép gọi: services (BAN_DO_DU_LIEU), domains (BAN_DO), config (CAU_HINH_BAN_DO, CAU_HINH)
-// Phiên bản: 0.4.0 · Cập nhật: 11/10/2026 23:37
+// Phiên bản: 0.5.0 · Cập nhật: 12/10/2026 23:20
+// Mỗi nhóm lớp một nguồn = một file trên kho (ck-<id> / nb-<id>); nhóm đang tắt thì MapLibre không tải ô của nó.
 // ============================================================
 
 (function () {
   'use strict';
 
-  var CONG_KHAI = 'cong-khai';
-  var NOI_BO = 'noi-bo';
+  var CONG_KHAI = 'ck';
+  var NOI_BO = 'nb';
   // Nhóm Chữ riêng (từ lớp chữ MapInfo/DGN) chưa dùng — tên xã lấy từ vùng ranh xã (domains/ban-do.js)
   function boChu(n) { return n.hinh !== 'chu'; }
   // Bản đồ nền (chọn một). Không dùng tile.openstreetmap.org (bị chặn ở máy chủ dự án, chỉ cho dùng nhẹ)
@@ -45,14 +46,18 @@
   function kemNguon(ds, nguon) {
     return ds.filter(boChu).map(function (n) { return Object.assign({ nguon: nguon }, n); });
   }
-  function laNguonMinh(ten) { return ten === CONG_KHAI || ten === NOI_BO; }
+  function laNguonMinh(ten) { return /^(ck|nb)-/.test(ten); }
   function lop(nhom, phan) { return BAN_DO.maLop(nhom, nhom.nguon, phan); }
+  /** Nguồn vector của một nhóm: mỗi nhóm một file trên kho */
+  function nguonNhom(nhom) {
+    return { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(BAN_DO.maNguon(nhom, nhom.nguon)) };
+  }
 
   function dungBanDo(nhomCongKhai) {
     BAN_DO_DU_LIEU.noiGiaoThuc(maplibregl, pmtiles);
     var khung = CAU_HINH_BAN_DO.KHUNG_THANH_PHO;
     var nguon = {};
-    nguon[CONG_KHAI] = { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(CONG_KHAI) };
+    nhomCongKhai.forEach(function (n) { nguon[BAN_DO.maNguon(n, CONG_KHAI)] = nguonNhom(n); });
     NEN.forEach(function (n) {
       nguon['nen-' + n.id] = { type: 'raster', tileSize: 256, maxzoom: 19, tiles: n.tiles, attribution: n.ghiCong };
     });
@@ -181,14 +186,14 @@
 
   // ---------- lớp Nội bộ ----------
   function themNoiBo() {
-    if (daCoNoiBo || !BAN_DO_DU_LIEU.coQuyen(NOI_BO)) return;
+    if (daCoNoiBo || !BAN_DO_DU_LIEU.coNoiBo()) return;
     daCoNoiBo = true;
     BAN_DO_DU_LIEU.layNhomNoiBo().then(function (ds) {
       var nhom = kemNguon(ds, NOI_BO);
       if (!nhom.length) return;
       function them() {
-        map.addSource(NOI_BO, { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(NOI_BO) });
         nhom.forEach(function (n) {
+          map.addSource(BAN_DO.maNguon(n, NOI_BO), nguonNhom(n));
           BAN_DO.lopVe(n, NOI_BO).forEach(function (l) { map.addLayer(l); });
           ganSuKien(n);
           themMucNhom(n);

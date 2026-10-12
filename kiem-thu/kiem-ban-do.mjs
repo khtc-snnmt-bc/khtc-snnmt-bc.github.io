@@ -25,8 +25,9 @@ const khoanh = {
 const duong = { id: 'kenh', ten: 'Kênh', hinh: 'duong', loai: [{ ma: '', ten: 'Kênh', mau: '#0077cc' }] };
 
 bai('lopVe vùng: nền màu theo loại + viền + lớp chọn', () => {
-  const ls = sach(BD.lopVe(khoanh, 'cong-khai'));
+  const ls = sach(BD.lopVe(khoanh, 'ck'));
   assert.deepEqual(ls.map((l) => l.id), ['khoanh_dat-nen', 'khoanh_dat-vien', 'khoanh_dat-chon']);
+  assert.equal(ls[0].source, 'ck-khoanh_dat', 'mỗi nhóm một file trên kho');
   assert.equal(ls[0]['source-layer'], 'khoanh_dat');
   assert.deepEqual(ls[0].paint['fill-color'], ['match', ['get', 'loai'], 'LUC', '#FFFC82', 'CLN', '#FFD7AA', '#888888']);
   assert.deepEqual(ls[2].filter, ['==', ['id'], -1]);
@@ -34,7 +35,7 @@ bai('lopVe vùng: nền màu theo loại + viền + lớp chọn', () => {
 
 bai('lopVe vùng chỉ viền: nền trong suốt, viền theo màu nhóm', () => {
   const ranh = { id: 'ranh_xa', ten: 'Ranh xã', hinh: 'vung', vien: true, loai: [{ ma: '', ten: 'Ranh xã', mau: '#7B2D8E' }] };
-  const ls = sach(BD.lopVe(ranh, 'cong-khai'));
+  const ls = sach(BD.lopVe(ranh, 'ck'));
   assert.deepEqual(ls.map((l) => l.id), ['ranh_xa-nen', 'ranh_xa-vien', 'ranh_xa-chon', 'ranh_xa-chu']);
   assert.equal(ls[0].paint['fill-opacity'], 0);
   assert.equal(ls[1].paint['line-color'], '#7B2D8E');
@@ -45,11 +46,12 @@ bai('lopVe vùng chỉ viền: nền trong suốt, viền theo màu nhóm', () =
 });
 
 bai('lopVe nhóm Nội bộ: id lớp có tiền tố nguồn, source-layer giữ tên nhóm', () => {
-  const ls = sach(BD.lopVe(khoanh, 'noi-bo'));
-  assert.deepEqual(ls.map((l) => l.id), ['noi-bo:khoanh_dat-nen', 'noi-bo:khoanh_dat-vien', 'noi-bo:khoanh_dat-chon']);
-  assert.equal(ls[0].source, 'noi-bo');
+  const ls = sach(BD.lopVe(khoanh, 'nb'));
+  assert.deepEqual(ls.map((l) => l.id), ['nb:khoanh_dat-nen', 'nb:khoanh_dat-vien', 'nb:khoanh_dat-chon']);
+  assert.equal(ls[0].source, 'nb-khoanh_dat');
   assert.equal(ls[0]['source-layer'], 'khoanh_dat');
-  assert.equal(BD.maLop(khoanh, 'cong-khai', 'chon'), 'khoanh_dat-chon');
+  assert.equal(BD.maLop(khoanh, 'ck', 'chon'), 'khoanh_dat-chon');
+  assert.equal(BD.maNguon(khoanh, 'nb'), 'nb-khoanh_dat');
 });
 
 bai('hanVe: đọc exp của vé Google; vé hỏng = 0', () => {
@@ -64,7 +66,7 @@ bai('hanVe: đọc exp của vé Google; vé hỏng = 0', () => {
 });
 
 bai('lopVe đường một màu', () => {
-  const ls = sach(BD.lopVe(duong, 'cong-khai'));
+  const ls = sach(BD.lopVe(duong, 'ck'));
   assert.equal(ls[0].paint['line-color'], '#0077cc');
   assert.equal(ls[0].type, 'line');
 });
