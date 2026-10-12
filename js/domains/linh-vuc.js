@@ -2,7 +2,7 @@
 // bcsnn · js/domains/linh-vuc.js
 // Vai trò  : Nghiệp vụ thuần: lĩnh vực của trang theo thư mục web
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.4.0 · Cập nhật: 13/10/2026 00:10
+// Phiên bản: 0.4.0 · Cập nhật: 12/10/2026 23:58
 // ============================================================
 // Mỗi lĩnh vực một địa chỉ (/BTTDC, /Nhiem_Vu, /BC_xa, /BanDo/QuanLy) và một Sheet quản lý riêng (b10b) —
 // GAS chỉ trả đơn vị, bảng của lĩnh vực trang gửi kèm, trang không phải lọc gì.

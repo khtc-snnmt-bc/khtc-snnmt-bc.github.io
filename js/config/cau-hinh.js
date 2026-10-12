@@ -2,7 +2,7 @@
 // bcsnn · js/config/cau-hinh.js
 // Vai trò  : Hằng số cấu hình duy nhất — chủ dự án sửa tay file này
 // Lớp      : config — không gọi ai
-// Phiên bản: 0.5.0 · Cập nhật: 13/10/2026 00:10
+// Phiên bản: 0.5.0 · Cập nhật: 12/10/2026 23:58
 // ============================================================
 // ⚠ KHÔNG ghi ID file, Gmail thật vào đây — repo Public!
 // Chủ dự án: dán URL web app GAS vào dòng GAS_URL bên dưới.

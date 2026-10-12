@@ -5,7 +5,7 @@
 //            Phân quyền (giao bảng), Quản lý bảng (tab Danh sách bảng: chỉnh
 //            sửa, tạo bảng cho đơn vị, xoá · tab Tạo bảng mới: dựng mẫu / tải Excel)
 // Lớp      : pages — được gọi bởi: quantri.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.25.0 · Cập nhật: 13/10/2026 00:15
+// Phiên bản: 0.25.0 · Cập nhật: 12/10/2026 23:58
 // Lĩnh vực chiQuanTri (Bản đồ): chỉ mục Tài khoản + nút Lấy tài khoản các lĩnh vực; Chặn / Ảnh vệ tinh tích trong Sheet.
 // ============================================================
 // Quản trị đúng lĩnh vực vừa vào (mỗi lĩnh vực một Sheet quản lý — b10b); đơn vị quản lý báo cáo

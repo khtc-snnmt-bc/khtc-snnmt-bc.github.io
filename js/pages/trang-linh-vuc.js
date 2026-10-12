@@ -3,7 +3,7 @@
 // Vai trò  : Trang một lĩnh vực (/BTTDC, /Nhiem_Vu, /BC_xa, /BanDo/QuanLy): dựng khung đăng nhập + nhập liệu
 //            rồi điều khiển luồng — đăng nhập → nhập liệu (lĩnh vực chiQuanTri: → Quản trị) → đăng xuất
 // Lớp      : pages — được gọi bởi: <thư mục lĩnh vực>/index.html · được phép gọi: domains, services, utils, config
-// Phiên bản: 0.4.0 · Cập nhật: 13/10/2026 00:10
+// Phiên bản: 0.4.0 · Cập nhật: 12/10/2026 23:58
 // ============================================================
 // Trang lĩnh vực chỉ ghi <body data-linh-vuc="<thư mục>"> và nạp script; khung HTML nằm ở đây
 // để ba lĩnh vực dùng chung một bản. Mỗi lĩnh vực một Sheet quản lý riêng (b10b): đơn vị, tài

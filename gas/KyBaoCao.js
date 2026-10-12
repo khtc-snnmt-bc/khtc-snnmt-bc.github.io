@@ -4,7 +4,7 @@
 //            thì tạo file), khoá / mở khoá / xoá kỳ, tự khoá theo ngày; sổ kỳ ở tab "Kỳ" của Sheet quản lý
 // Lớp      : gas — gọi bởi: Code.js, QuanLyBang.js, B04.js (thử), trigger theo giờ (tuKhoaKy)
 //            · gọi: PhanQuyen.js, DangNhap.js, QuanLyBang.js (kiemMauBang_), Code.js (layQuanLyId_, DS_LINH_VUC)
-// Phiên bản: 0.7.3 · Cập nhật: 10/10/2026 21:20
+// Phiên bản: 0.8.0 · Cập nhật: 12/10/2026 23:58
 // ============================================================
 // Tab kỳ = chép tab đầu của file tổng (templateFileId), tách dòng theo mã đơn
 // vị, khoá theo cài đặt bảng (KIEN-TRUC.md mục 6). Tên tab dd.mm.yyyy.
@@ -15,8 +15,8 @@
 // thì vùng nhập cũ cất vào developer metadata của tab → Mở khoá trả lại đúng.
 // 168 file không xong trong một lần chạy (6 phút) → mỗi lần chạy tối đa
 // KY_MS_TOI_DA rồi trả `tiepTu`; trang gọi lại với batDau = tiepTu tới khi null.
-// Gmail cá nhân tạo tối đa 250 Sheet/ngày: hết hạn mức thì dừng, trả hetHanMuc — hôm sau bấm
-// Tạo kỳ lại, đơn vị đã có file + tab kỳ được bỏ qua.
+// File đơn vị tạo bằng Drive API (tránh hạn mức 250 Sheet/ngày của SpreadsheetApp.create). Vẫn gặp hạn mức
+// thì dừng, trả hetHanMuc — hôm sau bấm Tạo kỳ lại, đơn vị đã có file + tab kỳ được bỏ qua.
 // Tự khoá (thiết kế mục 7): mỗi kỳ có ngày tự khoá (tab Kỳ cột lockDate), mặc định
 // = ngày `lockDay` của bảng đầu tiên sau ngày kỳ. Trigger theo giờ gọi tuKhoaKy —
 // chủ dự án tự cài trong trình soạn (không dùng ScriptApp → không thêm quyền mới); một trigger
@@ -44,7 +44,7 @@ var TH_GIA_TRI = 'giaTri';
 
 /** Lỗi Google "gọi quá nhiều lần trong một ngày" (thông báo theo ngôn ngữ tài khoản: Anh / Việt). */
 function laLoiHanMuc_(thongBao) {
-  return /too many times|quá nhiều lần/i.test(String(thongBao || ''));
+  return /too many times|quá nhiều lần|rate ?limit|quota/i.test(String(thongBao || ''));
 }
 
 // 'A' → 1, 'AF' → 32
@@ -534,12 +534,16 @@ function chepTabChuThich_(ss, mau, caiDat) {
   });
 }
 
-/** File đơn vị mới `{mãBảng}_{mãĐơnVị}`, cùng thư mục với file tổng (thiết kế mục 5). */
+/**
+ * File đơn vị mới `{mãBảng}_{mãĐơnVị}`, cùng thư mục với file tổng (thiết kế mục 5). Tạo bằng Drive API
+ * (dịch vụ nâng cao Drive), KHÔNG dùng SpreadsheetApp.create — hàm đó bị hạn mức 250 Sheet/24 giờ với Gmail
+ * cá nhân (đã thử 12/10/2026: hết hạn mức đó vẫn tạo được bằng Drive API).
+ */
 function taoFileChoDonVi_(caiDat, unitCode) {
-  var ss = SpreadsheetApp.create(caiDat.tableCode + '_' + unitCode);
   var thuMuc = DriveApp.getFileById(caiDat.templateFileId).getParents();
-  if (thuMuc.hasNext()) DriveApp.getFileById(ss.getId()).moveTo(thuMuc.next());
-  return ss;
+  var id = Drive.Files.create({ name: caiDat.tableCode + '_' + unitCode, mimeType: MimeType.GOOGLE_SHEETS,
+    parents: thuMuc.hasNext() ? [thuMuc.next().getId()] : [] }).id;
+  return SpreadsheetApp.openById(id);
 }
 
 function soTabDangHien_(ss) {
