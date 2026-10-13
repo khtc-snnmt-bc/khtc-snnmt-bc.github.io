@@ -4,8 +4,9 @@
 //            nguồn CÓ CẤT (Cache Storage), gắn vé Google cho file Nội bộ, hỏi quyền, lấy nhóm lớp Nội bộ
 //            + nội dung loại đất + trang thuyết minh đối tượng; đăng nhập Google (thư viện GIS, vé ID token)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.5.0 · Cập nhật: 13/10/2026 09:30
+// Phiên bản: 0.6.0 · Cập nhật: 13/10/2026 14:20
 // ============================================================
+// Tải trọn (taiTron): cả file lớp Công khai vào bộ cất một lần → các đoạn sau cắt từ bản trọn, không hỏi mạng.
 // Mỗi lớp một file trên kho: ck-<nhóm> (Công khai), nb-<nhóm> (Nội bộ — kèm vé Google). Tên file mang phiên bản
 // theo nội dung (vd ck-khoanh_dat.6b263269.pmtiles) nên KHÔNG BAO GIỜ đổi. Phiên bản file Công khai +
 // nb-cau-hinh ở CAU_HINH_BAN_DO.PHIEN_BAN; phiên bản file Nội bộ nằm trong nb-cau-hinh (chỉ người có quyền đọc).
@@ -17,8 +18,12 @@ var BAN_DO_DU_LIEU = (function () {
   'use strict';
 
   var PHIEN = Object.assign({}, CAU_HINH_BAN_DO.PHIEN_BAN || {});
+  // các dải phông đã chép vào app/vendor/noto-sans/ (thêm dải thì thêm ở đây; kiểm: bando/cong-cu/dai-chu.mjs)
+  var DAI_PHONG = ['0-255', '256-511', '768-1023', '1024-1279', '7680-7935', '8192-8447'];
   var giaoThuc = null;
   var daNoi = {};          // file pmtiles đã nối vào giao thức
+  var tron = {};           // file → Promise<Blob | null>: trọn file đã cất
+  var dangTaiTron = {};    // file → Promise: đang / đã tải trọn trong phiên này
   var ve = '';
   var coDem = typeof caches !== 'undefined';
 
@@ -68,6 +73,40 @@ var BAN_DO_DU_LIEU = (function () {
     }, tai);
   }
 
+  /** Trọn file đã cất (khoá = địa chỉ, không đoạn byte) → Promise<Blob | null>; hỏi bộ cất một lần mỗi phiên */
+  function blobTron(goc) {
+    if (!coDem) return Promise.resolve(null);
+    if (!tron[goc]) {
+      var url = diaChi(tenTep(goc, '.pmtiles'));
+      tron[goc] = caches.open(tenDem(goc)).then(function (dem) { return dem.match(url); })
+        .then(function (r) { return r ? r.blob() : null; })
+        .catch(function () { return null; });
+    }
+    return tron[goc];
+  }
+
+  /**
+   * Tải ngầm TRỌN một file lớp Công khai vào bộ cất (một lượt Worker cho mỗi file mỗi phiên bản), thay các đoạn lẻ
+   * đã cất → từ đó mọi vùng của lớp xem được không cần mạng, kể cả khi hàng rào hạn mức tắt Worker.
+   * Lỗi giữa chừng thì bỏ qua, lần mở trang sau thử lại. Trang tự quyết khi nào nên tải (Wi-Fi / máy tính).
+   */
+  function taiTron(goc) {
+    if (!coDem || !PHIEN[goc] || laNoiBo(goc)) return Promise.resolve();
+    if (!dangTaiTron[goc]) {
+      var url = diaChi(tenTep(goc, '.pmtiles'));
+      dangTaiTron[goc] = blobTron(goc).then(function (b) {
+        if (b) return null;
+        return fetch(url, { cache: 'no-store' }).then(function (r) {
+          if (r.status !== 200) throw new Error('Kho bản đồ trả lỗi ' + r.status);
+          return caches.delete(tenDem(goc))
+            .then(function () { return caches.open(tenDem(goc)); })
+            .then(function (dem) { return dem.put(url, r); });
+        }).then(function () { delete tron[goc]; });
+      }).catch(function () { /* lần sau thử lại */ });
+    }
+    return dangTaiTron[goc];
+  }
+
   /** Nguồn PMTiles có cất — cùng giao diện với pmtiles.FetchSource (getKey, getBytes) */
   function NguonCoCat(goc) {
     this.goc = goc;
@@ -75,6 +114,14 @@ var BAN_DO_DU_LIEU = (function () {
   }
   NguonCoCat.prototype.getKey = function () { return this.url; };
   NguonCoCat.prototype.getBytes = function (dau, doDai, signal) {
+    var goc = this.goc;
+    var dt = this;
+    return blobTron(goc).then(function (b) {
+      if (b) return b.slice(dau, dau + doDai).arrayBuffer().then(function (du) { return { data: du }; });
+      return dt.layDoan(dau, doDai, signal);
+    });
+  };
+  NguonCoCat.prototype.layDoan = function (dau, doDai, signal) {
     var url = this.url, goc = this.goc;
     return layCoCat(goc, url + '?r=' + dau + '-' + doDai, function () {
       var h = dauVe(goc);
@@ -98,6 +145,23 @@ var BAN_DO_DU_LIEU = (function () {
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () { /* bỏ qua */ });
   }
 
+  /**
+   * Phông nhãn: trả địa chỉ 'phong://{fontstack}/{range}' cho kiểu bản đồ. Dải có trong app/vendor/noto-sans tải từ
+   * mau (địa chỉ thật, có {fontstack} {range}); dải khác (Khmer, chữ Hán…) trả rỗng, chữ đó không hiện — để lỗi 404
+   * thì MapLibre BỎ CẢ Ô bản đồ chứa chữ ấy.
+   */
+  function diaChiPhong(maplibregl, mau) {
+    maplibregl.addProtocol('phong', function (yc) {
+      var m = /^phong:\/\/([^/]+)\/(\d+-\d+)$/.exec(yc.url);
+      if (!m || DAI_PHONG.indexOf(m[2]) < 0) return Promise.resolve({ data: new ArrayBuffer(0) });
+      return fetch(mau.replace('{fontstack}', m[1]).replace('{range}', m[2]))
+        .then(function (r) { return r.ok ? r.arrayBuffer() : new ArrayBuffer(0); })
+        .catch(function () { return new ArrayBuffer(0); })
+        .then(function (du) { return { data: du }; });
+    });
+    return 'phong://{fontstack}/{range}';
+  }
+
   /** Địa chỉ nguồn vector cho MapLibre của một file lớp ('ck-khoanh_dat'…) — nối nguồn có cất lần đầu */
   function nguonPmtiles(goc) {
     if (!daNoi[goc]) {
@@ -109,6 +173,9 @@ var BAN_DO_DU_LIEU = (function () {
 
   /** Lần đẩy bản đồ gần nhất có lớp Nội bộ không */
   function coNoiBo() { return !!PHIEN['nb-cau-hinh']; }
+
+  /** Kho có file này không (vd nền 'ck-nen-duong' chưa đẩy thì không có) */
+  function coTep(goc) { return !!PHIEN[goc]; }
 
   /** Vé Google (ID token) gửi kèm mọi yêu cầu file Nội bộ; '' = bỏ */
   function datVe(veMoi) { ve = veMoi || ''; }
@@ -196,7 +263,8 @@ var BAN_DO_DU_LIEU = (function () {
   }
 
   return {
-    noiGiaoThuc: noiGiaoThuc, nguonPmtiles: nguonPmtiles, coNoiBo: coNoiBo, datVe: datVe, layLoaiDat: layLoaiDat,
+    noiGiaoThuc: noiGiaoThuc, diaChiPhong: diaChiPhong, nguonPmtiles: nguonPmtiles, coNoiBo: coNoiBo, coTep: coTep, taiTron: taiTron,
+    datVe: datVe, layLoaiDat: layLoaiDat,
     layQuyen: layQuyen, layNhomNoiBo: layNhomNoiBo, xoaDemNoiBo: xoaDemNoiBo, layThuyetMinh: layThuyetMinh,
     khoiTaoGoogle: khoiTaoGoogle, lamMoiVe: lamMoiVe,
   };

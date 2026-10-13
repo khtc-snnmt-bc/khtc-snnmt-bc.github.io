@@ -2,7 +2,7 @@
 // bcsnn · app/kiem-thu/kiem-ban-do.mjs
 // Vai trò  : Kiểm domains bản đồ (ban-do.js): kiểu vẽ, bộ lọc loại, khung thông tin
 // Chạy     : node app/kiem-thu/kiem-ban-do.mjs
-// Phiên bản: 0.3.0 · Cập nhật: 11/10/2026 22:31
+// Phiên bản: 0.4.0 · Cập nhật: 13/10/2026 14:20
 // ============================================================
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -139,6 +139,33 @@ bai('duongDanEarthWeb: tâm khung, khoảng cách theo bề ngang', () => {
   assert.ok(m, u);
   // bề ngang 0,2° ở vĩ độ 10,95 ≈ 21,86 km → khoảng cách ≈ 34,7 km
   assert.ok(Math.abs(+m[1] - 34660) < 300, m[1]);
+});
+
+bai('lopNenDuong: mọi lớp chung tiền tố + nguồn, có nền nước, đất, đường, nhãn', () => {
+  const ls = sach(BD.lopNenDuong('nen-duong', 'nen-duong-'));
+  assert.ok(ls.every((l) => l.id.indexOf('nen-duong-') === 0), 'bật/tắt cả nền theo tiền tố');
+  assert.equal(new Set(ls.map((l) => l.id)).size, ls.length, 'id không trùng');
+  assert.equal(ls[0].type, 'background');
+  assert.ok(ls.slice(1).every((l) => l.source === 'nen-duong'));
+  const lopNguon = new Set(ls.map((l) => l['source-layer']).filter(Boolean));
+  ['earth', 'water', 'landuse', 'roads', 'places', 'boundaries'].forEach((x) => assert.ok(lopNguon.has(x), x));
+  // nhãn chỉ dùng phông đã chép (thiếu phông thì MapLibre bỏ cả ô)
+  ls.filter((l) => l.type === 'symbol').forEach((l) => assert.deepEqual(l.layout['text-font'], ['NotoSansRegular']));
+  // viền đường nằm dưới ruột đường
+  const vt = (id) => ls.findIndex((l) => l.id === id);
+  assert.ok(vt('nen-duong-vien-highway') < vt('nen-duong-duong-minor_road'));
+});
+
+bai('nenTaiTron: Wi-Fi / mạng dây / máy tính thì tải, 4G / tiết kiệm dữ liệu / mạng chậm thì không', () => {
+  assert.equal(BD.nenTaiTron({ type: 'wifi' }, false), true);
+  assert.equal(BD.nenTaiTron({ type: 'ethernet' }, false), true);
+  assert.equal(BD.nenTaiTron({ type: 'cellular' }, true), false);
+  assert.equal(BD.nenTaiTron({ type: 'wifi', saveData: true }, true), false);
+  assert.equal(BD.nenTaiTron({ type: 'wifi', effectiveType: '3g' }, true), false);
+  assert.equal(BD.nenTaiTron({ effectiveType: '4g' }, true), true, 'không rõ loại mạng: theo máy');
+  assert.equal(BD.nenTaiTron({ effectiveType: '4g' }, false), false, 'điện thoại không rõ mạng: không tải');
+  assert.equal(BD.nenTaiTron(undefined, true), true, 'trình duyệt không có navigator.connection');
+  assert.equal(BD.nenTaiTron(undefined, false), false);
 });
 
 console.log(`kiem-ban-do: ${soBai} bài đạt`);

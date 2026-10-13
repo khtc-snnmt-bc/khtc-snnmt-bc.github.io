@@ -3,14 +3,14 @@
 // Vai trò  : Lớp Công khai của bản đồ (tên, màu, thứ tự) + khung thành phố
 // Lớp      : config — SINH TỰ ĐỘNG bởi bando/cong-cu/day-ban-do.py từ danh-sach-lop.xlsx, đừng sửa tay
 //            (địa chỉ kho file thì sửa hằng KHO trong day-ban-do.py)
-// Phiên bản: 0.3.0 · Cập nhật: 13/10/2026 09:07
+// Phiên bản: 0.3.0 · Cập nhật: 13/10/2026 14:19
 // PHIEN_BAN: tên file trên kho (không đuôi) → phiên bản theo nội dung. Lớp Nội bộ chỉ có nb-cau-hinh
 //            (tên + phiên bản các lớp Nội bộ nằm trong file đó, Worker chỉ trả khi có quyền)
 // ============================================================
 
 var CAU_HINH_BAN_DO = {
   KHO: "https://bando-snnmt.gsheet.workers.dev/",
-  PHIEN_BAN: {"ck-khoanh_dat": "38d7da71", "ck-ranh_xa": "73dfc69e", "ck-loai-dat": "cb5b7b24", "nb-cau-hinh": "30fc1a20"},
+  PHIEN_BAN: {"ck-khoanh_dat": "38d7da71", "ck-ranh_xa": "73dfc69e", "ck-test_html": "bf9ab1bf", "ck-loai-dat": "cb5b7b24", "ck-tm/test_html_ck/1": "35ecc06e", "ck-tm/test_html_ck/2": "ceba0e22", "ck-nen-duong": "f63cefa5", "nb-cau-hinh": "db99998a"},
   KHUNG_THANH_PHO: [106.3352, 10.32, 107.5719, 11.5014],
   // khung nhìn ban đầu = KHUNG_THANH_PHO; kéo được tới mọi điểm của KHUNG_GIOI_HAN (gồm Côn Đảo)
   KHUNG_GIOI_HAN: [106.3352, 8.55, 107.5719, 11.5014],
@@ -49,6 +49,18 @@ var CAU_HINH_BAN_DO = {
         }
       ],
       "vien": true
+    },
+    {
+      "id": "test_html",
+      "ten": "Test HTML",
+      "hinh": "diem",
+      "loai": [
+        {
+          "ma": "",
+          "ten": "Test HTML",
+          "mau": "#1F6FEB"
+        }
+      ]
     }
   ]
 };

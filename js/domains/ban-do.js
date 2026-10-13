@@ -4,7 +4,7 @@
 //            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, tên trang thuyết minh (neo cột id),
 //            đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
-// Phiên bản: 0.6.0 · Cập nhật: 13/10/2026 09:30
+// Phiên bản: 0.7.0 · Cập nhật: 13/10/2026 14:20
 // ============================================================
 // Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', vien?: true, loai: [{ma, ten, mau}] }
 // vien = vùng chỉ vẽ viền (ranh giới).
@@ -238,9 +238,101 @@ var BAN_DO = (function () {
     return ra;
   }
 
+  // ---------- nền Bản đồ đường: dữ liệu OSM theo khuôn Protomaps v4 (file ck-nen-duong) ----------
+  // Màu nhạt, ít chữ — để lớp của mình nổi lên trên. Chưa có biểu tượng điểm (POI).
+  var MAU_NEN = {
+    nuoc: '#bcd6e3', dat: '#f3f1ec', xanh: '#dbe8d0', ruong: '#ecefdc', congNghiep: '#ebe6ee', nha: '#e2ddd5',
+    vienDuong: '#d3cdc4', ranh: '#a59bb0', chu: '#5b5750', chuNuoc: '#4f7a92',
+  };
+  var DUONG = [   // [kind, màu ruột, màu viền, bề rộng ở zoom 8 / 12 / 16, hiện từ zoom]
+    ['highway', '#f6cf8c', '#d9a95a', [1, 3, 14], 8],
+    ['major_road', '#fbe9b0', '#d7c48e', [0.6, 2.2, 11], 8],
+    ['medium_road', '#ffffff', MAU_NEN.vienDuong, [0.3, 1.4, 8], 10],
+    ['minor_road', '#ffffff', MAU_NEN.vienDuong, [0, 0.6, 5], 12],
+  ];
+
+  /** Các lớp vẽ của nền đường; mọi id bắt đầu bằng tienTo (để bật/tắt cả nền một lần) */
+  function lopNenDuong(nguon, tienTo) {
+    function l(ten, kieu, lopNguon, paint, them) {
+      return Object.assign({ id: tienTo + ten, type: kieu, paint: paint },
+        lopNguon ? { source: nguon, 'source-layer': lopNguon } : {}, them || {});
+    }
+    function rong(w, nhan) {
+      return ['interpolate', ['exponential', 1.6], ['zoom'], 8, w[0] * nhan, 12, w[1] * nhan, 16, w[2] * nhan];
+    }
+    function chu(co, them) {
+      return Object.assign({ 'text-font': [PHONG_CHU], 'text-field': ['get', 'name'], 'text-size': co },
+        them || {});
+    }
+    var laKind = function (k) { return ['==', ['get', 'kind'], k]; };
+    var ds = [
+      l('bien', 'background', null, { 'background-color': MAU_NEN.nuoc }),
+      l('dat', 'fill', 'earth', { 'fill-color': MAU_NEN.dat }),
+      l('su-dung-dat', 'fill', 'landuse', {
+        'fill-color': ['match', ['get', 'kind'],
+          ['park', 'forest', 'wood', 'nature_reserve', 'national_park', 'protected_area', 'grassland', 'grass',
+            'garden', 'golf_course', 'cemetery', 'scrub', 'wetland'], MAU_NEN.xanh,
+          ['farmland', 'farmyard', 'orchard', 'allotments', 'meadow'], MAU_NEN.ruong,
+          ['industrial', 'aerodrome', 'military', 'railway', 'quarry'], MAU_NEN.congNghiep,
+          'rgba(0,0,0,0)'],
+      }),
+      l('nuoc', 'fill', 'water', { 'fill-color': MAU_NEN.nuoc }, { filter: ['==', ['geometry-type'], 'Polygon'] }),
+      l('song', 'line', 'water', {
+        'line-color': MAU_NEN.nuoc,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 14, 2, 17, 4],
+      }, { filter: ['==', ['geometry-type'], 'LineString'], minzoom: 10 }),
+      l('nha', 'fill', 'buildings', { 'fill-color': MAU_NEN.nha, 'fill-opacity': 0.7 }, { minzoom: 14 }),
+      l('loi-di', 'line', 'roads', { 'line-color': '#c9c1b5', 'line-width': 0.8, 'line-dasharray': [2, 1.5] },
+        { filter: laKind('path'), minzoom: 14 }),
+    ];
+    // viền đường vẽ trước (dưới), ruột vẽ sau; đường nhỏ dưới đường lớn
+    DUONG.slice().reverse().forEach(function (d) {
+      ds.push(l('vien-' + d[0], 'line', 'roads', { 'line-color': d[2], 'line-width': rong(d[3], 1.35) },
+        { filter: laKind(d[0]), minzoom: Math.max(d[4], 11), layout: { 'line-cap': 'round', 'line-join': 'round' } }));
+    });
+    DUONG.slice().reverse().forEach(function (d) {
+      ds.push(l('duong-' + d[0], 'line', 'roads', { 'line-color': d[1], 'line-width': rong(d[3], 1) },
+        { filter: laKind(d[0]), minzoom: d[4], layout: { 'line-cap': 'round', 'line-join': 'round' } }));
+    });
+    return ds.concat([
+      l('duong-sat', 'line', 'roads', { 'line-color': '#a9a39b', 'line-width': 1, 'line-dasharray': [3, 2] },
+        { filter: laKind('rail'), minzoom: 11 }),
+      l('ranh', 'line', 'boundaries', { 'line-color': MAU_NEN.ranh, 'line-width': 1, 'line-dasharray': [3, 2] }),
+      l('ten-nuoc', 'symbol', 'water',
+        { 'text-color': MAU_NEN.chuNuoc, 'text-halo-color': 'rgba(255,255,255,0.8)', 'text-halo-width': 1 },
+        { minzoom: 11, filter: ['has', 'name'],
+          layout: chu(11, { 'symbol-placement': 'point', 'text-max-width': 8 }) }),
+      l('ten-duong', 'symbol', 'roads',
+        { 'text-color': MAU_NEN.chu, 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 },
+        { minzoom: 13, filter: ['all', ['has', 'name'], ['match', ['get', 'kind'],
+          ['highway', 'major_road', 'medium_road', 'minor_road'], true, false]],
+        layout: chu(['interpolate', ['linear'], ['zoom'], 13, 10, 17, 13], { 'symbol-placement': 'line' }) }),
+      l('ten-noi', 'symbol', 'places',
+        { 'text-color': MAU_NEN.chu, 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.4 },
+        { filter: ['all', ['match', ['get', 'kind'], ['locality', 'macrohood'], true, false],
+          ['<=', ['coalesce', ['get', 'min_zoom'], 0], ['zoom']]],
+        layout: chu(['interpolate', ['linear'], ['zoom'], 8, 10, 14, 13], { 'text-max-width': 7 }) }),
+    ]);
+  }
+
+  /**
+   * Có nên tải ngầm trọn file lớp không: chỉ Wi-Fi / mạng dây, hoặc máy tính khi trình duyệt không cho biết loại mạng.
+   * Không tải trên 4G, khi bật Tiết kiệm dữ liệu, hay mạng chậm.
+   * @param {{type?, effectiveType?, saveData?}|null} ketNoi  navigator.connection (có thể không có)
+   * @param {boolean} laMayTinh  con trỏ chuột (không phải màn cảm ứng)
+   */
+  function nenTaiTron(ketNoi, laMayTinh) {
+    var k = ketNoi || {};
+    if (k.saveData) return false;
+    if (k.effectiveType && k.effectiveType !== '4g') return false;   // 'slow-2g' | '2g' | '3g'
+    if (k.type === 'wifi' || k.type === 'ethernet') return true;
+    if (k.type && k.type !== 'unknown') return false;                // cellular, bluetooth, wimax, none, other
+    return !!laMayTinh;
+  }
+
   return {
     maNguon: maNguon, maLop: maLop, lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin,
-    maThuyetMinh: maThuyetMinh, hanVe: hanVe,
+    maThuyetMinh: maThuyetMinh, hanVe: hanVe, lopNenDuong: lopNenDuong, nenTaiTron: nenTaiTron,
     khungKeo: khungKeo, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
     duongDanEarthWeb: duongDanEarthWeb,
   };
