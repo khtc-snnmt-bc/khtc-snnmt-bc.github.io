@@ -1,9 +1,10 @@
 // ============================================================
 // bcsnn · js/domains/ban-do.js
 // Vai trò  : Nghiệp vụ thuần của bản đồ: dựng kiểu vẽ MapLibre cho từng nhóm lớp, bộ lọc theo loại
-//            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, đóng gói KMZ (KML + ảnh) cho Google Earth
+//            đang bật, các dòng hiện ở khung thông tin khi bấm đối tượng, tên trang thuyết minh (neo cột id),
+//            đóng gói KMZ (KML + ảnh) cho Google Earth
 // Lớp      : domains — được gọi bởi: pages · được phép gọi: config (không chạm DOM, không gọi services)
-// Phiên bản: 0.5.0 · Cập nhật: 12/10/2026 23:20
+// Phiên bản: 0.6.0 · Cập nhật: 13/10/2026 09:30
 // ============================================================
 // Nhóm lớp (sinh từ danh-sach-lop.xlsx): { id, ten, hinh: 'vung'|'duong'|'diem', vien?: true, loai: [{ma, ten, mau}] }
 // vien = vùng chỉ vẽ viền (ranh giới).
@@ -131,6 +132,16 @@ var BAN_DO = (function () {
     return { tieuDe: tieuDe, dong: dong, noiDung: noiDung };
   }
 
+  /**
+   * Tên file (không phiên bản) của trang thuyết minh đối tượng: '<quyen>-tm/<_bang>/<_id>' — neo là cột `id`
+   * của bảng gốc (day-ban-do.py ghi thành _bang, _id). Đối tượng không có id → null.
+   */
+  function maThuyetMinh(quyen, thuocTinh) {
+    var bang = thuocTinh && thuocTinh._bang, id = thuocTinh && thuocTinh._id;
+    if (!bang || id == null || !/^[A-Za-z0-9_-]{1,64}$/.test(String(id))) return null;
+    return quyen + '-tm/' + bang + '/' + id;
+  }
+
   /** Hạn dùng (giây, giờ Unix) của vé Google ID token; vé hỏng thì 0. Chỉ đọc, không kiểm chữ ký (Worker kiểm). */
   function hanVe(ve) {
     try {
@@ -141,10 +152,17 @@ var BAN_DO = (function () {
     }
   }
 
-  /** Khung thành phố [tây, nam, đông, bắc] nới thêm một phần để kéo bản đồ không bị cứng */
-  function khungNoi(khung, tiLe) {
-    var dx = (khung[2] - khung[0]) * tiLe, dy = (khung[3] - khung[1]) * tiLe;
-    return [[khung[0] - dx, khung[1] - dy], [khung[2] + dx, khung[3] + dy]];
+  /**
+   * Giới hạn kéo bản đồ: khung thành phố [tây, nam, đông, bắc] nới thêm NỬA màn hình (rộng × cao điểm ảnh) đo ở mức
+   * phóng nhỏ nhất → ở mọi mức phóng, mọi điểm trong khung (kể cả đảo) kéo được về giữa màn hình. Nới theo
+   * Mercator (ô MapLibre 512 điểm ảnh). → [[tây, nam], [đông, bắc]]
+   */
+  function khungKeo(khung, rongPx, caoPx, zoomNhoNhat) {
+    var the = 512 * Math.pow(2, zoomNhoNhat);
+    var dx = rongPx / 2 * 360 / the, dy = caoPx / 2 * 2 * Math.PI / the;
+    function y(vi) { return Math.log(Math.tan(Math.PI / 4 + vi * Math.PI / 360)); }
+    function vi(yy) { return (2 * Math.atan(Math.exp(yy)) - Math.PI / 2) * 180 / Math.PI; }
+    return [[khung[0] - dx, vi(y(khung[1]) - dy)], [khung[2] + dx, vi(y(khung[3]) + dy)]];
   }
 
   // ---------- Xuất khung đang xem sang Google Earth (KMZ = zip chứa doc.kml + ảnh PNG) ----------
@@ -221,8 +239,9 @@ var BAN_DO = (function () {
   }
 
   return {
-    maNguon: maNguon, maLop: maLop, lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin, hanVe: hanVe,
-    khungNoi: khungNoi, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
+    maNguon: maNguon, maLop: maLop, lopVe: lopVe, boLoc: boLoc, locChon: locChon, thongTin: thongTin,
+    maThuyetMinh: maThuyetMinh, hanVe: hanVe,
+    khungKeo: khungKeo, dinhDangDienTich: dinhDangDienTich, taoKml: taoKml, taoZip: taoZip,
     duongDanEarthWeb: duongDanEarthWeb,
   };
 })();

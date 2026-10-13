@@ -2,9 +2,9 @@
 // bcsnn · js/services/ban-do-du-lieu.js
 // Vai trò  : Nói chuyện với kho file bản đồ (Cloudflare Worker): nối giao thức pmtiles:// cho MapLibre qua
 //            nguồn CÓ CẤT (Cache Storage), gắn vé Google cho file Nội bộ, hỏi quyền, lấy nhóm lớp Nội bộ
-//            + nội dung loại đất; đăng nhập Google (thư viện GIS, vé ID token)
+//            + nội dung loại đất + trang thuyết minh đối tượng; đăng nhập Google (thư viện GIS, vé ID token)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.4.0 · Cập nhật: 12/10/2026 23:20
+// Phiên bản: 0.5.0 · Cập nhật: 13/10/2026 09:30
 // ============================================================
 // Mỗi lớp một file trên kho: ck-<nhóm> (Công khai), nb-<nhóm> (Nội bộ — kèm vé Google). Tên file mang phiên bản
 // theo nội dung (vd ck-khoanh_dat.6b263269.pmtiles) nên KHÔNG BAO GIỜ đổi. Phiên bản file Công khai +
@@ -125,6 +125,17 @@ var BAN_DO_DU_LIEU = (function () {
       .catch(function () { return null; });
   }
 
+  /**
+   * Trang thuyết minh 'ck-tm/<bảng>/<id>' | 'nb-tm/…' → Promise<chuỗi HTML | null>. Không có trong danh sách phiên bản
+   * (đối tượng không có trang) thì null ngay, không hỏi kho. Tên có phiên bản → bộ nhớ HTTP của trình duyệt giữ.
+   */
+  function layThuyetMinh(goc) {
+    if (!goc || !PHIEN[goc]) return Promise.resolve(null);
+    return fetch(diaChi(tenTep(goc, '.html')), { headers: dauVe(goc) })
+      .then(function (r) { return r.ok ? r.text() : null; })
+      .catch(function () { return null; });
+  }
+
   /** Nội dung theo loại đất của quyền 'ck' | 'nb'; lỗi thì trả {} (bản đồ vẫn xem được) */
   function layLoaiDat(tienTo) {
     return layJson(tienTo + '-loai-dat').then(function (kq) { return kq || {}; });
@@ -186,7 +197,7 @@ var BAN_DO_DU_LIEU = (function () {
 
   return {
     noiGiaoThuc: noiGiaoThuc, nguonPmtiles: nguonPmtiles, coNoiBo: coNoiBo, datVe: datVe, layLoaiDat: layLoaiDat,
-    layQuyen: layQuyen, layNhomNoiBo: layNhomNoiBo, xoaDemNoiBo: xoaDemNoiBo,
+    layQuyen: layQuyen, layNhomNoiBo: layNhomNoiBo, xoaDemNoiBo: xoaDemNoiBo, layThuyetMinh: layThuyetMinh,
     khoiTaoGoogle: khoiTaoGoogle, lamMoiVe: lamMoiVe,
   };
 })();

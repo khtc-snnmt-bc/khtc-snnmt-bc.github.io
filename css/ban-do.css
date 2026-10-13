@@ -2,7 +2,7 @@
    bcsnn · css/ban-do.css
    Trang bản đồ (BanDo/) — dùng biến màu của app.css.
    Máy tính: bảng lớp trên trái, khung thông tin cạnh phải. Điện thoại: bảng lớp gập, khung thông tin trượt lên.
-   Phiên bản: 0.2.0 · Cập nhật: 11/10/2026 23:37
+   Phiên bản: 0.3.0 · Cập nhật: 13/10/2026 09:30
    ============================================================ */
 
 .trang-ban-do { overflow: hidden; }
@@ -87,6 +87,13 @@
 .bd-tt dd { font-weight: 600; }
 .bd-tt h3 { font-size: 13px; color: var(--xc); margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 0.03em; }
 .bd-tt p { font-size: 14px; white-space: pre-line; }
+/* thuyết minh: khung rộng hơn để ảnh dễ xem; iframe cao đúng nội dung (ban-do.js đo) → chỉ khung ngoài cuộn */
+.bd-tt.co-tm { width: 440px; }
+.bd-tt-tm {
+  display: block; box-sizing: content-box; width: 100%; height: 0; border: 0;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.bd-tt-tm[hidden] { display: none; }
 
 .maplibregl-ctrl-bottom-right { margin-bottom: 6px; }
 
@@ -103,6 +110,7 @@
     max-height: 55vh; border-radius: 16px 16px 0 0;
     animation: bd-truot-len 0.22s ease-out;
   }
+  .bd-tt.co-tm { width: auto; max-height: 75vh; }
   .bd-tt::before {
     content: ''; display: block; width: 40px; height: 4px; border-radius: 2px;
     background: var(--border); margin: -6px auto 10px;

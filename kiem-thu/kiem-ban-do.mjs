@@ -89,13 +89,27 @@ bai('thongTin: tên loại, diện tích, ẩn cột _ và mvt_id, nội dung lo
   assert.deepEqual(tt.noiDung, [{ nhan: 'Đặc điểm', giaTri: 'Đất phù sa' }, { nhan: 'Định hướng', giaTri: 'Giữ lúa' }]);
 });
 
+bai('maThuyetMinh: neo _bang + _id theo quyền lớp; thiếu / lạ thì null', () => {
+  assert.equal(BD.maThuyetMinh('nb', { _bang: 'csnuoiyen', _id: '5' }), 'nb-tm/csnuoiyen/5');
+  assert.equal(BD.maThuyetMinh('ck', { _bang: 'cln', _id: 0 }), 'ck-tm/cln/0');
+  assert.equal(BD.maThuyetMinh('ck', { _bang: 'cln' }), null);
+  assert.equal(BD.maThuyetMinh('ck', { _id: '5' }), null);
+  assert.equal(BD.maThuyetMinh('ck', { _bang: 'cln', _id: '../5' }), null);
+  assert.equal(BD.maThuyetMinh('ck', null), null);
+});
+
 bai('dinhDangDienTich: dưới 1 ha ghi m²', () => {
   assert.equal(BD.dinhDangDienTich(658.7), '659 m²');
   assert.equal(BD.dinhDangDienTich(10000), '1 ha');
 });
 
-bai('khungNoi', () => {
-  assert.deepEqual(sach(BD.khungNoi([106, 10, 107, 11], 0.1)), [[105.9, 9.9], [107.1, 11.1]]);
+bai('khungKeo: nới nửa màn hình ở mức phóng nhỏ nhất', () => {
+  // zoom 8: 512·256 = 131072 điểm ảnh cho 360° → nửa màn 1024 điểm ảnh rộng = 512 điểm ảnh ≈ 1,40625°
+  const k = sach(BD.khungKeo([106, 10, 107, 11], 1024, 0, 8));
+  assert.ok(Math.abs(k[0][0] - (106 - 1.40625)) < 1e-9 && Math.abs(k[1][0] - (107 + 1.40625)) < 1e-9);
+  assert.ok(Math.abs(k[0][1] - 10) < 1e-9 && Math.abs(k[1][1] - 11) < 1e-9);   // cao 0 → không nới vĩ độ
+  const c = sach(BD.khungKeo([106, 10, 107, 11], 0, 600, 8));
+  assert.ok(c[0][1] < 10 - 0.8 && c[1][1] > 11 + 0.8 && c[0][1] > 10 - 0.9);   // ~0,82° ở vĩ độ ~10
 });
 
 bai('taoKml: khung, tên ảnh, thoát ký tự', () => {

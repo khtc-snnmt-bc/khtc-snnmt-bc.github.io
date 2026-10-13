@@ -1,10 +1,11 @@
 // ============================================================
 // bcsnn · js/pages/ban-do.js
 // Vai trò  : Trang bản đồ: nền khoá trong thành phố, bảng lớp (bật/tắt nhóm, tích từng loại — kiêm chú giải),
-//            bấm đối tượng → khung thông tin (cạnh phải / trượt lên trên điện thoại); đăng nhập Google →
-//            Gmail thuộc đơn vị được quyền thấy thêm lớp Nội bộ / nền ảnh vệ tinh
+//            bấm đối tượng → khung thông tin (cạnh phải / trượt lên trên điện thoại): bảng thuộc tính + trang
+//            thuyết minh của đối tượng (nếu có); đăng nhập Google → Gmail thuộc đơn vị được quyền thấy thêm
+//            lớp Nội bộ / nền ảnh vệ tinh
 // Lớp      : pages — được phép gọi: services (BAN_DO_DU_LIEU), domains (BAN_DO), config (CAU_HINH_BAN_DO, CAU_HINH)
-// Phiên bản: 0.5.0 · Cập nhật: 12/10/2026 23:20
+// Phiên bản: 0.6.0 · Cập nhật: 13/10/2026 09:30
 // Mỗi nhóm lớp một nguồn = một file trên kho (ck-<id> / nb-<id>); nhóm đang tắt thì MapLibre không tải ô của nó.
 // ============================================================
 
@@ -26,7 +27,8 @@
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
       ghiCong: 'Esri, Maxar, Earthstar Geographics' },
   ];
-  var KHOA_VE = 'bd_ve';                 // sessionStorage: vé Google còn hạn (tải lại trang không phải đăng nhập lại)
+  var ZOOM_NHO_NHAT = 8;                 // = MINZOOM lúc cắt PMTiles (day-ban-do.py): nhỏ hơn thì lớp không vẽ
+  var KHOA_VE = 'bd_ve';                // sessionStorage: vé Google còn hạn (tải lại trang không phải đăng nhập lại)
   var KHOA_DA_DANG_NHAP = 'bd_da_dn';    // localStorage: máy này từng đăng nhập → lần sau tự đăng nhập lại
 
   var nhomLop = [];          // mọi nhóm đang có trên bản đồ, mỗi nhóm kèm .nguon
@@ -53,6 +55,13 @@
     return { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(BAN_DO.maNguon(nhom, nhom.nguon)) };
   }
 
+  /** Giới hạn kéo theo cỡ màn hình hiện tại: mọi điểm trong thành phố (gồm đảo) kéo được về giữa màn hình */
+  function gioiHanKeo() {
+    var c = $('ban-do');
+    return BAN_DO.khungKeo(CAU_HINH_BAN_DO.KHUNG_GIOI_HAN || CAU_HINH_BAN_DO.KHUNG_THANH_PHO,
+      c.clientWidth, c.clientHeight, ZOOM_NHO_NHAT);
+  }
+
   function dungBanDo(nhomCongKhai) {
     BAN_DO_DU_LIEU.noiGiaoThuc(maplibregl, pmtiles);
     var khung = CAU_HINH_BAN_DO.KHUNG_THANH_PHO;
@@ -64,8 +73,8 @@
     map = new maplibregl.Map({
       container: 'ban-do',
       bounds: khung,
-      maxBounds: BAN_DO.khungNoi(khung, 0.15),
-      minZoom: 8,
+      maxBounds: gioiHanKeo(),
+      minZoom: ZOOM_NHO_NHAT,
       maxZoom: 19,
       dragRotate: false,       // khung nhìn luôn hướng bắc → KMZ phủ đúng
       pitchWithRotate: false,
@@ -295,12 +304,44 @@
     var nd = $('bd-tt-noi-dung');
     nd.textContent = '';
     tt.noiDung.forEach(function (d) { nd.appendChild(tao('h3', '', d.nhan)); nd.appendChild(tao('p', '', d.giaTri)); });
+    anThuyetMinh();
     $('bd-tt').hidden = false;
+    var luot = dangChon;
+    BAN_DO_DU_LIEU.layThuyetMinh(BAN_DO.maThuyetMinh(nhom.nguon, dt.properties)).then(function (html) {
+      if (html && dangChon === luot) hienThuyetMinh(html);
+    });
+  }
+
+  // Thuyết minh: trang HTML riêng của đối tượng, nằm dưới bảng thuộc tính. Khung cao đúng bằng nội dung →
+  // cả khung thông tin cuộn một lần, không có thanh cuộn lồng; không có trang thì không hiện gì.
+  function hienThuyetMinh(html) {
+    var f = $('bd-tt-tm');
+    f.onload = function () { doCao(); };
+    f.srcdoc = html;
+    f.hidden = false;
+    $('bd-tt').classList.add('co-tm');
+  }
+
+  function doCao() {
+    var f = $('bd-tt-tm');
+    if (f.hidden || !f.contentDocument || !f.contentDocument.documentElement) return;
+    f.style.height = '0';
+    f.style.height = f.contentDocument.documentElement.scrollHeight + 'px';
+  }
+
+  function anThuyetMinh() {
+    var f = $('bd-tt-tm');
+    f.hidden = true;
+    f.onload = null;
+    f.removeAttribute('srcdoc');
+    f.style.height = '';
+    $('bd-tt').classList.remove('co-tm');
   }
 
   function boChon() {
     if (dangChon) map.setFilter(lop(dangChon.nhom, 'chon'), BAN_DO.locChon(null));
     dangChon = null;
+    anThuyetMinh();
     $('bd-tt').hidden = true;
   }
 
@@ -311,6 +352,7 @@
     $('bd-lop-mo').addEventListener('click', function () { $('bd-lop').classList.toggle('mo'); });
     dungBanDo(nhomLop);
     $('bd-tt-dong-nut').addEventListener('click', boChon);
+    window.addEventListener('resize', function () { doCao(); map.setMaxBounds(gioiHanKeo()); });
     $('bd-earth-web').addEventListener('click', function () {
       // mở tab ngay trong lúc bấm (mở trễ sau khi chụp thì trình duyệt chặn cửa sổ bật lên)
       var b = map.getBounds();
