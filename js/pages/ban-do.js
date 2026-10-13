@@ -5,7 +5,7 @@
 //            thuyết minh của đối tượng (nếu có); đăng nhập Google → Gmail thuộc đơn vị được quyền thấy thêm
 //            lớp Nội bộ / nền ảnh vệ tinh
 // Lớp      : pages — được phép gọi: services (BAN_DO_DU_LIEU), domains (BAN_DO), config (CAU_HINH_BAN_DO, CAU_HINH)
-// Phiên bản: 0.8.0 · Cập nhật: 13/10/2026 15:10
+// Phiên bản: 0.8.1 · Cập nhật: 14/10/2026 06:30
 // Mỗi nhóm lớp một nguồn = một file trên kho (ck-<id> / nb-<id>); nhóm đang tắt thì MapLibre không tải ô của nó.
 // ============================================================
 
@@ -71,7 +71,7 @@
         nguon['nen-' + n.id] = { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(n.goc), attribution: n.ghiCong };
         n.lop = BAN_DO.lopNenDuong('nen-' + n.id, 'nen-' + n.id + '-');
       } else {
-        nguon['nen-' + n.id] = { type: 'raster', tiles: [BAN_DO_DU_LIEU.nguonVeTinh()], tileSize: 512, maxzoom: 19,
+        nguon['nen-' + n.id] = { type: 'raster', tiles: [BAN_DO_DU_LIEU.nguonVeTinh()], tileSize: 256, maxzoom: 19,
           attribution: n.ghiCong };
         n.lop = [{ id: 'nen-' + n.id, type: 'raster', source: 'nen-' + n.id }];
       }
