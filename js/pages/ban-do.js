@@ -5,7 +5,7 @@
 //            thuyết minh của đối tượng (nếu có); đăng nhập Google → Gmail thuộc đơn vị được quyền thấy thêm
 //            lớp Nội bộ / nền ảnh vệ tinh
 // Lớp      : pages — được phép gọi: services (BAN_DO_DU_LIEU), domains (BAN_DO), config (CAU_HINH_BAN_DO, CAU_HINH)
-// Phiên bản: 0.7.0 · Cập nhật: 13/10/2026 14:20
+// Phiên bản: 0.8.0 · Cập nhật: 13/10/2026 15:10
 // Mỗi nhóm lớp một nguồn = một file trên kho (ck-<id> / nb-<id>); nhóm đang tắt thì MapLibre không tải ô của nó.
 // ============================================================
 
@@ -18,11 +18,13 @@
   function boChu(n) { return n.hinh !== 'chu'; }
   // Bản đồ nền (chọn một). Không dùng tile.openstreetmap.org (DNS Viettel chặn, chỉ cho dùng nhẹ) hay CARTO
   // (đòi API key). Bản đồ đường = dữ liệu OSM tự đóng PMTiles trên kho (ck-nen-duong, bando/cong-cu/nen-duong.py).
-  // Ảnh vệ tinh (Esri có khoá do Worker trả, quyen: 'veTinh' — chỉ hiện khi có quyền) thêm khi có tài khoản ArcGIS.
+  // Ảnh vệ tinh = ô Esri qua Worker (khoá ArcGIS nằm ở Worker); quyen 'veTinh' — chỉ hiện với Gmail có quyền.
   var NEN = [
     { id: 'duong', ten: 'Bản đồ đường', goc: 'ck-nen-duong',
       ghiCong: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>' },
-  ].filter(function (n) { return BAN_DO_DU_LIEU.coTep(n.goc); });
+    { id: 'vetinh', ten: 'Ảnh vệ tinh', quyen: 'veTinh',
+      ghiCong: 'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> | Esri, Maxar, Earthstar Geographics' },
+  ].filter(function (n) { return !n.goc || BAN_DO_DU_LIEU.coTep(n.goc); });
   var ZOOM_NHO_NHAT = 8;                 // = MINZOOM lúc cắt PMTiles (day-ban-do.py): nhỏ hơn thì lớp không vẽ
   var KHOA_VE = 'bd_ve';                // sessionStorage: vé Google còn hạn (tải lại trang không phải đăng nhập lại)
   var KHOA_DA_DANG_NHAP = 'bd_da_dn';    // localStorage: máy này từng đăng nhập → lần sau tự đăng nhập lại
@@ -65,8 +67,14 @@
     nhomCongKhai.forEach(function (n) { nguon[BAN_DO.maNguon(n, CONG_KHAI)] = nguonNhom(n); });
     var lopNen = [];
     NEN.forEach(function (n, i) {
-      nguon['nen-' + n.id] = { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(n.goc), attribution: n.ghiCong };
-      n.lop = BAN_DO.lopNenDuong('nen-' + n.id, 'nen-' + n.id + '-');
+      if (n.goc) {
+        nguon['nen-' + n.id] = { type: 'vector', url: BAN_DO_DU_LIEU.nguonPmtiles(n.goc), attribution: n.ghiCong };
+        n.lop = BAN_DO.lopNenDuong('nen-' + n.id, 'nen-' + n.id + '-');
+      } else {
+        nguon['nen-' + n.id] = { type: 'raster', tiles: [BAN_DO_DU_LIEU.nguonVeTinh()], tileSize: 512, maxzoom: 19,
+          attribution: n.ghiCong };
+        n.lop = [{ id: 'nen-' + n.id, type: 'raster', source: 'nen-' + n.id }];
+      }
       n.lop.forEach(function (l) { l.layout = Object.assign({}, l.layout, { visibility: i ? 'none' : 'visible' }); });
       lopNen = lopNen.concat(n.lop);
     });
@@ -108,7 +116,7 @@
   var hangTai = Promise.resolve();
   function taiTronDangBat() {
     if (!coTaiTron) return;
-    var ds = NEN.filter(function (n) { return map.getLayoutProperty(n.lop[0].id, 'visibility') !== 'none'; })
+    var ds = NEN.filter(function (n) { return n.goc && map.getLayoutProperty(n.lop[0].id, 'visibility') !== 'none'; })
       .map(function (n) { return n.goc; })
       .concat(nhomLop.filter(function (n) { return n.nguon === CONG_KHAI && !n.tat; })
         .map(function (n) { return BAN_DO.maNguon(n, CONG_KHAI); }));
@@ -261,6 +269,7 @@
       if (!q || !q.ok) {   // vé hỏng / hết hạn: về trạng thái chưa đăng nhập
         BAN_DO_DU_LIEU.datVe('');
         ghiNho(KHOA_VE, '', sessionStorage);
+        apQuyenNen(null);
         $('bd-dang-nhap').hidden = false;
         $('bd-tai-khoan').hidden = true;
         return;

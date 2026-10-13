@@ -2,9 +2,10 @@
 // bcsnn · js/services/ban-do-du-lieu.js
 // Vai trò  : Nói chuyện với kho file bản đồ (Cloudflare Worker): nối giao thức pmtiles:// cho MapLibre qua
 //            nguồn CÓ CẤT (Cache Storage), gắn vé Google cho file Nội bộ, hỏi quyền, lấy nhóm lớp Nội bộ
-//            + nội dung loại đất + trang thuyết minh đối tượng; đăng nhập Google (thư viện GIS, vé ID token)
+//            + nội dung loại đất + trang thuyết minh đối tượng; ô ảnh vệ tinh (vetinh://, kèm vé);
+//            đăng nhập Google (thư viện GIS, vé ID token)
 // Lớp      : services — được gọi bởi: pages · được phép gọi: config
-// Phiên bản: 0.6.0 · Cập nhật: 13/10/2026 14:20
+// Phiên bản: 0.7.0 · Cập nhật: 13/10/2026 15:10
 // ============================================================
 // Tải trọn (taiTron): cả file lớp Công khai vào bộ cất một lần → các đoạn sau cắt từ bản trọn, không hỏi mạng.
 // Mỗi lớp một file trên kho: ck-<nhóm> (Công khai), nb-<nhóm> (Nội bộ — kèm vé Google). Tên file mang phiên bản
@@ -141,6 +142,15 @@ var BAN_DO_DU_LIEU = (function () {
     if (giaoThuc) return;
     giaoThuc = { p: new pmtiles.Protocol(), PMTiles: pmtiles.PMTiles };
     maplibregl.addProtocol('pmtiles', giaoThuc.p.tile);
+    // ô ảnh vệ tinh: Worker kiểm vé rồi lấy ô Esri bằng khoá ArcGIS của Worker (khoá không xuống trình duyệt)
+    maplibregl.addProtocol('vetinh', function (yc, huy) {
+      var h = new Headers({ Authorization: 'Bearer ' + ve });
+      return fetch(diaChi(yc.url.replace('vetinh://', 'vt/')), { headers: h, signal: huy && huy.signal })
+        .then(function (r) {
+          if (!r.ok) throw new Error('Ảnh vệ tinh: ' + r.status);
+          return r.arrayBuffer();
+        }).then(function (du) { return { data: du }; });
+    });
     donDem(function (goc) { return !laNoiBo(goc) || goc === 'nb-cau-hinh'; });
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () { /* bỏ qua */ });
   }
@@ -170,6 +180,9 @@ var BAN_DO_DU_LIEU = (function () {
     }
     return 'pmtiles://' + diaChi(tenTep(goc, '.pmtiles'));
   }
+
+  /** Mẫu địa chỉ ô ảnh vệ tinh cho nguồn raster của MapLibre */
+  function nguonVeTinh() { return 'vetinh://{z}/{y}/{x}'; }
 
   /** Lần đẩy bản đồ gần nhất có lớp Nội bộ không */
   function coNoiBo() { return !!PHIEN['nb-cau-hinh']; }
@@ -263,7 +276,7 @@ var BAN_DO_DU_LIEU = (function () {
   }
 
   return {
-    noiGiaoThuc: noiGiaoThuc, diaChiPhong: diaChiPhong, nguonPmtiles: nguonPmtiles, coNoiBo: coNoiBo, coTep: coTep, taiTron: taiTron,
+    noiGiaoThuc: noiGiaoThuc, diaChiPhong: diaChiPhong, nguonPmtiles: nguonPmtiles, nguonVeTinh: nguonVeTinh, coNoiBo: coNoiBo, coTep: coTep, taiTron: taiTron,
     datVe: datVe, layLoaiDat: layLoaiDat,
     layQuyen: layQuyen, layNhomNoiBo: layNhomNoiBo, xoaDemNoiBo: xoaDemNoiBo, layThuyetMinh: layThuyetMinh,
     khoiTaoGoogle: khoiTaoGoogle, lamMoiVe: lamMoiVe,
